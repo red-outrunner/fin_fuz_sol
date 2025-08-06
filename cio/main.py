@@ -10,6 +10,7 @@ def read_data():
     Read portfolio data from CSV or Excel file selected by user
     Returns a pandas DataFrame
     """
+    # Create root window
     root = tk.Tk()
     root.withdraw()  # Hide the main window
     
@@ -21,6 +22,9 @@ def read_data():
             ("All files", "*.*")
         ]
     )
+    
+    # Destroy the root window
+    root.destroy()
     
     if not file_path:
         raise FileNotFoundError("No file selected")
