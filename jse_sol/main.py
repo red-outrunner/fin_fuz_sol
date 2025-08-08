@@ -13,19 +13,21 @@ end_date = datetime.today().strftime("%Y-%m-%d")
 # ------------------
 
 # 1) download daily data, then resample to month-end
-data = yf.download(ticker, start=f"{start_year}-01-01", end=end_date, progress=False)
+data = yf.download(ticker, start=f"{start_year}-01-01", end=end_date, 
+                   progress=False, auto_adjust=False)
 
 if data.empty:
     raise SystemExit("No data returned — check ticker or internet connection")
 
 # use 'Adj Close' if available; otherwise use 'Close'
 price_col = "Adj Close" if "Adj Close" in data.columns else "Close"
-monthly = data[price_col].resample('M').last()
+monthly = data[price_col].resample('ME').last()  # Changed 'M' to 'ME'
 
 # 2) compute month returns (percent)
 monthly_ret = monthly.pct_change().dropna()
 
 # 3) build a DataFrame indexed by year, columns=month number
+# monthly_ret is already a Series, so we can use to_frame()
 df = monthly_ret.to_frame(name='ret')
 df['year'] = df.index.year
 df['month'] = df.index.month
@@ -52,3 +54,11 @@ plt.ylabel('Year')
 plt.title(f'Month-by-year returns (%) for {ticker}')
 plt.xticks(np.arange(12)+.5, ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], rotation=0)
 plt.show()
+
+# Optional: Print summary statistics
+print(f"\nMonthly Return Summary for {ticker} ({start_year}-{end_date[:4]}):")
+print("=" * 50)
+for month_num, month_name in enumerate(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], 1):
+    if month_num in month_avg.index:
+        avg_ret = month_avg[month_num] * 100
+        print(f"{month_name}: {avg_ret:+6.2f}%")
