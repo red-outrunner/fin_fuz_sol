@@ -26,6 +26,10 @@ monthly = data[price_col].resample('ME').last()  # Changed 'M' to 'ME'
 # 2) compute month returns (percent)
 monthly_ret = monthly.pct_change().dropna()
 
+if isinstance(monthly_ret, pd.DataFrame):
+    monthly_ret = monthly_ret.iloc[:, 0]  # Take first column if DataFrame
+monthly_ret.name = 'ret'
+df = monthly_ret.to_frame()
 # 3) build a DataFrame indexed by year, columns=month number
 # monthly_ret is already a Series, so we can use to_frame()
 # df = monthly_ret.to_frame(name='ret')
@@ -47,7 +51,7 @@ plt.figure(figsize=(10,5))
 plt.bar(range(1,13), month_avg*100)
 plt.xticks(range(1,13), ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])
 plt.ylabel('Avg monthly return (%)')
-plt.title(f'Average monthly returns for {ticker} ({start_year} to {end_date[:4]})')
+plt.title(f'Average monthly returns for {ticker} JSE-ALLshare index ({start_year} to {end_date[:4]})')
 plt.grid(axis='y', alpha=0.25)
 plt.show()
 
@@ -56,7 +60,7 @@ plt.figure(figsize=(12,8))
 sns.heatmap(pivot*100, center=0, cmap='vlag', cbar_kws={'label':'monthly return (%)'}, linewidths=.5)
 plt.xlabel('Month')
 plt.ylabel('Year')
-plt.title(f'Month-by-year returns (%) for {ticker}')
+plt.title(f'Month-by-year returns (%) for {ticker} JSE-ALLshare index')
 plt.xticks(np.arange(12)+.5, ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], rotation=0)
 plt.show()
 
