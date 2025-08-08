@@ -28,7 +28,12 @@ monthly_ret = monthly.pct_change().dropna()
 
 # 3) build a DataFrame indexed by year, columns=month number
 # monthly_ret is already a Series, so we can use to_frame()
-df = monthly_ret.to_frame(name='ret')
+# df = monthly_ret.to_frame(name='ret')
+if isinstance(monthly_ret, pd.Series):
+    df = monthly_ret.to_frame(name='ret')
+else:
+    df = monthly_ret.copy()
+    df.columns = ['ret']
 df['year'] = df.index.year
 df['month'] = df.index.month
 pivot = df.pivot_table(index='year', columns='month', values='ret')
