@@ -17,7 +17,17 @@ class JSEAnalyzer:
         self.root.title("JSE Monthly Return Analyzer")
         self.root.geometry("1200x800")
         
-        # Default values
+        # Default values and ticker options
+        self.ticker_options = {
+            "JSE All Share (^J203.JO)": "^J203.JO",
+            "JSE Top 40 (^JTOPI.JO)": "^JTOPI.JO",
+            "JSE Top 40 TRI (^J40TRI.JO)": "^J40TRI.JO",
+            "JSE All Share TRI (^J203TRI.JO)": "^J203TRI.JO",
+            "S&P 500 (^GSPC)": "^GSPC",
+            "FTSE 100 (^FTSE)": "^FTSE",
+            "DAX (^GDAXI)": "^GDAXI",
+            "Nikkei 225 (^N225)": "^N225"
+        }
         self.ticker = "^J203.JO"
         self.start_year = 1990
         self.end_date = datetime.today().strftime("%Y-%m-%d")
@@ -41,39 +51,54 @@ class JSEAnalyzer:
         config_frame = ttk.LabelFrame(main_frame, text="Configuration", padding="10")
         config_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
         
-        # Ticker input
-        ttk.Label(config_frame, text="Ticker:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
-        self.ticker_var = tk.StringVar(value=self.ticker)
-        ticker_entry = ttk.Entry(config_frame, textvariable=self.ticker_var, width=15)
-        ticker_entry.grid(row=0, column=1, sticky=tk.W, padx=(0, 20))
+        # Ticker selection with dropdown
+        ttk.Label(config_frame, text="Index/ETF:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
+        self.ticker_var = tk.StringVar(value="JSE All Share (^J203.JO)")
+        ticker_combo = ttk.Combobox(config_frame, textvariable=self.ticker_var, 
+                                   values=list(self.ticker_options.keys()), 
+                                   state="readonly", width=25)
+        ticker_combo.grid(row=0, column=1, sticky=tk.W, padx=(0, 20))
+        
+        # Custom ticker entry (hidden by default)
+        self.custom_ticker_var = tk.StringVar()
+        self.custom_ticker_entry = ttk.Entry(config_frame, textvariable=self.custom_ticker_var, width=15)
+        self.custom_ticker_entry.grid(row=0, column=2, sticky=tk.W, padx=(0, 20))
+        self.custom_ticker_entry.grid_remove()  # Hide by default
+        
+        # Custom ticker checkbox
+        self.use_custom_var = tk.BooleanVar()
+        custom_check = ttk.Checkbutton(config_frame, text="Custom Ticker", 
+                                      variable=self.use_custom_var, 
+                                      command=self.toggle_custom_ticker)
+        custom_check.grid(row=0, column=3, sticky=tk.W, padx=(0, 20))
         
         # Date range options
-        ttk.Label(config_frame, text="Date Range:").grid(row=0, column=2, sticky=tk.W, padx=(0, 5))
+        ttk.Label(config_frame, text="Date Range:").grid(row=0, column=4, sticky=tk.W, padx=(0, 5))
         self.date_range_var = tk.StringVar(value="Custom")
         date_range_combo = ttk.Combobox(config_frame, textvariable=self.date_range_var, 
                                        values=["Custom", "Last 5 Years", "Last 10 Years", "Last 20 Years", "All Data"], 
                                        state="readonly", width=15)
-        date_range_combo.grid(row=0, column=3, sticky=tk.W, padx=(0, 20))
+        date_range_combo.grid(row=0, column=5, sticky=tk.W, padx=(0, 20))
         date_range_combo.bind('<<ComboboxSelected>>', self.on_date_range_change)
         
         # Custom date inputs
-        ttk.Label(config_frame, text="Start Year:").grid(row=0, column=4, sticky=tk.W, padx=(0, 5))
+        ttk.Label(config_frame, text="Start Year:").grid(row=0, column=6, sticky=tk.W, padx=(0, 5))
         self.start_year_var = tk.IntVar(value=self.start_year)
         self.start_year_entry = ttk.Entry(config_frame, textvariable=self.start_year_var, width=8)
-        self.start_year_entry.grid(row=0, column=5, sticky=tk.W, padx=(0, 20))
+        self.start_year_entry.grid(row=0, column=7, sticky=tk.W, padx=(0, 20))
         
-        ttk.Label(config_frame, text="End Date:").grid(row=0, column=6, sticky=tk.W, padx=(0, 5))
+        ttk.Label(config_frame, text="End Date:").grid(row=0, column=8, sticky=tk.W, padx=(0, 5))
         self.end_date_var = tk.StringVar(value=self.end_date)
         self.end_date_entry = ttk.Entry(config_frame, textvariable=self.end_date_var, width=12)
-        self.end_date_entry.grid(row=0, column=7, sticky=tk.W, padx=(0, 20))
+        self.end_date_entry.grid(row=0, column=9, sticky=tk.W, padx=(0, 20))
         
         # Analyze button
         analyze_btn = ttk.Button(config_frame, text="Analyze Data", command=self.analyze_data)
-        analyze_btn.grid(row=0, column=8, padx=(10, 0))
+        analyze_btn.grid(row=0, column=10, padx=(10, 0))
         
         # Export button
         export_btn = ttk.Button(config_frame, text="Export to Excel", command=self.export_to_excel, state=tk.DISABLED)
-        export_btn.grid(row=0, column=9, padx=(10, 0))
+        export_btn.grid(row=0, column=11, padx=(10, 0))
         self.export_btn = export_btn
         
         # Results notebook
@@ -110,6 +135,33 @@ class JSEAnalyzer:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         
+    def toggle_custom_ticker(self):
+        """Toggle between predefined ticker dropdown and custom ticker entry"""
+        if self.use_custom_var.get():
+            # Hide dropdown, show custom entry
+            for widget in self.root.winfo_children():
+                if isinstance(widget, ttk.Frame):
+                    for child in widget.winfo_children():
+                        if isinstance(child, ttk.Combobox) and child.get() in self.ticker_options.keys():
+                            child.grid_remove()
+            self.custom_ticker_entry.grid()
+            self.custom_ticker_entry.delete(0, tk.END)
+        else:
+            # Show dropdown, hide custom entry
+            self.custom_ticker_entry.grid_remove()
+            # Find and show the combobox (relocate it)
+            config_frame = None
+            for widget in self.root.winfo_children():
+                if isinstance(widget, ttk.Frame):
+                    for child in widget.winfo_children():
+                        if isinstance(child, ttk.LabelFrame):
+                            config_frame = child
+                            break
+            if config_frame:
+                for child in config_frame.winfo_children():
+                    if isinstance(child, ttk.Combobox) and hasattr(child, 'state'):
+                        child.grid(row=0, column=1, sticky=tk.W, padx=(0, 20))
+    
     def on_date_range_change(self, event=None):
         selection = self.date_range_var.get()
         current_year = datetime.now().year
@@ -143,7 +195,17 @@ class JSEAnalyzer:
             self.status_var.set("Downloading data...")
             self.root.update()
             
-            self.ticker = self.ticker_var.get()
+            # Get ticker based on selection
+            if self.use_custom_var.get():
+                self.ticker = self.custom_ticker_var.get().strip()
+                if not self.ticker:
+                    messagebox.showerror("Error", "Please enter a custom ticker symbol")
+                    self.status_var.set("Missing ticker symbol")
+                    return
+            else:
+                ticker_name = self.ticker_var.get()
+                self.ticker = self.ticker_options.get(ticker_name, "^J203.JO")
+            
             self.start_year = self.start_year_var.get()
             self.end_date = self.end_date_var.get()
             
@@ -343,7 +405,7 @@ class JSEAnalyzer:
             return
             
         try:
-            filename = f"{self.ticker.replace('^', '').replace('.JO', '')}_monthly_analysis_{self.start_year}_{self.end_date[:4]}.xlsx"
+            filename = f"{self.ticker.replace('^', '').replace('.JO', '').replace('.JK', '')}_monthly_analysis_{self.start_year}_{self.end_date[:4]}.xlsx"
             
             with pd.ExcelWriter(filename, engine='openpyxl') as writer:
                 # Sheet 1: Year-by-Month Returns
