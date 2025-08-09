@@ -71,3 +71,40 @@ for month_num, month_name in enumerate(['Jan','Feb','Mar','Apr','May','Jun','Jul
     if month_num in month_avg.index:
         avg_ret = month_avg[month_num] * 100
         print(f"{month_name}: {avg_ret:+6.2f}%")
+        
+def export_to_excel(pivot, month_avg, month_median, ticker, start_year, end_date):
+    """Export monthly return data to Excel with multiple sheets"""
+    
+    filename = f"{ticker.replace('^', '').replace('.JO', '')}_monthly_analysis_{start_year}_{end_date[:4]}.xlsx"
+    
+    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+        # Sheet 1: Year-by-Month Returns
+        pivot.to_excel(writer, sheet_name='Year_Month_Returns')
+        
+        # Sheet 2: Monthly Summary Stats
+        summary_stats = pd.DataFrame({
+            'Month': range(1, 13),
+            'Month_Name': ['Jan','Feb','Mar','Apr','May','Jun',
+                          'Jul','Aug','Sep','Oct','Nov','Dec'],
+            'Average_Return_%': month_avg.values * 100,
+            'Median_Return_%': month_median.values * 100,
+            'Std_Dev_%': pivot.std().values * 100,
+            'Best_Return_%': pivot.max().values * 100,
+            'Worst_Return_%': pivot.min().values * 100,
+            'Positive_Months_Count': (pivot > 0).sum().values,
+            'Total_Months_Count': pivot.count().values,
+            'Positive_Rate_%': ((pivot > 0).sum() / pivot.count() * 100).values
+        })
+        summary_stats.to_excel(writer, sheet_name='Monthly_Summary', index=False)
+        
+        # Sheet 3: Raw Data
+        raw_data = pd.DataFrame({
+            'Date': pivot.index,
+            'Year': pivot.index,
+            **{f'M{col}': pivot[col].values for col in pivot.columns}
+        })
+        raw_data.to_excel(writer, sheet_name='Raw_Data', index=False)
+    
+    print(f"Data exported to {filename}")
+
+export_to_excel(pivot, month_avg, month_median, ticker, start_year, end_date)
