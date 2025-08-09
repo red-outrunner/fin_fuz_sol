@@ -252,6 +252,9 @@ class JSEAnalyzer:
             self.month_avg = self.pivot.mean().sort_index()
             self.month_median = self.pivot.median().sort_index()
             
+            # Calculate overall average for benchmark line
+            self.overall_avg = self.monthly_ret.mean()
+            
             # Update UI with results
             self.update_charts()
             self.update_summary()
@@ -273,14 +276,25 @@ class JSEAnalyzer:
         for widget in self.scatter_frame.winfo_children():
             widget.destroy()
         
-        # Bar chart with hover functionality
+        # Bar chart with hover functionality and benchmark lines
         fig1, ax1 = plt.subplots(figsize=(10, 5))
-        bars = ax1.bar(range(1, 13), self.month_avg*100)
+        bars = ax1.bar(range(1, 13), self.month_avg*100, alpha=0.7, color='skyblue', edgecolor='navy')
         ax1.set_xticks(range(1, 13))
         ax1.set_xticklabels(self.months)
         ax1.set_ylabel('Avg monthly return (%)')
         ax1.set_title(f'Average monthly returns for {self.ticker} ({self.start_year} to {self.end_date[:4]})')
         ax1.grid(axis='y', alpha=0.25)
+        
+        # Add benchmark lines
+        overall_avg_pct = self.overall_avg * 100
+        ax1.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=2, 
+                   label=f'Overall Average: {overall_avg_pct:.2f}%')
+        
+        # Add zero line for reference
+        ax1.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
+        
+        # Add legend
+        ax1.legend()
         
         # Add hover functionality to bar chart
         annot1 = ax1.annotate("", xy=(0,0), xytext=(20,20), textcoords="offset points",
@@ -359,6 +373,11 @@ class JSEAnalyzer:
         ax3.axhline(y=0, color='black', linestyle='-', alpha=0.3)
         ax3.axvline(x=0, color='black', linestyle='-', alpha=0.3)
         
+        # Add benchmark lines
+        ax3.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=1, alpha=0.7,
+                   label=f'Overall Avg Return: {overall_avg_pct:.2f}%')
+        ax3.legend()
+        
         # Add hover functionality to scatter plot
         annot3 = ax3.annotate("", xy=(0,0), xytext=(20,20), textcoords="offset points",
                              bbox=dict(boxstyle="round", fc="w"),
@@ -404,6 +423,10 @@ class JSEAnalyzer:
             if month_num in self.month_avg.index:
                 avg_ret = self.month_avg[month_num] * 100
                 summary += f"{month_name}: {avg_ret:+6.2f}%\n"
+        summary += "=" * 50 + "\n"
+        overall_avg_pct = self.overall_avg * 100
+        summary += f"Overall Average Return: {overall_avg_pct:+6.2f}%\n"
+        summary += f"Data Period: {self.start_year} to {self.end_date[:4]} ({len(self.pivot)} years)\n"
         
         self.summary_text.insert(1.0, summary)
     
