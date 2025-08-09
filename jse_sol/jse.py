@@ -14,24 +14,25 @@ matplotlib.use('TkAgg')
 class JSEAnalyzer:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Global Index Monthly Return Analyzer")
-        self.root.geometry("1200x800")
+        self.root.title("📊 Global Index Monthly Return Analyzer")
+        self.root.geometry("1300x850")
+        self.root.configure(bg='#f0f0f0')
         
         # Default values and ticker options
         self.ticker_options = {
-            "JSE All Share (^J203.JO)": "^J203.JO",
-            "JSE Financials (^J258.JO)": "^J258.JO",
-            "JSE Industrials (^J252.JO)": "^J252.JO",
-            "JSE Resources (^J250.JO)": "^J250.JO",
-            "ASX 200 (^AXJO)": "^AXJO",
-            "S&P 500 (^GSPC)": "^GSPC",
-            "FTSE 100 (^FTSE)": "^FTSE",
-            "DAX (^GDAXI)": "^GDAXI",
-            "Nikkei 225 (^N225)": "^N225",
-            "Hang Seng (^HSI)": "^HSI",
-            "Shanghai Composite (000001.SS)": "000001.SS",
-            "MSCI World (^MXWO)": "^MXWO",
-            "MSCI Emerging Markets (^MXEF)": "^MXEF"
+            "🇿🇦 JSE All Share (^J203.JO)": "^J203.JO",
+            "🇿🇦 JSE Financials (^J258.JO)": "^J258.JO",
+            "🇿🇦 JSE Industrials (^J252.JO)": "^J252.JO",
+            "🇿🇦 JSE Resources (^J250.JO)": "^J250.JO",
+            "🇦🇺 ASX 200 (^AXJO)": "^AXJO",
+            "🇺🇸 S&P 500 (^GSPC)": "^GSPC",
+            "🇬🇧 FTSE 100 (^FTSE)": "^FTSE",
+            "🇩🇪 DAX (^GDAXI)": "^GDAXI",
+            "🇯🇵 Nikkei 225 (^N225)": "^N225",
+            "🇭🇰 Hang Seng (^HSI)": "^HSI",
+            "🇨🇳 Shanghai Composite (000001.SS)": "000001.SS",
+            "🌍 MSCI World (^MXWO)": "^MXWO",
+            "🌍 MSCI Emerging Markets (^MXEF)": "^MXEF"
         }
         self.ticker = "^J203.JO"
         self.start_year = 1990
@@ -44,98 +45,148 @@ class JSEAnalyzer:
         self.month_avg = None
         self.month_median = None
         self.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        self.show_benchmark = tk.BooleanVar(value=True)  # Toggle for benchmark line
+        self.show_benchmark = tk.BooleanVar(value=True)
+        
+        # Style configuration
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        self.configure_styles()
         
         self.setup_ui()
         
+    def configure_styles(self):
+        # Configure custom styles
+        self.style.configure('Title.TLabel', font=('Arial', 12, 'bold'), foreground='#2c3e50')
+        self.style.configure('Header.TFrame', background='#3498db')
+        self.style.configure('Config.TLabelframe', background='#f8f9fa', foreground='#2c3e50')
+        self.style.configure('Config.TLabelframe.Label', font=('Arial', 10, 'bold'), foreground='#2c3e50')
+        self.style.configure('Primary.TButton', font=('Arial', 9, 'bold'), background='#3498db', foreground='white')
+        self.style.map('Primary.TButton', background=[('active', '#2980b9')])
+        self.style.configure('Secondary.TButton', font=('Arial', 9), background='#95a5a6', foreground='white')
+        self.style.map('Secondary.TButton', background=[('active', '#7f8c8d')])
+        self.style.configure('Success.TButton', font=('Arial', 9, 'bold'), background='#27ae60', foreground='white')
+        self.style.map('Success.TButton', background=[('active', '#229954')])
+        
     def setup_ui(self):
-        # Main frame
-        main_frame = ttk.Frame(self.root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        # Main container
+        main_container = tk.Frame(self.root, bg='#f0f0f0')
+        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Configuration frame
-        config_frame = ttk.LabelFrame(main_frame, text="Configuration", padding="10")
-        config_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        # Header with title
+        header_frame = ttk.Frame(main_container, style='Header.TFrame')
+        header_frame.pack(fill=tk.X, pady=(0, 15))
         
-        # Ticker selection with dropdown
-        ttk.Label(config_frame, text="Index/ETF:").grid(row=0, column=0, sticky=tk.W, padx=(0, 5))
-        self.ticker_var = tk.StringVar(value="JSE All Share (^J203.JO)")
-        ticker_combo = ttk.Combobox(config_frame, textvariable=self.ticker_var, 
+        title_label = ttk.Label(header_frame, text="📈 Global Index Monthly Return Analyzer", 
+                               style='Title.TLabel')
+        title_label.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Configuration frame with improved styling
+        config_frame = ttk.LabelFrame(main_container, text="⚙️ Configuration Panel", 
+                                     style='Config.TLabelframe', padding="15")
+        config_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        # Ticker selection row
+        ticker_row = ttk.Frame(config_frame)
+        ticker_row.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Label(ticker_row, text="Index/ETF:").pack(side=tk.LEFT, padx=(0, 10))
+        self.ticker_var = tk.StringVar(value="🇿🇦 JSE All Share (^J203.JO)")
+        ticker_combo = ttk.Combobox(ticker_row, textvariable=self.ticker_var, 
                                    values=list(self.ticker_options.keys()), 
-                                   state="readonly", width=30)
-        ticker_combo.grid(row=0, column=1, sticky=tk.W, padx=(0, 20))
+                                   state="readonly", width=35, font=('Arial', 9))
+        ticker_combo.pack(side=tk.LEFT, padx=(0, 15))
         
-        # Custom ticker entry (hidden by default)
-        self.custom_ticker_var = tk.StringVar()
-        self.custom_ticker_entry = ttk.Entry(config_frame, textvariable=self.custom_ticker_var, width=15)
-        self.custom_ticker_entry.grid(row=0, column=2, sticky=tk.W, padx=(0, 20))
-        self.custom_ticker_entry.grid_remove()  # Hide by default
-        
-        # Custom ticker checkbox
+        # Custom ticker controls
         self.use_custom_var = tk.BooleanVar()
-        custom_check = ttk.Checkbutton(config_frame, text="Custom Ticker", 
+        custom_check = ttk.Checkbutton(ticker_row, text="Custom Ticker", 
                                       variable=self.use_custom_var, 
                                       command=self.toggle_custom_ticker)
-        custom_check.grid(row=0, column=3, sticky=tk.W, padx=(0, 20))
+        custom_check.pack(side=tk.LEFT, padx=(0, 10))
         
-        # Date range options
-        ttk.Label(config_frame, text="Date Range:").grid(row=0, column=4, sticky=tk.W, padx=(0, 5))
+        self.custom_ticker_var = tk.StringVar()
+        self.custom_ticker_entry = ttk.Entry(ticker_row, textvariable=self.custom_ticker_var, 
+                                            width=15, font=('Arial', 9))
+        self.custom_ticker_entry.pack(side=tk.LEFT)
+        self.custom_ticker_entry.grid_remove()
+        
+        # Date controls row
+        date_row = ttk.Frame(config_frame)
+        date_row.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Label(date_row, text="Date Range:").pack(side=tk.LEFT, padx=(0, 10))
         self.date_range_var = tk.StringVar(value="Custom")
-        date_range_combo = ttk.Combobox(config_frame, textvariable=self.date_range_var, 
-                                       values=["Custom", "Last 5 Years", "Last 10 Years", "Last 20 Years", "All Data"], 
-                                       state="readonly", width=15)
-        date_range_combo.grid(row=0, column=5, sticky=tk.W, padx=(0, 20))
+        date_range_combo = ttk.Combobox(date_row, textvariable=self.date_range_var, 
+                                       values=["Custom", "Last 5 Years", "Last 10 Years", 
+                                              "Last 20 Years", "All Data"], 
+                                       state="readonly", width=15, font=('Arial', 9))
+        date_range_combo.pack(side=tk.LEFT, padx=(0, 15))
         date_range_combo.bind('<<ComboboxSelected>>', self.on_date_range_change)
         
-        # Custom date inputs
-        ttk.Label(config_frame, text="Start Year:").grid(row=0, column=6, sticky=tk.W, padx=(0, 5))
+        ttk.Label(date_row, text="Start Year:").pack(side=tk.LEFT, padx=(0, 10))
         self.start_year_var = tk.IntVar(value=self.start_year)
-        self.start_year_entry = ttk.Entry(config_frame, textvariable=self.start_year_var, width=8)
-        self.start_year_entry.grid(row=0, column=7, sticky=tk.W, padx=(0, 20))
+        self.start_year_entry = ttk.Entry(date_row, textvariable=self.start_year_var, 
+                                         width=8, font=('Arial', 9))
+        self.start_year_entry.pack(side=tk.LEFT, padx=(0, 15))
         
-        ttk.Label(config_frame, text="End Date:").grid(row=0, column=8, sticky=tk.W, padx=(0, 5))
+        ttk.Label(date_row, text="End Date:").pack(side=tk.LEFT, padx=(0, 10))
         self.end_date_var = tk.StringVar(value=self.end_date)
-        self.end_date_entry = ttk.Entry(config_frame, textvariable=self.end_date_var, width=12)
-        self.end_date_entry.grid(row=0, column=9, sticky=tk.W, padx=(0, 20))
+        self.end_date_entry = ttk.Entry(date_row, textvariable=self.end_date_var, 
+                                       width=12, font=('Arial', 9))
+        self.end_date_entry.pack(side=tk.LEFT, padx=(0, 15))
         
-        # Analyze button
-        analyze_btn = ttk.Button(config_frame, text="Analyze Data", command=self.analyze_data)
-        analyze_btn.grid(row=0, column=10, padx=(10, 0))
+        # Action buttons row
+        button_row = ttk.Frame(config_frame)
+        button_row.pack(fill=tk.X, pady=(10, 0))
         
-        # Export button
-        export_btn = ttk.Button(config_frame, text="Export to Excel", command=self.export_to_excel, state=tk.DISABLED)
-        export_btn.grid(row=0, column=11, padx=(10, 0))
-        self.export_btn = export_btn
+        analyze_btn = ttk.Button(button_row, text="🔍 Analyze Data", 
+                                command=self.analyze_data, style='Primary.TButton')
+        analyze_btn.pack(side=tk.LEFT, padx=(0, 10))
         
-        # Results notebook
-        notebook = ttk.Notebook(main_frame)
-        notebook.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
+        self.export_btn = ttk.Button(button_row, text="💾 Export to Excel", 
+                                    command=self.export_to_excel, state=tk.DISABLED,
+                                    style='Success.TButton')
+        self.export_btn.pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.toggle_benchmark_btn = ttk.Button(button_row, text="📊 Toggle Benchmark", 
+                                              command=self.toggle_benchmark_line,
+                                              style='Secondary.TButton')
+        self.toggle_benchmark_btn.pack(side=tk.LEFT)
+        
+        # Results notebook with modern styling
+        notebook_frame = ttk.Frame(main_container)
+        notebook_frame.pack(fill=tk.BOTH, expand=True)
+        
+        self.notebook = ttk.Notebook(notebook_frame, padding=5)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
         
         # Tab 1: Average Returns Bar Chart
-        self.bar_frame = ttk.Frame(notebook)
-        notebook.add(self.bar_frame, text="Average Returns")
+        self.bar_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.bar_frame, text="📊 Average Returns")
         
         # Tab 2: Heatmap
-        self.heatmap_frame = ttk.Frame(notebook)
-        notebook.columnconfigure(0, weight=1)
-        main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(1, weight=1)
-        notebook.add(self.heatmap_frame, text="Year-Month Heatmap")
+        self.heatmap_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.heatmap_frame, text="🌡️ Year-Month Heatmap")
         
         # Tab 3: Risk-Return Scatter
-        self.scatter_frame = ttk.Frame(notebook)
-        notebook.add(self.scatter_frame, text="Risk vs Return")
+        self.scatter_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.scatter_frame, text="⚖️ Risk vs Return")
         
         # Tab 4: Summary Stats
-        self.summary_frame = ttk.Frame(notebook)
-        notebook.add(self.summary_frame, text="Summary Statistics")
-        self.summary_text = tk.Text(self.summary_frame, wrap=tk.WORD)
-        self.summary_text.pack(fill=tk.BOTH, expand=True)
+        self.summary_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.summary_frame, text="📋 Summary Statistics")
+        self.summary_text = tk.Text(self.summary_frame, wrap=tk.WORD, font=('Consolas', 10),
+                                   bg='#ffffff', fg='#2c3e50')
+        self.summary_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        scrollbar = ttk.Scrollbar(self.summary_frame, orient=tk.VERTICAL, command=self.summary_text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.summary_text.configure(yscrollcommand=scrollbar.set)
         
         # Status bar
-        self.status_var = tk.StringVar(value="Ready")
-        status_bar = ttk.Label(main_frame, textvariable=self.status_var, relief=tk.SUNKEN)
-        status_bar.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+        self.status_var = tk.StringVar(value="✨ Ready - Select an index and click Analyze")
+        status_bar = ttk.Label(main_container, textvariable=self.status_var, 
+                              relief=tk.SUNKEN, padding=5, font=('Arial', 9),
+                              background='#ecf0f1', foreground='#7f8c8d')
+        status_bar.pack(fill=tk.X, pady=(10, 0))
         
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
@@ -144,32 +195,33 @@ class JSEAnalyzer:
     def toggle_custom_ticker(self):
         """Toggle between predefined ticker dropdown and custom ticker entry"""
         if self.use_custom_var.get():
-            # Hide dropdown, show custom entry
+            # Find and hide the combobox
             for widget in self.root.winfo_children():
-                if isinstance(widget, ttk.Frame):
+                if isinstance(widget, tk.Frame):
                     for child in widget.winfo_children():
                         if isinstance(child, ttk.LabelFrame):
                             for grandchild in child.winfo_children():
-                                if isinstance(grandchild, ttk.Combobox):
-                                    grandchild.grid_remove()
-                                    break
-            self.custom_ticker_entry.grid()
+                                if isinstance(grandchild, ttk.Frame):
+                                    for great_grandchild in grandchild.winfo_children():
+                                        if isinstance(great_grandchild, ttk.Combobox):
+                                            great_grandchild.pack_forget()
+                                            break
+            self.custom_ticker_entry.pack(side=tk.LEFT, padx=(0, 15))
             self.custom_ticker_entry.delete(0, tk.END)
         else:
             # Show dropdown, hide custom entry
-            self.custom_ticker_entry.grid_remove()
+            self.custom_ticker_entry.pack_forget()
             # Find and show the combobox
-            config_frame = None
             for widget in self.root.winfo_children():
-                if isinstance(widget, ttk.Frame):
+                if isinstance(widget, tk.Frame):
                     for child in widget.winfo_children():
                         if isinstance(child, ttk.LabelFrame):
-                            config_frame = child
-                            break
-            if config_frame:
-                for child in config_frame.winfo_children():
-                    if isinstance(child, ttk.Combobox) and child['state'] == 'readonly':
-                        child.grid(row=0, column=1, sticky=tk.W, padx=(0, 20))
+                            for grandchild in child.winfo_children():
+                                if isinstance(grandchild, ttk.Frame):
+                                    for great_grandchild in grandchild.winfo_children():
+                                        if isinstance(great_grandchild, ttk.Combobox):
+                                            great_grandchild.pack(side=tk.LEFT, padx=(0, 15))
+                                            break
     
     def on_date_range_change(self, event=None):
         selection = self.date_range_var.get()
@@ -201,7 +253,7 @@ class JSEAnalyzer:
     
     def analyze_data(self):
         try:
-            self.status_var.set("Downloading data...")
+            self.status_var.set("📥 Downloading data...")
             self.root.update()
             
             # Get ticker based on selection
@@ -209,7 +261,7 @@ class JSEAnalyzer:
                 self.ticker = self.custom_ticker_var.get().strip()
                 if not self.ticker:
                     messagebox.showerror("Error", "Please enter a custom ticker symbol")
-                    self.status_var.set("Missing ticker symbol")
+                    self.status_var.set("❌ Missing ticker symbol")
                     return
             else:
                 ticker_name = self.ticker_var.get()
@@ -224,16 +276,16 @@ class JSEAnalyzer:
                                        progress=False, auto_adjust=False)
             except Exception as e:
                 messagebox.showerror("Error", f"Error downloading  {e}")
-                self.status_var.set("Error downloading data")
+                self.status_var.set("❌ Error downloading data")
                 return
             
             if self.data.empty:
                 messagebox.showerror("Error", "No data returned — check ticker or internet connection")
-                self.status_var.set("No data available")
+                self.status_var.set("❌ No data available")
                 return
             
             # Process data
-            self.status_var.set("Processing data...")
+            self.status_var.set("⚙️ Processing data...")
             self.root.update()
             
             price_col = "Adj Close" if "Adj Close" in self.data.columns else "Close"
@@ -262,16 +314,18 @@ class JSEAnalyzer:
             
             # Enable export button
             self.export_btn.config(state=tk.NORMAL)
-            self.status_var.set(f"Analysis complete. Data from {self.start_year} to {self.end_date[:4]}")
+            self.status_var.set(f"✅ Analysis complete for {self.ticker} ({self.start_year}-{self.end_date[:4]})")
             
         except Exception as e:
             messagebox.showerror("Error", f"Error during analysis: {e}")
-            self.status_var.set("Analysis failed")
+            self.status_var.set("❌ Analysis failed")
     
     def toggle_benchmark_line(self):
         """Toggle the benchmark line on/off"""
         self.show_benchmark.set(not self.show_benchmark.get())
         self.update_charts()
+        status = "ON" if self.show_benchmark.get() else "OFF"
+        self.status_var.set(f"📊 Benchmark line is now {status}")
     
     def update_charts(self):
         # Clear existing charts
@@ -282,42 +336,58 @@ class JSEAnalyzer:
         for widget in self.scatter_frame.winfo_children():
             widget.destroy()
         
-        # Add toggle button for benchmark line in bar chart tab
-        toggle_frame = ttk.Frame(self.bar_frame)
-        toggle_frame.pack(fill=tk.X, padx=5, pady=5)
-        toggle_btn = ttk.Button(toggle_frame, text="Toggle Benchmark Line", 
-                               command=self.toggle_benchmark_line)
-        toggle_btn.pack(side=tk.RIGHT)
-        
         # Bar chart with hover functionality and benchmark lines
         chart_frame = ttk.Frame(self.bar_frame)
-        chart_frame.pack(fill=tk.BOTH, expand=True)
+        chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        fig1, ax1 = plt.subplots(figsize=(10, 5))
-        bars = ax1.bar(range(1, 13), self.month_avg*100, alpha=0.7, color='skyblue', edgecolor='navy')
+        fig1, ax1 = plt.subplots(figsize=(12, 6))
+        bars = ax1.bar(range(1, 13), self.month_avg*100, alpha=0.8, color='#3498db', 
+                      edgecolor='#2980b9', linewidth=1)
         ax1.set_xticks(range(1, 13))
-        ax1.set_xticklabels(self.months)
-        ax1.set_ylabel('Avg monthly return (%)')
-        ax1.set_title(f'Average monthly returns for {self.ticker} ({self.start_year} to {self.end_date[:4]})')
-        ax1.grid(axis='y', alpha=0.25)
+        ax1.set_xticklabels(self.months, fontsize=10)
+        ax1.set_ylabel('Average Monthly Return (%)', fontsize=11, fontweight='bold')
+        ax1.set_title(f'Average Monthly Returns for {self.ticker}\nPeriod: {self.start_year} to {self.end_date[:4]}', 
+                     fontsize=12, fontweight='bold', pad=20)
+        ax1.grid(axis='y', alpha=0.3, linestyle='--')
+        
+        # Style improvements
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax1.spines['left'].set_color('#cccccc')
+        ax1.spines['bottom'].set_color('#cccccc')
         
         # Add benchmark lines if enabled
         if self.show_benchmark.get():
             overall_avg_pct = self.overall_avg * 100
-            ax1.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=2, 
-                       label=f'Overall Average: {overall_avg_pct:.2f}%')
+            ax1.axhline(y=overall_avg_pct, color='#e74c3c', linestyle='--', linewidth=2, 
+                       label=f'Overall Average: {overall_avg_pct:.2f}%', alpha=0.8)
         
         # Add zero line for reference
-        ax1.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
+        ax1.axhline(y=0, color='#2c3e50', linestyle='-', linewidth=0.8, alpha=0.5)
         
         # Add legend if benchmark is shown
         if self.show_benchmark.get():
-            ax1.legend()
+            ax1.legend(loc='upper right', framealpha=0.9)
+        
+        # Color coding for positive/negative bars
+        for i, bar in enumerate(bars):
+            height = bar.get_height()
+            if height < 0:
+                bar.set_color('#e74c3c')  # Red for negative
+                bar.set_edgecolor('#c0392b')
+        
+        # Add value labels on bars
+        for i, bar in enumerate(bars):
+            height = bar.get_height()
+            ax1.text(bar.get_x() + bar.get_width()/2., height + (0.1 if height >= 0 else -0.3),
+                    f'{height:.1f}%', ha='center', va='bottom' if height >= 0 else 'top',
+                    fontsize=8, fontweight='bold')
         
         # Add hover functionality to bar chart
-        annot1 = ax1.annotate("", xy=(0,0), xytext=(20,20), textcoords="offset points",
-                             bbox=dict(boxstyle="round", fc="w"),
-                             arrowprops=dict(arrowstyle="->"))
+        annot1 = ax1.annotate("", xy=(0,0), xytext=(10,10), textcoords="offset points",
+                             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1, alpha=0.9),
+                             arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
+                             fontsize=9, fontweight='bold')
         annot1.set_visible(False)
         
         def update_annot_bar(bar, index):
@@ -326,9 +396,9 @@ class JSEAnalyzer:
             annot1.xy = (x, y)
             month_name = self.months[index]
             value = self.month_avg.iloc[index] * 100
-            text = f"{month_name}: {value:.2f}%"
+            text = f"{month_name}\n{value:.2f}%"
             annot1.set_text(text)
-            annot1.get_bbox_patch().set_alpha(0.8)
+            annot1.get_bbox_patch().set_alpha(0.9)
         
         def hover_bar(event):
             vis = annot1.get_visible()
@@ -350,22 +420,39 @@ class JSEAnalyzer:
         canvas1.draw()
         canvas1.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        # Heatmap
-        fig2, ax2 = plt.subplots(figsize=(12, 8))
-        im = sns.heatmap(self.pivot*100, center=0, cmap='vlag', 
-                        cbar_kws={'label':'monthly return (%)'}, 
-                        linewidths=.5, ax=ax2, annot=True, fmt='.1f')
-        ax2.set_xlabel('Month')
-        ax2.set_ylabel('Year')
-        ax2.set_title(f'Month-by-year returns (%) for {self.ticker}')
-        ax2.set_xticks(np.arange(12) + 0.5)
-        ax2.set_xticklabels(self.months, rotation=0)
+        # Heatmap with improved styling
+        heatmap_frame = ttk.Frame(self.heatmap_frame)
+        heatmap_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        canvas2 = FigureCanvasTkAgg(fig2, self.heatmap_frame)
+        fig2, ax2 = plt.subplots(figsize=(14, 8))
+        im = sns.heatmap(self.pivot*100, center=0, cmap='RdYlGn', 
+                        cbar_kws={'label':'Monthly Return (%)'}, 
+                        linewidths=.5, ax=ax2, annot=True, fmt='.1f',
+                        cbar=True)
+        
+        # Style improvements
+        ax2.set_xlabel('Month', fontsize=11, fontweight='bold')
+        ax2.set_ylabel('Year', fontsize=11, fontweight='bold')
+        ax2.set_title(f'Month-by-Year Returns for {self.ticker}\nPeriod: {self.start_year} to {self.end_date[:4]}', 
+                     fontsize=12, fontweight='bold', pad=20)
+        
+        # Month labels
+        ax2.set_xticks(np.arange(12) + 0.5)
+        ax2.set_xticklabels(self.months, rotation=0, fontsize=9)
+        ax2.set_yticklabels(ax2.get_yticklabels(), rotation=0, fontsize=8)
+        
+        # Colorbar styling
+        cbar = ax2.collections[0].colorbar
+        cbar.set_label('Monthly Return (%)', fontsize=10, fontweight='bold')
+        
+        canvas2 = FigureCanvasTkAgg(fig2, heatmap_frame)
         canvas2.draw()
         canvas2.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
         # Risk vs Return Scatter with hover functionality
+        scatter_chart_frame = ttk.Frame(self.scatter_frame)
+        scatter_chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
         monthly_stats = pd.DataFrame({
             'month': range(1, 13),
             'avg_return': self.month_avg * 100,
@@ -373,46 +460,47 @@ class JSEAnalyzer:
             'positive_rate': (self.pivot > 0).sum() / self.pivot.count() * 100
         })
         
-        # Add toggle button for benchmark line in scatter chart tab
-        scatter_toggle_frame = ttk.Frame(self.scatter_frame)
-        scatter_toggle_frame.pack(fill=tk.X, padx=5, pady=5)
-        scatter_toggle_btn = ttk.Button(scatter_toggle_frame, text="Toggle Benchmark Line", 
-                                       command=self.toggle_benchmark_line)
-        scatter_toggle_btn.pack(side=tk.RIGHT)
-        
-        # Scatter chart frame
-        scatter_chart_frame = ttk.Frame(self.scatter_frame)
-        scatter_chart_frame.pack(fill=tk.BOTH, expand=True)
-        
         fig3, ax3 = plt.subplots(figsize=(12, 8))
         scatter = ax3.scatter(monthly_stats['std_dev'], monthly_stats['avg_return'], 
                              c=monthly_stats['positive_rate'], 
-                             cmap='RdYlGn', s=200, alpha=0.7, edgecolors='black')
+                             cmap='RdYlGn', s=250, alpha=0.8, edgecolors='black', linewidth=1)
         
-        # Add month labels
+        # Add month labels with better positioning
         for i, month in enumerate(self.months):
             ax3.annotate(month, (monthly_stats['std_dev'].iloc[i], monthly_stats['avg_return'].iloc[i]), 
-                        xytext=(5, 5), textcoords='offset points', fontsize=9, weight='bold')
+                        xytext=(5, 5), textcoords='offset points', fontsize=9, fontweight='bold',
+                        bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.7))
         
-        ax3.set_xlabel('Monthly Return Standard Deviation (%)')
-        ax3.set_ylabel('Average Monthly Return (%)')
-        ax3.set_title(f'Risk vs Return by Month for {self.ticker}\n(Color = Positive Return Rate)')
-        cbar = plt.colorbar(scatter, ax=ax3, label='Positive Return Rate (%)')
-        ax3.grid(True, alpha=0.3)
-        ax3.axhline(y=0, color='black', linestyle='-', alpha=0.3)
-        ax3.axvline(x=0, color='black', linestyle='-', alpha=0.3)
+        ax3.set_xlabel('Monthly Return Standard Deviation (%)', fontsize=11, fontweight='bold')
+        ax3.set_ylabel('Average Monthly Return (%)', fontsize=11, fontweight='bold')
+        ax3.set_title(f'Risk vs Return by Month for {self.ticker}\n(Color = Positive Return Rate)\nPeriod: {self.start_year} to {self.end_date[:4]}', 
+                     fontsize=12, fontweight='bold', pad=20)
+        
+        # Style improvements
+        ax3.grid(True, alpha=0.3, linestyle='--')
+        ax3.spines['top'].set_visible(False)
+        ax3.spines['right'].set_visible(False)
+        
+        # Add colorbar
+        cbar3 = plt.colorbar(scatter, ax=ax3, label='Positive Return Rate (%)')
+        cbar3.set_label('Positive Return Rate (%)', fontsize=10, fontweight='bold')
         
         # Add benchmark lines if enabled
         if self.show_benchmark.get():
             overall_avg_pct = self.overall_avg * 100
-            ax3.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=1, alpha=0.7,
+            ax3.axhline(y=overall_avg_pct, color='#e74c3c', linestyle='--', linewidth=2, alpha=0.8,
                        label=f'Overall Avg Return: {overall_avg_pct:.2f}%')
-            ax3.legend()
+            ax3.legend(loc='upper right', framealpha=0.9)
+        
+        # Add zero lines for reference
+        ax3.axhline(y=0, color='#2c3e50', linestyle='-', linewidth=0.8, alpha=0.5)
+        ax3.axvline(x=0, color='#2c3e50', linestyle='-', linewidth=0.8, alpha=0.5)
         
         # Add hover functionality to scatter plot
-        annot3 = ax3.annotate("", xy=(0,0), xytext=(20,20), textcoords="offset points",
-                             bbox=dict(boxstyle="round", fc="w"),
-                             arrowprops=dict(arrowstyle="->"))
+        annot3 = ax3.annotate("", xy=(0,0), xytext=(10,10), textcoords="offset points",
+                             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1, alpha=0.9),
+                             arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
+                             fontsize=9)
         annot3.set_visible(False)
         
         def update_annot_scatter(ind):
@@ -425,7 +513,7 @@ class JSEAnalyzer:
             pos_rate = monthly_stats['positive_rate'].iloc[index]
             text = f"{month_name}\nReturn: {avg_ret:.2f}%\nRisk: {std_dev:.2f}%\nPos Rate: {pos_rate:.1f}%"
             annot3.set_text(text)
-            annot3.get_bbox_patch().set_alpha(0.8)
+            annot3.get_bbox_patch().set_alpha(0.9)
         
         def hover_scatter(event):
             vis = annot3.get_visible()
@@ -448,17 +536,32 @@ class JSEAnalyzer:
     
     def update_summary(self):
         self.summary_text.delete(1.0, tk.END)
-        summary = f"Monthly Return Summary for {self.ticker} ({self.start_year}-{self.end_date[:4]}):\n"
-        summary += "=" * 50 + "\n"
+        summary = f"📊 MONTHLY RETURN ANALYSIS SUMMARY\n"
+        summary += f"{'='*50}\n"
+        summary += f"Index/ETF: {self.ticker}\n"
+        summary += f"Analysis Period: {self.start_year} to {self.end_date[:4]} ({len(self.pivot)} years)\n"
+        summary += f"Total Months Analyzed: {len(self.monthly_ret)}\n"
+        summary += f"{'='*50}\n\n"
+        
+        summary += "📈 MONTHLY AVERAGE RETURNS:\n"
+        summary += "-" * 30 + "\n"
         for month_num, month_name in enumerate(self.months, 1):
             if month_num in self.month_avg.index:
                 avg_ret = self.month_avg[month_num] * 100
-                summary += f"{month_name}: {avg_ret:+6.2f}%\n"
-        summary += "=" * 50 + "\n"
+                summary += f"{month_name:3}: {avg_ret:+6.2f}%\n"
+        
+        summary += f"\n{'='*50}\n"
         overall_avg_pct = self.overall_avg * 100
-        summary += f"Overall Average Return: {overall_avg_pct:+6.2f}%\n"
-        summary += f"Data Period: {self.start_year} to {self.end_date[:4]} ({len(self.pivot)} years)\n"
-        summary += f"Benchmark Line: {'ON' if self.show_benchmark.get() else 'OFF'}\n"
+        summary += f"🎯 OVERALL AVERAGE RETURN: {overall_avg_pct:+6.2f}%\n"
+        summary += f"📊 BENCHMARK LINE STATUS: {'ON' if self.show_benchmark.get() else 'OFF'}\n"
+        
+        # Best and worst months
+        best_month_idx = self.month_avg.idxmax()
+        worst_month_idx = self.month_avg.idxmin()
+        best_month_name = self.months[best_month_idx - 1]
+        worst_month_name = self.months[worst_month_idx - 1]
+        summary += f"🏆 BEST MONTH: {best_month_name} ({self.month_avg[best_month_idx]*100:+.2f}%)\n"
+        summary += f"⚠️  WORST MONTH: {worst_month_name} ({self.month_avg[worst_month_idx]*100:+.2f}%)\n"
         
         self.summary_text.insert(1.0, summary)
     
@@ -497,12 +600,12 @@ class JSEAnalyzer:
                 })
                 raw_data.to_excel(writer, sheet_name='Raw_Data', index=False)
             
-            messagebox.showinfo("Success", f"Data exported to {filename}")
-            self.status_var.set(f"Data exported to {filename}")
+            messagebox.showinfo("Success", f"✅ Data exported to {filename}")
+            self.status_var.set(f"💾 Data exported to {filename}")
             
         except Exception as e:
             messagebox.showerror("Error", f"Error exporting  {e}")
-            self.status_var.set("Export failed")
+            self.status_var.set("❌ Export failed")
     
     def run(self):
         self.root.mainloop()
