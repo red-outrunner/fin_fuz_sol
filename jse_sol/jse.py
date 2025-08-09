@@ -14,19 +14,24 @@ matplotlib.use('TkAgg')
 class JSEAnalyzer:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("JSE Monthly Return Analyzer")
+        self.root.title("Global Index Monthly Return Analyzer")
         self.root.geometry("1200x800")
         
         # Default values and ticker options
         self.ticker_options = {
             "JSE All Share (^J203.JO)": "^J203.JO",
-            "JSE Top 40 (^JTOPI.JO)": "^JTOPI.JO",
-            "JSE Top 40 TRI (^J40TRI.JO)": "^J40TRI.JO",
-            "JSE All Share TRI (^J203TRI.JO)": "^J203TRI.JO",
+            "JSE Financials (^J258.JO)": "^J258.JO",
+            "JSE Industrials (^J252.JO)": "^J252.JO",
+            "JSE Resources (^J250.JO)": "^J250.JO",
+            "ASX 200 (^AXJO)": "^AXJO",
             "S&P 500 (^GSPC)": "^GSPC",
             "FTSE 100 (^FTSE)": "^FTSE",
             "DAX (^GDAXI)": "^GDAXI",
-            "Nikkei 225 (^N225)": "^N225"
+            "Nikkei 225 (^N225)": "^N225",
+            "Hang Seng (^HSI)": "^HSI",
+            "Shanghai Composite (000001.SS)": "000001.SS",
+            "MSCI World (^MXWO)": "^MXWO",
+            "MSCI Emerging Markets (^MXEF)": "^MXEF"
         }
         self.ticker = "^J203.JO"
         self.start_year = 1990
@@ -56,7 +61,7 @@ class JSEAnalyzer:
         self.ticker_var = tk.StringVar(value="JSE All Share (^J203.JO)")
         ticker_combo = ttk.Combobox(config_frame, textvariable=self.ticker_var, 
                                    values=list(self.ticker_options.keys()), 
-                                   state="readonly", width=25)
+                                   state="readonly", width=30)
         ticker_combo.grid(row=0, column=1, sticky=tk.W, padx=(0, 20))
         
         # Custom ticker entry (hidden by default)
@@ -142,14 +147,17 @@ class JSEAnalyzer:
             for widget in self.root.winfo_children():
                 if isinstance(widget, ttk.Frame):
                     for child in widget.winfo_children():
-                        if isinstance(child, ttk.Combobox) and child.get() in self.ticker_options.keys():
-                            child.grid_remove()
+                        if isinstance(child, ttk.LabelFrame):
+                            for grandchild in child.winfo_children():
+                                if isinstance(grandchild, ttk.Combobox):
+                                    grandchild.grid_remove()
+                                    break
             self.custom_ticker_entry.grid()
             self.custom_ticker_entry.delete(0, tk.END)
         else:
             # Show dropdown, hide custom entry
             self.custom_ticker_entry.grid_remove()
-            # Find and show the combobox (relocate it)
+            # Find and show the combobox
             config_frame = None
             for widget in self.root.winfo_children():
                 if isinstance(widget, ttk.Frame):
@@ -159,7 +167,7 @@ class JSEAnalyzer:
                             break
             if config_frame:
                 for child in config_frame.winfo_children():
-                    if isinstance(child, ttk.Combobox) and hasattr(child, 'state'):
+                    if isinstance(child, ttk.Combobox) and child['state'] == 'readonly':
                         child.grid(row=0, column=1, sticky=tk.W, padx=(0, 20))
     
     def on_date_range_change(self, event=None):
@@ -405,7 +413,7 @@ class JSEAnalyzer:
             return
             
         try:
-            filename = f"{self.ticker.replace('^', '').replace('.JO', '').replace('.JK', '')}_monthly_analysis_{self.start_year}_{self.end_date[:4]}.xlsx"
+            filename = f"{self.ticker.replace('^', '').replace('.JO', '').replace('.SS', '').replace('.AX', '')}_monthly_analysis_{self.start_year}_{self.end_date[:4]}.xlsx"
             
             with pd.ExcelWriter(filename, engine='openpyxl') as writer:
                 # Sheet 1: Year-by-Month Returns
