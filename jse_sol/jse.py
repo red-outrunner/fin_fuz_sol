@@ -44,6 +44,7 @@ class JSEAnalyzer:
         self.month_avg = None
         self.month_median = None
         self.months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        self.show_benchmark = tk.BooleanVar(value=True)  # Toggle for benchmark line
         
         self.setup_ui()
         
@@ -267,6 +268,11 @@ class JSEAnalyzer:
             messagebox.showerror("Error", f"Error during analysis: {e}")
             self.status_var.set("Analysis failed")
     
+    def toggle_benchmark_line(self):
+        """Toggle the benchmark line on/off"""
+        self.show_benchmark.set(not self.show_benchmark.get())
+        self.update_charts()
+    
     def update_charts(self):
         # Clear existing charts
         for widget in self.bar_frame.winfo_children():
@@ -276,7 +282,17 @@ class JSEAnalyzer:
         for widget in self.scatter_frame.winfo_children():
             widget.destroy()
         
+        # Add toggle button for benchmark line in bar chart tab
+        toggle_frame = ttk.Frame(self.bar_frame)
+        toggle_frame.pack(fill=tk.X, padx=5, pady=5)
+        toggle_btn = ttk.Button(toggle_frame, text="Toggle Benchmark Line", 
+                               command=self.toggle_benchmark_line)
+        toggle_btn.pack(side=tk.RIGHT)
+        
         # Bar chart with hover functionality and benchmark lines
+        chart_frame = ttk.Frame(self.bar_frame)
+        chart_frame.pack(fill=tk.BOTH, expand=True)
+        
         fig1, ax1 = plt.subplots(figsize=(10, 5))
         bars = ax1.bar(range(1, 13), self.month_avg*100, alpha=0.7, color='skyblue', edgecolor='navy')
         ax1.set_xticks(range(1, 13))
@@ -285,16 +301,18 @@ class JSEAnalyzer:
         ax1.set_title(f'Average monthly returns for {self.ticker} ({self.start_year} to {self.end_date[:4]})')
         ax1.grid(axis='y', alpha=0.25)
         
-        # Add benchmark lines
-        overall_avg_pct = self.overall_avg * 100
-        ax1.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=2, 
-                   label=f'Overall Average: {overall_avg_pct:.2f}%')
+        # Add benchmark lines if enabled
+        if self.show_benchmark.get():
+            overall_avg_pct = self.overall_avg * 100
+            ax1.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=2, 
+                       label=f'Overall Average: {overall_avg_pct:.2f}%')
         
         # Add zero line for reference
         ax1.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
         
-        # Add legend
-        ax1.legend()
+        # Add legend if benchmark is shown
+        if self.show_benchmark.get():
+            ax1.legend()
         
         # Add hover functionality to bar chart
         annot1 = ax1.annotate("", xy=(0,0), xytext=(20,20), textcoords="offset points",
@@ -328,7 +346,7 @@ class JSEAnalyzer:
         
         fig1.canvas.mpl_connect("motion_notify_event", hover_bar)
         
-        canvas1 = FigureCanvasTkAgg(fig1, self.bar_frame)
+        canvas1 = FigureCanvasTkAgg(fig1, chart_frame)
         canvas1.draw()
         canvas1.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
@@ -355,6 +373,17 @@ class JSEAnalyzer:
             'positive_rate': (self.pivot > 0).sum() / self.pivot.count() * 100
         })
         
+        # Add toggle button for benchmark line in scatter chart tab
+        scatter_toggle_frame = ttk.Frame(self.scatter_frame)
+        scatter_toggle_frame.pack(fill=tk.X, padx=5, pady=5)
+        scatter_toggle_btn = ttk.Button(scatter_toggle_frame, text="Toggle Benchmark Line", 
+                                       command=self.toggle_benchmark_line)
+        scatter_toggle_btn.pack(side=tk.RIGHT)
+        
+        # Scatter chart frame
+        scatter_chart_frame = ttk.Frame(self.scatter_frame)
+        scatter_chart_frame.pack(fill=tk.BOTH, expand=True)
+        
         fig3, ax3 = plt.subplots(figsize=(12, 8))
         scatter = ax3.scatter(monthly_stats['std_dev'], monthly_stats['avg_return'], 
                              c=monthly_stats['positive_rate'], 
@@ -373,10 +402,12 @@ class JSEAnalyzer:
         ax3.axhline(y=0, color='black', linestyle='-', alpha=0.3)
         ax3.axvline(x=0, color='black', linestyle='-', alpha=0.3)
         
-        # Add benchmark lines
-        ax3.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=1, alpha=0.7,
-                   label=f'Overall Avg Return: {overall_avg_pct:.2f}%')
-        ax3.legend()
+        # Add benchmark lines if enabled
+        if self.show_benchmark.get():
+            overall_avg_pct = self.overall_avg * 100
+            ax3.axhline(y=overall_avg_pct, color='red', linestyle='--', linewidth=1, alpha=0.7,
+                       label=f'Overall Avg Return: {overall_avg_pct:.2f}%')
+            ax3.legend()
         
         # Add hover functionality to scatter plot
         annot3 = ax3.annotate("", xy=(0,0), xytext=(20,20), textcoords="offset points",
@@ -411,7 +442,7 @@ class JSEAnalyzer:
         
         fig3.canvas.mpl_connect("motion_notify_event", hover_scatter)
         
-        canvas3 = FigureCanvasTkAgg(fig3, self.scatter_frame)
+        canvas3 = FigureCanvasTkAgg(fig3, scatter_chart_frame)
         canvas3.draw()
         canvas3.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     
@@ -427,6 +458,7 @@ class JSEAnalyzer:
         overall_avg_pct = self.overall_avg * 100
         summary += f"Overall Average Return: {overall_avg_pct:+6.2f}%\n"
         summary += f"Data Period: {self.start_year} to {self.end_date[:4]} ({len(self.pivot)} years)\n"
+        summary += f"Benchmark Line: {'ON' if self.show_benchmark.get() else 'OFF'}\n"
         
         self.summary_text.insert(1.0, summary)
     
