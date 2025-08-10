@@ -898,13 +898,16 @@ class JSEAnalyzer:
             results += "MONTH CLUSTERING RESULTS (K-Means, k=3):\n"
             results += "-" * 40 + "\n"
             
+            # Ensure cluster IDs are integers
+            monthly_features['cluster'] = monthly_features['cluster'].astype(int)
+            
             for cluster_id in range(3):
                 cluster_months = monthly_features[monthly_features['cluster'] == cluster_id]
-                month_names = [self.months[idx-1] for idx in cluster_months['month']]
+                month_names = [self.months[idx - 1] for idx in cluster_months['month']]
                 results += f"Cluster {cluster_id + 1}: {', '.join(month_names)}\n"
-                results += f"  Avg Return: {cluster_months['avg_return'].mean()*100:+.2f}%\n"
-                results += f"  Avg Risk: {cluster_months['std_dev'].mean()*100:.2f}%\n"
-                results += f"  Avg Pos Rate: {cluster_months['positive_rate'].mean()*100:.1f}%\n\n"
+                results += f"  Avg Return: {cluster_months['avg_return'].mean() * 100:+.2f}%\n"
+                results += f"  Avg Risk: {cluster_months['std_dev'].mean() * 100:.2f}%\n"
+                results += f"  Avg Pos Rate: {cluster_months['positive_rate'].mean() * 100:.1f}%\n\n"
             
             # Principal Component Analysis (simplified)
             results += "DIMENSIONALITY REDUCTION INSIGHTS:\n"
@@ -925,7 +928,7 @@ class JSEAnalyzer:
             # Months with highest distances are potential anomalies
             anomaly_indices = np.argsort(min_distances)[-3:]  # Top 3
             for idx in anomaly_indices:
-                month_name = self.months[monthly_features.iloc[idx]['month'] - 1]
+                month_name = self.months[int(monthly_features.iloc[idx]['month']) - 1]
                 distance = min_distances[idx]
                 results += f"{month_name}: Distance={distance:.3f}\n"
             
