@@ -363,7 +363,7 @@ class JSEAnalyzer:
                 
                 # Check cache first
                 cached_data = self.load_cached_data(self.ticker, self.start_year, self.end_date)
-                if cached_
+                if cached_data:
                     self.data = cached_data
                     self.status_var.set("📦 Using cached data...")
                 else:
