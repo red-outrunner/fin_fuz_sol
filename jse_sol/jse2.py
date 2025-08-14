@@ -345,87 +345,95 @@ class JSEAnalyzer:
             pass
     
     def analyze_data_async(self):
-        """Run data analysis in background thread"""
-        def worker():
-            try:
-                self.status_var.set("📥 Downloading data...")
-                self.root.update()
-                
-                # Get ticker based on selection
-                if self.use_custom_var.get():
-                    self.ticker = self.custom_ticker_var.get().strip()
-                    if not self.ticker:
-                        self.root.after(0, lambda: messagebox.showerror("Error", "Please enter a custom ticker symbol"))
-                        self.root.after(0, lambda: self.status_var.set("❌ Missing ticker symbol"))
-                        return
-                else:
-                    ticker_name = self.ticker_var.get()
-                    self.ticker = self.ticker_options.get(ticker_name, "^J203.JO")
-                
-                self.start_year = self.start_year_var.get()
-                self.end_date = self.end_date_var.get()
-                
-                # Check cache first
-                cached_data = self.load_cached_data(self.ticker, self.start_year, self.end_date)
-                if cached_data:
-                    self.data = cached_data
-                    self.status_var.set("📦 Using cached data...")
-                else:
-                    # Download data
-                    try:
-                        self.data = yf.download(self.ticker, start=f"{self.start_year}-01-01", end=self.end_date, 
-                                               progress=False, auto_adjust=False)
-                        # Save to cache
-                        self.save_cached_data(self.ticker, self.start_year, self.end_date, self.data)
-                    except Exception as e:
-                        self.root.after(0, lambda: messagebox.showerror("Error", f"Error downloading  {e}"))
-                        self.root.after(0, lambda: self.status_var.set("❌ Error downloading data"))
-                        return
-                
-                if self.data.empty:
-                    self.root.after(0, lambda: messagebox.showerror("Error", "No data returned — check ticker or internet connection"))
-                    self.root.after(0, lambda: self.status_var.set("❌ No data available"))
-                    return
-                
-                # Process data
-                self.root.after(0, lambda: self.status_var.set("⚙️ Processing data..."))
-                self.root.update()
-                
-                price_col = "Adj Close" if "Adj Close" in self.data.columns else "Close"
-                self.monthly = self.data[price_col].resample('ME').last()
-                self.monthly_ret = self.monthly.pct_change().dropna()
-                
-                # Handle case where monthly_ret might be DataFrame instead of Series
-                if isinstance(self.monthly_ret, pd.DataFrame):
-                    self.monthly_ret = self.monthly_ret.iloc[:, 0]  # Take first column if DataFrame
-                self.monthly_ret.name = 'ret'
-                self.df = self.monthly_ret.to_frame()
-                
-                self.df['year'] = self.df.index.year
-                self.df['month'] = self.df.index.month
-                self.pivot = self.df.pivot_table(index='year', columns='month', values='ret')
-                
-                self.month_avg = self.pivot.mean().sort_index()
-                self.month_median = self.pivot.median().sort_index()
-                
-                # Calculate overall average for benchmark line
-                self.overall_avg = self.monthly_ret.mean()
-                
-                # Update UI with results
-                self.root.after(0, self.update_charts)
-                self.root.after(0, self.update_summary)
-                
-                # Enable export button
-                self.root.after(0, lambda: self.export_btn.config(state=tk.NORMAL))
-                self.root.after(0, lambda: self.status_var.set(f"✅ Analysis complete for {self.ticker} ({self.start_year}-{self.end_date[:4]})"))
-                
-            except Exception as e:
-                self.root.after(0, lambda: messagebox.showerror("Error", f"Error during analysis: {e}"))
-                self.root.after(0, lambda: self.status_var.set("❌ Analysis failed"))
+            """Run data analysis in background thread"""
+            def worker():
+                try:
+                    self.status_var.set("📥 Downloading data...")
+                    self.root.update()
+                    # Get ticker based on selection
+                    if self.use_custom_var.get():
+                        self.ticker = self.custom_ticker_var.get().strip()
+                        if not self.ticker:
+                            self.root.after(0, lambda: messagebox.showerror("Error", "Please enter a custom ticker symbol"))
+                            self.root.after(0, lambda: self.status_var.set("❌ Missing ticker symbol"))
+                            return
+                    else:
+                        ticker_name = self.ticker_var.get()
+                        self.ticker = self.ticker_options.get(ticker_name, "^J203.JO")
+                    self.start_year = self.start_year_var.get()
+                    self.end_date = self.end_date_var.get()
+                    # Check cache first
+                    cached_data = self.load_cached_data(self.ticker, self.start_year, self.end_date)
+                    if cached_data:
+                        self.data = cached_data
+                        self.status_var.set("📦 Using cached data...")
+                    else:
+                        # Download data
+                        try:
+                            self.data = yf.download(self.ticker, start=f"{self.start_year}-01-01", end=self.end_date, 
+                                                   progress=False, auto_adjust=False)
+                            # Save to cache
+                            self.save_cached_data(self.ticker, self.start_year, self.end_date, self.data)
+                        except Exception as e:
+                            self.root.after(0, lambda: messagebox.showerror("Error", f"Error downloading data: {e}"))
+                            self.root.after(0, lambda: self.status_var.set("❌ Error downloading data"))
+                            return
         
-        thread = threading.Thread(target=worker)
-        thread.daemon = True
-        thread.start()
+                    # Check if data is empty
+                    if self.data.empty:
+                        self.root.after(0, lambda: messagebox.showerror("Error", "No data returned — check ticker or internet connection"))
+                        self.root.after(0, lambda: self.status_var.set("❌ No data available"))
+                        return
+        
+                    # Process data
+                    self.root.after(0, lambda: self.status_var.set("⚙️ Processing data..."))
+                    self.root.update()
+        
+                    # Select appropriate price column
+                    price_col = "Adj Close" if "Adj Close" in self.data.columns else "Close"
+                    if price_col not in self.data.columns:
+                        self.root.after(0, lambda: messagebox.showerror("Error", f"Column '{price_col}' not found in data"))
+                        self.root.after(0, lambda: self.status_var.set(f"❌ Column '{price_col}' not found"))
+                        return
+        
+                    self.monthly = self.data[price_col].resample('ME').last()
+                    self.monthly_ret = self.monthly.pct_change().dropna()
+        
+                    # Handle case where monthly_ret might be DataFrame instead of Series
+                    if isinstance(self.monthly_ret, pd.DataFrame):
+                        if self.monthly_ret.empty:
+                            self.root.after(0, lambda: messagebox.showerror("Error", "Monthly returns DataFrame is empty"))
+                            self.root.after(0, lambda: self.status_var.set("❌ Monthly returns are empty"))
+                            return
+                        self.monthly_ret = self.monthly_ret.iloc[:, 0]  # Take first column if DataFrame
+        
+                    # Ensure monthly_ret is not empty
+                    if self.monthly_ret.empty:
+                        self.root.after(0, lambda: messagebox.showerror("Error", "Monthly returns are empty"))
+                        self.root.after(0, lambda: self.status_var.set("❌ Monthly returns are empty"))
+                        return
+        
+                    self.monthly_ret.name = 'ret'
+                    self.df = self.monthly_ret.to_frame()
+                    self.df['year'] = self.df.index.year
+                    self.df['month'] = self.df.index.month
+                    self.pivot = self.df.pivot_table(index='year', columns='month', values='ret')
+                    self.month_avg = self.pivot.mean().sort_index()
+                    self.month_median = self.pivot.median().sort_index()
+                    # Calculate overall average for benchmark line
+                    self.overall_avg = self.monthly_ret.mean()
+                    # Update UI with results
+                    self.root.after(0, self.update_charts)
+                    self.root.after(0, self.update_summary)
+                    # Enable export button
+                    self.root.after(0, lambda: self.export_btn.config(state=tk.NORMAL))
+                    self.root.after(0, lambda: self.status_var.set(f"✅ Analysis complete for {self.ticker} ({self.start_year}-{self.end_date[:4]})"))
+                except Exception as e:
+                    self.root.after(0, lambda: messagebox.showerror("Error", f"Error during analysis: {e}"))
+                    self.root.after(0, lambda: self.status_var.set("❌ Analysis failed"))
+            thread = threading.Thread(target=worker)
+            thread.daemon = True
+            thread.start()
     
     def analyze_data(self):
         """Wrapper for async analysis"""
