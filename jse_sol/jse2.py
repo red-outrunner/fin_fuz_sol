@@ -27,7 +27,6 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import warnings
 warnings.filterwarnings('ignore')
-
 matplotlib.use('TkAgg')
 
 class JSEAnalyzer:
@@ -36,11 +35,9 @@ class JSEAnalyzer:
         self.root.title("📊 Global Index Monthly Return Analyzer")
         self.root.geometry("1300x850")
         self.root.configure(bg='#f0f0f0')
-        
         # Cache directory
         self.cache_dir = "cache"
         os.makedirs(self.cache_dir, exist_ok=True)
-        
         # Default values and ticker options
         self.ticker_options = {
             "🇿🇦 JSE All Share (^J203.JO)": "^J203.JO",
@@ -71,14 +68,12 @@ class JSEAnalyzer:
         self.show_benchmark = tk.BooleanVar(value=True)
         self.dark_mode = tk.BooleanVar(value=False)
         self.comparison_tickers = []
-        
         # Style configuration
         self.style = ttk.Style()
         self.style.theme_use('clam')
         self.configure_styles()
-        
         self.setup_ui()
-        
+
     def configure_styles(self):
         # Configure custom styles
         self.style.configure('Title.TLabel', font=('Arial', 12, 'bold'), foreground='#2c3e50')
@@ -93,59 +88,49 @@ class JSEAnalyzer:
         self.style.map('Success.TButton', background=[('active', '#229954')])
         self.style.configure('Warning.TButton', font=('Arial', 9, 'bold'), background='#f39c12', foreground='white')
         self.style.map('Warning.TButton', background=[('active', '#d35400')])
-        
+
     def setup_ui(self):
         # Main container
         main_container = tk.Frame(self.root, bg='#f0f0f0')
         main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
         # Header with title
         header_frame = ttk.Frame(main_container, style='Header.TFrame')
         header_frame.pack(fill=tk.X, pady=(0, 15))
-        
         title_label = ttk.Label(header_frame, text="📈 Global Index Monthly Return Analyzer", 
                                style='Title.TLabel')
         title_label.pack(side=tk.LEFT, padx=10, pady=10)
-        
         # Dark mode toggle
         dark_mode_check = ttk.Checkbutton(header_frame, text="🌙 Dark Mode", 
                                          variable=self.dark_mode, 
                                          command=self.toggle_dark_mode)
         dark_mode_check.pack(side=tk.RIGHT, padx=10, pady=10)
-        
         # Configuration frame with improved styling
         config_frame = ttk.LabelFrame(main_container, text="⚙️ Configuration Panel", 
                                      style='Config.TLabelframe', padding="15")
         config_frame.pack(fill=tk.X, pady=(0, 15))
-        
         # Ticker selection row
         ticker_row = ttk.Frame(config_frame)
         ticker_row.pack(fill=tk.X, pady=(0, 10))
-        
         ttk.Label(ticker_row, text="Index/ETF:").pack(side=tk.LEFT, padx=(0, 10))
         self.ticker_var = tk.StringVar(value="🇿🇦 JSE All Share (^J203.JO)")
         ticker_combo = ttk.Combobox(ticker_row, textvariable=self.ticker_var, 
                                    values=list(self.ticker_options.keys()), 
                                    state="readonly", width=35, font=('Arial', 9))
         ticker_combo.pack(side=tk.LEFT, padx=(0, 15))
-        
         # Custom ticker controls
         self.use_custom_var = tk.BooleanVar()
         custom_check = ttk.Checkbutton(ticker_row, text="Custom Ticker", 
                                       variable=self.use_custom_var, 
                                       command=self.toggle_custom_ticker)
         custom_check.pack(side=tk.LEFT, padx=(0, 10))
-        
         self.custom_ticker_var = tk.StringVar()
         self.custom_ticker_entry = ttk.Entry(ticker_row, textvariable=self.custom_ticker_var, 
                                             width=15, font=('Arial', 9))
         self.custom_ticker_entry.pack(side=tk.LEFT)
         self.custom_ticker_entry.grid_remove()
-        
         # Date controls row
         date_row = ttk.Frame(config_frame)
         date_row.pack(fill=tk.X, pady=(0, 10))
-        
         ttk.Label(date_row, text="Date Range:").pack(side=tk.LEFT, padx=(0, 10))
         self.date_range_var = tk.StringVar(value="Custom")
         date_range_combo = ttk.Combobox(date_row, textvariable=self.date_range_var, 
@@ -154,69 +139,54 @@ class JSEAnalyzer:
                                        state="readonly", width=15, font=('Arial', 9))
         date_range_combo.pack(side=tk.LEFT, padx=(0, 15))
         date_range_combo.bind('<<ComboboxSelected>>', self.on_date_range_change)
-        
         ttk.Label(date_row, text="Start Year:").pack(side=tk.LEFT, padx=(0, 10))
         self.start_year_var = tk.IntVar(value=self.start_year)
         self.start_year_entry = ttk.Entry(date_row, textvariable=self.start_year_var, 
                                          width=8, font=('Arial', 9))
         self.start_year_entry.pack(side=tk.LEFT, padx=(0, 15))
-        
         ttk.Label(date_row, text="End Date:").pack(side=tk.LEFT, padx=(0, 10))
         self.end_date_var = tk.StringVar(value=self.end_date)
         self.end_date_entry = ttk.Entry(date_row, textvariable=self.end_date_var, 
                                        width=12, font=('Arial', 9))
         self.end_date_entry.pack(side=tk.LEFT, padx=(0, 15))
-        
         # Action buttons row
         button_row = ttk.Frame(config_frame)
         button_row.pack(fill=tk.X, pady=(10, 0))
-        
         analyze_btn = ttk.Button(button_row, text="🔍 Analyze Data", 
                                 command=self.analyze_data, style='Primary.TButton')
         analyze_btn.pack(side=tk.LEFT, padx=(0, 10))
-        
         self.export_btn = ttk.Button(button_row, text="💾 Export to Excel", 
                                     command=self.export_to_excel, state=tk.DISABLED,
                                     style='Success.TButton')
         self.export_btn.pack(side=tk.LEFT, padx=(0, 10))
-        
         self.toggle_benchmark_btn = ttk.Button(button_row, text="📊 Toggle Benchmark", 
                                               command=self.toggle_benchmark_line,
                                               style='Secondary.TButton')
         self.toggle_benchmark_btn.pack(side=tk.LEFT, padx=(0, 10))
-        
         pdf_btn = ttk.Button(button_row, text="📄 Export PDF", 
                             command=self.generate_pdf_report, style='Warning.TButton')
         pdf_btn.pack(side=tk.LEFT, padx=(0, 10))
-        
         # Advanced analysis buttons
         ml_btn = ttk.Button(button_row, text="🤖 ML Analysis", 
                            command=self.run_ml_analysis, style='Secondary.TButton')
         ml_btn.pack(side=tk.LEFT, padx=(0, 10))
-        
         stats_btn = ttk.Button(button_row, text="🧮 Significance Test", 
                               command=self.run_statistical_tests, style='Secondary.TButton')
         stats_btn.pack(side=tk.LEFT)
-        
         # Results notebook with modern styling
         notebook_frame = ttk.Frame(main_container)
         notebook_frame.pack(fill=tk.BOTH, expand=True)
-        
         self.notebook = ttk.Notebook(notebook_frame, padding=5)
         self.notebook.pack(fill=tk.BOTH, expand=True)
-        
         # Tab 1: Average Returns Bar Chart
         self.bar_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.bar_frame, text="📊 Average Returns")
-        
         # Tab 2: Heatmap
         self.heatmap_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.heatmap_frame, text="🌡️ Year-Month Heatmap")
-        
         # Tab 3: Risk-Return Scatter
         self.scatter_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.scatter_frame, text="⚖️ Risk vs Return")
-        
         # Tab 4: Summary Stats
         self.summary_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.summary_frame, text="📋 Summary Statistics")
@@ -226,30 +196,25 @@ class JSEAnalyzer:
         scrollbar = ttk.Scrollbar(self.summary_frame, orient=tk.VERTICAL, command=self.summary_text.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.summary_text.configure(yscrollcommand=scrollbar.set)
-        
         # Tab 5: Comparative Analysis
         self.comparison_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.comparison_frame, text="🔄 Comparison")
-        
         # Tab 6: Statistical Tests
         self.stats_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.stats_frame, text="🧮 Statistical Tests")
-        
         # Tab 7: ML Analysis
         self.ml_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.ml_frame, text="🤖 ML Analysis")
-        
         # Status bar
         self.status_var = tk.StringVar(value="✨ Ready - Select an index and click Analyze")
         status_bar = ttk.Label(main_container, textvariable=self.status_var, 
                               relief=tk.SUNKEN, padding=5, font=('Arial', 9),
                               background='#ecf0f1', foreground='#7f8c8d')
         status_bar.pack(fill=tk.X, pady=(10, 0))
-        
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
-        
+
     def toggle_dark_mode(self):
         """Toggle between light and dark mode"""
         if self.dark_mode.get():
@@ -258,7 +223,7 @@ class JSEAnalyzer:
         else:
             self.root.configure(bg='#f0f0f0')
             # Update widget styles for light mode
-    
+
     def toggle_custom_ticker(self):
         """Toggle between predefined ticker dropdown and custom ticker entry"""
         if self.use_custom_var.get():
@@ -289,11 +254,10 @@ class JSEAnalyzer:
                                         if isinstance(great_grandchild, ttk.Combobox):
                                             great_grandchild.pack(side=tk.LEFT, padx=(0, 15))
                                             break
-    
+
     def on_date_range_change(self, event=None):
         selection = self.date_range_var.get()
         current_year = datetime.now().year
-        
         if selection == "Last 5 Years":
             self.start_year_var.set(current_year - 5)
             self.end_date_var.set(datetime.today().strftime("%Y-%m-%d"))
@@ -317,11 +281,11 @@ class JSEAnalyzer:
         else:  # Custom
             self.start_year_entry.config(state=tk.NORMAL)
             self.end_date_entry.config(state=tk.NORMAL)
-    
+
     def get_cache_filename(self, ticker, start_year, end_date):
         """Generate cache filename"""
         return f"{self.cache_dir}/{ticker.replace('^', '').replace('.', '_')}_{start_year}_{end_date[:4]}.pkl"
-    
+
     def load_cached_data(self, ticker, start_year, end_date):
         """Load data from cache if available and recent"""
         cache_file = self.get_cache_filename(ticker, start_year, end_date)
@@ -334,7 +298,7 @@ class JSEAnalyzer:
                 except:
                     pass
         return None
-    
+
     def save_cached_data(self, ticker, start_year, end_date, data):
         """Cache downloaded data locally"""
         cache_file = self.get_cache_filename(ticker, start_year, end_date)
@@ -343,109 +307,111 @@ class JSEAnalyzer:
                 pickle.dump(data, f)
         except:
             pass
-    
+
     def analyze_data_async(self):
-            """Run data analysis in background thread"""
-            def worker():
-                try:
-                    self.status_var.set("📥 Downloading data...")
-                    self.root.update()
-                    # Get ticker based on selection
-                    if self.use_custom_var.get():
-                        self.ticker = self.custom_ticker_var.get().strip()
-                        if not self.ticker:
-                            self.root.after(0, lambda: messagebox.showerror("Error", "Please enter a custom ticker symbol"))
-                            self.root.after(0, lambda: self.status_var.set("❌ Missing ticker symbol"))
-                            return
-                    else:
-                        ticker_name = self.ticker_var.get()
-                        self.ticker = self.ticker_options.get(ticker_name, "^J203.JO")
-                    self.start_year = self.start_year_var.get()
-                    self.end_date = self.end_date_var.get()
-                    # Check cache first
-                    cached_data = self.load_cached_data(self.ticker, self.start_year, self.end_date)
-                    if cached_data:
-                        self.data = cached_data
-                        self.status_var.set("📦 Using cached data...")
-                    else:
-                        # Download data
-                        try:
-                            self.data = yf.download(self.ticker, start=f"{self.start_year}-01-01", end=self.end_date, 
-                                                   progress=False, auto_adjust=False)
-                            # Save to cache
-                            self.save_cached_data(self.ticker, self.start_year, self.end_date, self.data)
-                        except Exception as e:
-                            self.root.after(0, lambda: messagebox.showerror("Error", f"Error downloading data: {e}"))
-                            self.root.after(0, lambda: self.status_var.set("❌ Error downloading data"))
-                            return
-        
-                    # Check if data is empty
-                    if self.data.empty:
-                        self.root.after(0, lambda: messagebox.showerror("Error", "No data returned — check ticker or internet connection"))
-                        self.root.after(0, lambda: self.status_var.set("❌ No data available"))
+        """Run data analysis in background thread"""
+        def worker():
+            try:
+                self.status_var.set("📥 Downloading data...")
+                self.root.update()
+                # Get ticker based on selection
+                if self.use_custom_var.get():
+                    self.ticker = self.custom_ticker_var.get().strip()
+                    if not self.ticker:
+                        self.root.after(0, lambda: messagebox.showerror("Error", "Please enter a custom ticker symbol"))
+                        self.root.after(0, lambda: self.status_var.set("❌ Missing ticker symbol"))
                         return
-        
-                    # Process data
-                    self.root.after(0, lambda: self.status_var.set("⚙️ Processing data..."))
-                    self.root.update()
-        
-                    # Select appropriate price column
-                    price_col = "Adj Close" if "Adj Close" in self.data.columns else "Close"
-                    if price_col not in self.data.columns:
-                        self.root.after(0, lambda: messagebox.showerror("Error", f"Column '{price_col}' not found in data"))
-                        self.root.after(0, lambda: self.status_var.set(f"❌ Column '{price_col}' not found"))
+                else:
+                    ticker_name = self.ticker_var.get()
+                    self.ticker = self.ticker_options.get(ticker_name, "^J203.JO")
+                self.start_year = self.start_year_var.get()
+                self.end_date = self.end_date_var.get()
+                # Check cache first
+                cached_data = self.load_cached_data(self.ticker, self.start_year, self.end_date)
+                if cached_data is not None: # Check if cached data exists
+                    self.data = cached_data
+                    self.status_var.set("📦 Using cached data...")
+                else:
+                    # Download data
+                    try:
+                        self.data = yf.download(self.ticker, start=f"{self.start_year}-01-01", end=self.end_date, 
+                                               progress=False, auto_adjust=False)
+                        # Save to cache
+                        self.save_cached_data(self.ticker, self.start_year, self.end_date, self.data)
+                    except Exception as e:
+                        self.root.after(0, lambda: messagebox.showerror("Error", f"Error downloading data: {e}"))
+                        self.root.after(0, lambda: self.status_var.set("❌ Error downloading data"))
                         return
-        
-                    self.monthly = self.data[price_col].resample('ME').last()
-                    self.monthly_ret = self.monthly.pct_change().dropna()
-        
-                    # Handle case where monthly_ret might be DataFrame instead of Series
-                    if isinstance(self.monthly_ret, pd.DataFrame):
-                        if self.monthly_ret.empty:
-                            self.root.after(0, lambda: messagebox.showerror("Error", "Monthly returns DataFrame is empty"))
-                            self.root.after(0, lambda: self.status_var.set("❌ Monthly returns are empty"))
-                            return
-                        self.monthly_ret = self.monthly_ret.iloc[:, 0]  # Take first column if DataFrame
-        
-                    # Ensure monthly_ret is not empty
+
+                # --- FIX: Check if data is empty ---
+                if self.data is None or self.data.empty:
+                    self.root.after(0, lambda: messagebox.showerror("Error", "No data returned — check ticker or internet connection"))
+                    self.root.after(0, lambda: self.status_var.set("❌ No data available"))
+                    return
+
+                # Process data
+                self.root.after(0, lambda: self.status_var.set("⚙️ Processing data..."))
+                self.root.update()
+
+                # --- FIX: Check if required price column exists ---
+                price_col = "Adj Close" if "Adj Close" in self.data.columns else "Close"
+                if price_col not in self.data.columns:
+                     self.root.after(0, lambda: messagebox.showerror("Error", f"Required price column '{price_col}' not found in downloaded data."))
+                     self.root.after(0, lambda: self.status_var.set(f"❌ Column '{price_col}' not found"))
+                     return
+
+                self.monthly = self.data[price_col].resample('ME').last()
+                self.monthly_ret = self.monthly.pct_change().dropna()
+
+                # --- FIX: Handle case where monthly_ret might be DataFrame instead of Series ---
+                # --- FIX: Check if monthly_ret is empty after processing ---
+                if isinstance(self.monthly_ret, pd.DataFrame):
                     if self.monthly_ret.empty:
-                        self.root.after(0, lambda: messagebox.showerror("Error", "Monthly returns are empty"))
+                        self.root.after(0, lambda: messagebox.showerror("Error", "Monthly returns calculation resulted in an empty DataFrame."))
                         self.root.after(0, lambda: self.status_var.set("❌ Monthly returns are empty"))
                         return
-        
-                    self.monthly_ret.name = 'ret'
-                    self.df = self.monthly_ret.to_frame()
-                    self.df['year'] = self.df.index.year
-                    self.df['month'] = self.df.index.month
-                    self.pivot = self.df.pivot_table(index='year', columns='month', values='ret')
-                    self.month_avg = self.pivot.mean().sort_index()
-                    self.month_median = self.pivot.median().sort_index()
-                    # Calculate overall average for benchmark line
-                    self.overall_avg = self.monthly_ret.mean()
-                    # Update UI with results
-                    self.root.after(0, self.update_charts)
-                    self.root.after(0, self.update_summary)
-                    # Enable export button
-                    self.root.after(0, lambda: self.export_btn.config(state=tk.NORMAL))
-                    self.root.after(0, lambda: self.status_var.set(f"✅ Analysis complete for {self.ticker} ({self.start_year}-{self.end_date[:4]})"))
-                except Exception as e:
-                    self.root.after(0, lambda: messagebox.showerror("Error", f"Error during analysis: {e}"))
-                    self.root.after(0, lambda: self.status_var.set("❌ Analysis failed"))
-            thread = threading.Thread(target=worker)
-            thread.daemon = True
-            thread.start()
-    
+                    self.monthly_ret = self.monthly_ret.iloc[:, 0]  # Take first column if DataFrame
+
+                # --- FIX: Ensure monthly_ret is not empty before proceeding ---
+                if self.monthly_ret.empty:
+                    self.root.after(0, lambda: messagebox.showerror("Error", "Monthly returns are empty after processing."))
+                    self.root.after(0, lambda: self.status_var.set("❌ Monthly returns are empty"))
+                    return
+
+                self.monthly_ret.name = 'ret'
+                self.df = self.monthly_ret.to_frame()
+                self.df['year'] = self.df.index.year
+                self.df['month'] = self.df.index.month
+                self.pivot = self.df.pivot_table(index='year', columns='month', values='ret')
+                self.month_avg = self.pivot.mean().sort_index()
+                self.month_median = self.pivot.median().sort_index()
+                # Calculate overall average for benchmark line
+                self.overall_avg = self.monthly_ret.mean()
+                # Update UI with results
+                self.root.after(0, self.update_charts)
+                self.root.after(0, self.update_summary)
+                # Enable export button
+                self.root.after(0, lambda: self.export_btn.config(state=tk.NORMAL))
+                self.root.after(0, lambda: self.status_var.set(f"✅ Analysis complete for {self.ticker} ({self.start_year}-{self.end_date[:4]})"))
+            except Exception as e:
+                self.root.after(0, lambda: messagebox.showerror("Error", f"Error during analysis: {e}"))
+                self.root.after(0, lambda: self.status_var.set("❌ Analysis failed"))
+                
+        thread = threading.Thread(target=worker)
+        thread.daemon = True
+        thread.start()
+
     def analyze_data(self):
         """Wrapper for async analysis"""
         self.analyze_data_async()
-    
+
     def toggle_benchmark_line(self):
         """Toggle the benchmark line on/off"""
         self.show_benchmark.set(not self.show_benchmark.get())
         self.update_charts()
         status = "ON" if self.show_benchmark.get() else "OFF"
         self.status_var.set(f"📊 Benchmark line is now {status}")
-    
+
     def update_charts(self):
         # Clear existing charts
         for widget in self.bar_frame.winfo_children():
@@ -454,11 +420,9 @@ class JSEAnalyzer:
             widget.destroy()
         for widget in self.scatter_frame.winfo_children():
             widget.destroy()
-        
         # Bar chart with hover functionality and benchmark lines
         chart_frame = ttk.Frame(self.bar_frame)
         chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
         fig1, ax1 = plt.subplots(figsize=(12, 6))
         bars = ax1.bar(range(1, 13), self.month_avg*100, alpha=0.8, color='#3498db', 
                       edgecolor='#2980b9', linewidth=1)
@@ -468,47 +432,39 @@ class JSEAnalyzer:
         ax1.set_title(f'Average Monthly Returns for {self.ticker}\nPeriod: {self.start_year} to {self.end_date[:4]}', 
                      fontsize=12, fontweight='bold', pad=20)
         ax1.grid(axis='y', alpha=0.3, linestyle='--')
-        
         # Style improvements
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
         ax1.spines['left'].set_color('#cccccc')
         ax1.spines['bottom'].set_color('#cccccc')
-        
         # Add benchmark lines if enabled
         if self.show_benchmark.get():
             overall_avg_pct = self.overall_avg * 100
             ax1.axhline(y=overall_avg_pct, color='#e74c3c', linestyle='--', linewidth=2, 
                        label=f'Overall Average: {overall_avg_pct:.2f}%', alpha=0.8)
-        
         # Add zero line for reference
         ax1.axhline(y=0, color='#2c3e50', linestyle='-', linewidth=0.8, alpha=0.5)
-        
         # Add legend if benchmark is shown
         if self.show_benchmark.get():
             ax1.legend(loc='upper right', framealpha=0.9)
-        
         # Color coding for positive/negative bars
         for i, bar in enumerate(bars):
             height = bar.get_height()
             if height < 0:
                 bar.set_color('#e74c3c')  # Red for negative
                 bar.set_edgecolor('#c0392b')
-        
         # Add value labels on bars
         for i, bar in enumerate(bars):
             height = bar.get_height()
             ax1.text(bar.get_x() + bar.get_width()/2., height + (0.1 if height >= 0 else -0.3),
                     f'{height:.1f}%', ha='center', va='bottom' if height >= 0 else 'top',
                     fontsize=8, fontweight='bold')
-        
         # Add hover functionality to bar chart
         annot1 = ax1.annotate("", xy=(0,0), xytext=(10,10), textcoords="offset points",
                              bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1, alpha=0.9),
                              arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
                              fontsize=9, fontweight='bold')
         annot1.set_visible(False)
-        
         def update_annot_bar(bar, index):
             x = bar.get_x() + bar.get_width() / 2
             y = bar.get_y() + bar.get_height()
@@ -518,7 +474,6 @@ class JSEAnalyzer:
             text = f"{month_name}\n{value:.2f}%"
             annot1.set_text(text)
             annot1.get_bbox_patch().set_alpha(0.9)
-        
         def hover_bar(event):
             vis = annot1.get_visible()
             if event.inaxes == ax1:
@@ -532,96 +487,77 @@ class JSEAnalyzer:
             if vis:
                 annot1.set_visible(False)
                 fig1.canvas.draw_idle()
-        
         fig1.canvas.mpl_connect("motion_notify_event", hover_bar)
-        
         canvas1 = FigureCanvasTkAgg(fig1, chart_frame)
         canvas1.draw()
         canvas1.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
         # Heatmap with improved styling
         heatmap_frame = ttk.Frame(self.heatmap_frame)
         heatmap_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
         fig2, ax2 = plt.subplots(figsize=(14, 8))
         im = sns.heatmap(self.pivot*100, center=0, cmap='RdYlGn', 
                         cbar_kws={'label':'Monthly Return (%)'}, 
                         linewidths=.5, ax=ax2, annot=True, fmt='.1f',
                         cbar=True)
-        
         # Style improvements
         ax2.set_xlabel('Month', fontsize=11, fontweight='bold')
         ax2.set_ylabel('Year', fontsize=11, fontweight='bold')
         ax2.set_title(f'Month-by-Year Returns for {self.ticker}\nPeriod: {self.start_year} to {self.end_date[:4]}', 
                      fontsize=12, fontweight='bold', pad=20)
-        
         # Month labels
         ax2.set_xticks(np.arange(12) + 0.5)
         ax2.set_xticklabels(self.months, rotation=0, fontsize=9)
         ax2.set_yticklabels(ax2.get_yticklabels(), rotation=0, fontsize=8)
-        
         # Colorbar styling
         cbar = ax2.collections[0].colorbar
         cbar.set_label('Monthly Return (%)', fontsize=10, fontweight='bold')
-        
         canvas2 = FigureCanvasTkAgg(fig2, heatmap_frame)
         canvas2.draw()
         canvas2.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        
         # Risk vs Return Scatter with hover functionality
         scatter_chart_frame = ttk.Frame(self.scatter_frame)
         scatter_chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
         monthly_stats = pd.DataFrame({
             'month': range(1, 13),
             'avg_return': self.month_avg * 100,
             'std_dev': self.pivot.std() * 100,
             'positive_rate': (self.pivot > 0).sum() / self.pivot.count() * 100
         })
-        
         fig3, ax3 = plt.subplots(figsize=(12, 8))
         scatter = ax3.scatter(monthly_stats['std_dev'], monthly_stats['avg_return'], 
                              c=monthly_stats['positive_rate'], 
                              cmap='RdYlGn', s=250, alpha=0.8, edgecolors='black', linewidth=1)
-        
         # Add month labels with better positioning
         for i, month in enumerate(self.months):
             ax3.annotate(month, (monthly_stats['std_dev'].iloc[i], monthly_stats['avg_return'].iloc[i]), 
                         xytext=(5, 5), textcoords='offset points', fontsize=9, fontweight='bold',
                         bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.7))
-        
         ax3.set_xlabel('Monthly Return Standard Deviation (%)', fontsize=11, fontweight='bold')
         ax3.set_ylabel('Average Monthly Return (%)', fontsize=11, fontweight='bold')
         ax3.set_title(f'Risk vs Return by Month for {self.ticker}\n(Color = Positive Return Rate)\nPeriod: {self.start_year} to {self.end_date[:4]}', 
                      fontsize=12, fontweight='bold', pad=20)
-        
         # Style improvements
         ax3.grid(True, alpha=0.3, linestyle='--')
         ax3.spines['top'].set_visible(False)
         ax3.spines['right'].set_visible(False)
-        
         # Add colorbar
         cbar3 = plt.colorbar(scatter, ax=ax3, label='Positive Return Rate (%)')
         cbar3.set_label('Positive Return Rate (%)', fontsize=10, fontweight='bold')
-        
         # Add benchmark lines if enabled
         if self.show_benchmark.get():
             overall_avg_pct = self.overall_avg * 100
             ax3.axhline(y=overall_avg_pct, color='#e74c3c', linestyle='--', linewidth=2, alpha=0.8,
                        label=f'Overall Avg Return: {overall_avg_pct:.2f}%')
             ax3.legend(loc='upper right', framealpha=0.9)
-        
         # Add zero lines for reference
         ax3.axhline(y=0, color='#2c3e50', linestyle='-', linewidth=0.8, alpha=0.5)
         ax3.axvline(x=0, color='#2c3e50', linestyle='-', linewidth=0.8, alpha=0.5)
-        
         # Add hover functionality to scatter plot
         annot3 = ax3.annotate("", xy=(0,0), xytext=(10,10), textcoords="offset points",
                              bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1, alpha=0.9),
                              arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
                              fontsize=9)
         annot3.set_visible(False)
-        
         def update_annot_scatter(ind):
             index = ind["ind"][0]
             pos = scatter.get_offsets()[index]
@@ -633,7 +569,6 @@ class JSEAnalyzer:
             text = f"{month_name}\nReturn: {avg_ret:.2f}%\nRisk: {std_dev:.2f}%\nPos Rate: {pos_rate:.1f}%"
             annot3.set_text(text)
             annot3.get_bbox_patch().set_alpha(0.9)
-        
         def hover_scatter(event):
             vis = annot3.get_visible()
             if event.inaxes == ax3:
@@ -646,13 +581,11 @@ class JSEAnalyzer:
             if vis:
                 annot3.set_visible(False)
                 fig3.canvas.draw_idle()
-        
         fig3.canvas.mpl_connect("motion_notify_event", hover_scatter)
-        
         canvas3 = FigureCanvasTkAgg(fig3, scatter_chart_frame)
         canvas3.draw()
         canvas3.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    
+
     def update_summary(self):
         self.summary_text.delete(1.0, tk.END)
         summary = f"📊 MONTHLY RETURN ANALYSIS SUMMARY\n"
@@ -660,20 +593,17 @@ class JSEAnalyzer:
         summary += f"Index/ETF: {self.ticker}\n"
         summary += f"Analysis Period: {self.start_year} to {self.end_date[:4]} ({len(self.pivot)} years)\n"
         summary += f"Total Months Analyzed: {len(self.monthly_ret)}\n"
-        summary += f"{'='*50}\n\n"
-        
+        summary += f"{'='*50}\n"
         summary += "📈 MONTHLY AVERAGE RETURNS:\n"
         summary += "-" * 30 + "\n"
         for month_num, month_name in enumerate(self.months, 1):
             if month_num in self.month_avg.index:
                 avg_ret = self.month_avg[month_num] * 100
                 summary += f"{month_name:3}: {avg_ret:+6.2f}%\n"
-        
         summary += f"\n{'='*50}\n"
         overall_avg_pct = self.overall_avg * 100
         summary += f"🎯 OVERALL AVERAGE RETURN: {overall_avg_pct:+6.2f}%\n"
         summary += f"📊 BENCHMARK LINE STATUS: {'ON' if self.show_benchmark.get() else 'OFF'}\n"
-        
         # Best and worst months
         best_month_idx = self.month_avg.idxmax()
         worst_month_idx = self.month_avg.idxmin()
@@ -681,28 +611,23 @@ class JSEAnalyzer:
         worst_month_name = self.months[worst_month_idx - 1]
         summary += f"🏆 BEST MONTH: {best_month_name} ({self.month_avg[best_month_idx]*100:+.2f}%)\n"
         summary += f"⚠️  WORST MONTH: {worst_month_name} ({self.month_avg[worst_month_idx]*100:+.2f}%)\n"
-        
         # Additional statistics
         summary += f"\n📈 ADDITIONAL STATISTICS:\n"
         summary += "-" * 30 + "\n"
         summary += f"Standard Deviation: {self.monthly_ret.std()*100:.2f}%\n"
         summary += f"Sharpe Ratio: {self.overall_avg/self.monthly_ret.std():.2f}\n"
         summary += f"Positive Months: {(self.monthly_ret > 0).sum()}/{len(self.monthly_ret)} ({(self.monthly_ret > 0).sum()/len(self.monthly_ret)*100:.1f}%)\n"
-        
         self.summary_text.insert(1.0, summary)
-    
+
     def export_to_excel(self):
         if self.pivot is None:
             messagebox.showwarning("Warning", "No data to export. Please analyze data first.")
             return
-            
         try:
             filename = f"{self.ticker.replace('^', '').replace('.JO', '').replace('.SS', '').replace('.AX', '')}_monthly_analysis_{self.start_year}_{self.end_date[:4]}.xlsx"
-            
             with pd.ExcelWriter(filename, engine='openpyxl') as writer:
                 # Sheet 1: Year-by-Month Returns
                 self.pivot.to_excel(writer, sheet_name='Year_Month_Returns')
-                
                 # Sheet 2: Monthly Summary Stats
                 summary_stats = pd.DataFrame({
                     'Month': range(1, 13),
@@ -717,7 +642,6 @@ class JSEAnalyzer:
                     'Positive_Rate_%': ((self.pivot > 0).sum() / self.pivot.count() * 100).values
                 })
                 summary_stats.to_excel(writer, sheet_name='Monthly_Summary', index=False)
-                
                 # Sheet 3: Raw Data
                 raw_data = pd.DataFrame({
                     'Date': self.pivot.index,
@@ -725,35 +649,29 @@ class JSEAnalyzer:
                     **{f'M{col}': self.pivot[col].values for col in self.pivot.columns}
                 })
                 raw_data.to_excel(writer, sheet_name='Raw_Data', index=False)
-            
             messagebox.showinfo("Success", f"✅ Data exported to {filename}")
             self.status_var.set(f"💾 Data exported to {filename}")
-            
         except Exception as e:
-            messagebox.showerror("Error", f"Error exporting  {e}")
+            messagebox.showerror("Error", f"Error exporting data: {e}")
             self.status_var.set("❌ Export failed")
-    
+
     def generate_pdf_report(self):
         """Generate professional PDF report"""
         if self.pivot is None:
             messagebox.showwarning("Warning", "No data to export. Please analyze data first.")
             return
-        
         try:
             filename = filedialog.asksaveasfilename(
                 defaultextension=".pdf",
                 filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
                 title="Save PDF Report"
             )
-            
             if not filename:
                 return
-            
             # Create PDF document
             doc = SimpleDocTemplate(filename, pagesize=A4)
             story = []
             styles = getSampleStyleSheet()
-            
             # Title
             title_style = ParagraphStyle(
                 'CustomTitle',
@@ -765,7 +683,6 @@ class JSEAnalyzer:
             title = Paragraph(f"Monthly Return Analysis Report<br/>{self.ticker}", title_style)
             story.append(title)
             story.append(Spacer(1, 20))
-            
             # Summary information
             info_text = f"""
             <b>Analysis Period:</b> {self.start_year} to {self.end_date[:4]}<br/>
@@ -776,18 +693,15 @@ class JSEAnalyzer:
             info_para = Paragraph(info_text, styles['Normal'])
             story.append(info_para)
             story.append(Spacer(1, 20))
-            
             # Monthly returns table
             story.append(Paragraph("<b>Monthly Average Returns</b>", styles['Heading2']))
             story.append(Spacer(1, 12))
-            
             # Create table data
             table_data = [['Month', 'Average Return (%)']]
             for month_num, month_name in enumerate(self.months, 1):
                 if month_num in self.month_avg.index:
                     avg_ret = self.month_avg[month_num] * 100
                     table_data.append([month_name, f"{avg_ret:+.2f}%"])
-            
             table = Table(table_data)
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -800,45 +714,37 @@ class JSEAnalyzer:
                 ('GRID', (0, 0), (-1, -1), 1, colors.black)
             ]))
             story.append(table)
-            
             # Build PDF
             doc.build(story)
             messagebox.showinfo("Success", f"✅ PDF report generated: {filename}")
             self.status_var.set(f"📄 PDF report generated: {filename}")
-            
         except Exception as e:
             messagebox.showerror("Error", f"Error generating PDF: {e}")
             self.status_var.set("❌ PDF generation failed")
-    
+
     def run_statistical_tests(self):
         """Run statistical significance tests"""
         if self.pivot is None:
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
-        
         try:
             # Clear existing content
             for widget in self.stats_frame.winfo_children():
                 widget.destroy()
-            
             # Create text widget for results
             stats_text = tk.Text(self.stats_frame, wrap=tk.WORD, font=('Consolas', 10))
             stats_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            
             # Perform t-tests between months
             results = "🧮 STATISTICAL SIGNIFICANCE TESTS\n"
-            results += "=" * 50 + "\n\n"
-            
+            results += "=" * 50 + "\n"
             results += "T-TESTS BETWEEN MONTHS (p < 0.05 indicates significant difference):\n"
             results += "-" * 70 + "\n"
-            
             # Compare each pair of months
             significant_pairs = []
             for i in range(1, 13):
                 for j in range(i+1, 13):
                     month1_data = self.pivot[i].dropna()
                     month2_data = self.pivot[j].dropna()
-                    
                     if len(month1_data) > 1 and len(month2_data) > 1:
                         t_stat, p_val = stats.ttest_ind(month1_data, month2_data)
                         if p_val < 0.05:
@@ -846,12 +752,9 @@ class JSEAnalyzer:
                             month1_name = self.months[i-1]
                             month2_name = self.months[j-1]
                             results += f"{month1_name} vs {month2_name}: p = {p_val:.4f}\n"
-            
             if not significant_pairs:
                 results += "No statistically significant differences found between months (p < 0.05)\n"
-            
-            results += f"\nTotal significant pairs: {len(significant_pairs)}\n\n"
-            
+            results += f"\nTotal significant pairs: {len(significant_pairs)}\n"
             # Add descriptive statistics
             results += "DESCRIPTIVE STATISTICS BY MONTH:\n"
             results += "-" * 40 + "\n"
@@ -859,32 +762,26 @@ class JSEAnalyzer:
                 month_data = self.pivot[i].dropna()
                 month_name = self.months[i-1]
                 results += f"{month_name}: Mean={month_data.mean()*100:+.2f}%, Std={month_data.std()*100:.2f}%\n"
-            
             stats_text.insert(1.0, results)
             self.status_var.set("🧮 Statistical tests completed")
-            
         except Exception as e:
             messagebox.showerror("Error", f"Error running statistical tests: {e}")
             self.status_var.set("❌ Statistical tests failed")
-    
+
     def run_ml_analysis(self):
         """Run machine learning analysis for pattern recognition"""
         if self.pivot is None:
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
-        
         try:
             # Clear existing content
             for widget in self.ml_frame.winfo_children():
                 widget.destroy()
-            
             # Create text widget for results
             ml_text = tk.Text(self.ml_frame, wrap=tk.WORD, font=('Consolas', 10))
             ml_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            
             results = "🤖 MACHINE LEARNING ANALYSIS\n"
-            results += "=" * 50 + "\n\n"
-            
+            results += "=" * 50 + "\n"
             # Prepare data for clustering
             monthly_features = pd.DataFrame({
                 'month': range(1, 13),
@@ -892,61 +789,49 @@ class JSEAnalyzer:
                 'std_dev': self.pivot.std().values,
                 'positive_rate': (self.pivot > 0).sum().values / self.pivot.count().values
             })
-            
             # Standardize features
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(monthly_features[['avg_return', 'std_dev', 'positive_rate']])
-            
             # K-means clustering
             kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
             clusters = kmeans.fit_predict(features_scaled)
-            
             monthly_features['cluster'] = clusters
-            
             results += "MONTH CLUSTERING RESULTS (K-Means, k=3):\n"
             results += "-" * 40 + "\n"
-            
             # Ensure cluster IDs are integers
             monthly_features['cluster'] = monthly_features['cluster'].astype(int)
-            
             for cluster_id in range(3):
                 cluster_months = monthly_features[monthly_features['cluster'] == cluster_id]
                 month_names = [self.months[idx - 1] for idx in cluster_months['month']]
                 results += f"Cluster {cluster_id + 1}: {', '.join(month_names)}\n"
                 results += f"  Avg Return: {cluster_months['avg_return'].mean() * 100:+.2f}%\n"
                 results += f"  Avg Risk: {cluster_months['std_dev'].mean() * 100:.2f}%\n"
-                results += f"  Avg Pos Rate: {cluster_months['positive_rate'].mean() * 100:.1f}%\n\n"
-            
+                results += f"  Avg Pos Rate: {cluster_months['positive_rate'].mean() * 100:.1f}%\n"
             # Principal Component Analysis (simplified)
             results += "DIMENSIONALITY REDUCTION INSIGHTS:\n"
             results += "-" * 40 + "\n"
             results += "Feature importance based on clustering:\n"
             results += "1. Average Return (primary driver)\n"
             results += "2. Standard Deviation (secondary driver)\n"
-            results += "3. Positive Rate (tertiary driver)\n\n"
-            
+            results += "3. Positive Rate (tertiary driver)\n"
             # Anomaly detection (simple approach)
             results += "POTENTIAL ANOMALIES:\n"
             results += "-" * 25 + "\n"
-            
             # Calculate distances from cluster centers
             distances = kmeans.transform(features_scaled)
             min_distances = np.min(distances, axis=1)
-            
             # Months with highest distances are potential anomalies
             anomaly_indices = np.argsort(min_distances)[-3:]  # Top 3
             for idx in anomaly_indices:
                 month_name = self.months[int(monthly_features.iloc[idx]['month']) - 1]
                 distance = min_distances[idx]
                 results += f"{month_name}: Distance={distance:.3f}\n"
-            
             ml_text.insert(1.0, results)
             self.status_var.set("🤖 ML analysis completed")
-            
         except Exception as e:
             messagebox.showerror("Error", f"Error running ML analysis: {e}")
             self.status_var.set("❌ ML analysis failed")
-    
+
     def run(self):
         self.root.mainloop()
 
