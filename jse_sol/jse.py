@@ -1,6 +1,6 @@
 # jse2.py
-# Global Index Monthly Return Analyzer (Version 2.0)
-# Improved with input validation, multiple ticker comparison, and modular structure
+# Global Index Monthly Return Analyzer (Version 2.1)
+# Enhanced with interactive controls for bar chart (mean/median toggle)
 
 import yfinance as yf
 import pandas as pd
@@ -36,7 +36,7 @@ matplotlib.use('TkAgg')
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.0"
+    VERSION = "2.1"
 
     def __init__(self):
         self.root = tk.Tk()
@@ -78,7 +78,8 @@ class JSEAnalyzer:
         self.show_benchmark = tk.BooleanVar(value=True)
         self.dark_mode = tk.BooleanVar(value=False)
         self.comparison_tickers = []
-        self.comparison_data = {}  # Store data for multiple tickers
+        self.comparison_data = {}
+        self.bar_metric = tk.StringVar(value="Mean")  # Control for mean/median toggle
 
         # Style configuration
         self.style = ttk.Style()
@@ -212,6 +213,18 @@ class JSEAnalyzer:
         # Tabs
         self.bar_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.bar_frame, text="📊 Average Returns")
+        # Add metric selection to bar chart frame
+        bar_control_frame = ttk.Frame(self.bar_frame)
+        bar_control_frame.pack(fill=tk.X, pady=(5, 0))
+        ttk.Label(bar_control_frame, text="Metric:").pack(side=tk.LEFT, padx=(5, 5))
+        metric_combo = ttk.Combobox(bar_control_frame, textvariable=self.bar_metric,
+                                   values=["Mean", "Median"], state="readonly", width=10, font=('Arial', 9))
+        metric_combo.pack(side=tk.LEFT, padx=(0, 5))
+        metric_combo.bind('<<ComboboxSelected>>', lambda event: self.update_charts())
+        self.toggle_benchmark_btn = ttk.Button(bar_control_frame, text="📊 Toggle Benchmark",
+                                             command=self.toggle_benchmark_line,
+                                             style='Secondary.TButton')
+        self.toggle_benchmark_btn.pack(side=tk.LEFT, padx=(5, 0))
         self.heatmap_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.heatmap_frame, text="🌡️ Year-Month Heatmap")
         self.scatter_frame = ttk.Frame(self.notebook)
@@ -487,7 +500,8 @@ class JSEAnalyzer:
     def update_charts(self):
         """Update all visualization tabs."""
         for widget in self.bar_frame.winfo_children():
-            widget.destroy()
+            if widget != self.bar_frame.winfo_children()[0]:  # Preserve control frame
+                widget.destroy()
         for widget in self.heatmap_frame.winfo_children():
             widget.destroy()
         for widget in self.scatter_frame.winfo_children():
@@ -497,12 +511,15 @@ class JSEAnalyzer:
         chart_frame = ttk.Frame(self.bar_frame)
         chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         fig1, ax1 = plt.subplots(figsize=(12, 6))
-        bars = ax1.bar(range(1, 13), self.month_avg*100, alpha=0.8, color='#3498db',
+        # Select data based on metric
+        metric_data = self.month_avg if self.bar_metric.get() == "Mean" else self.month_median
+        metric_label = "Average" if self.bar_metric.get() == "Mean" else "Median"
+        bars = ax1.bar(range(1, 13), metric_data*100, alpha=0.8, color='#3498db',
                       edgecolor='#2980b9', linewidth=1)
         ax1.set_xticks(range(1, 13))
         ax1.set_xticklabels(self.months, fontsize=10)
-        ax1.set_ylabel('Average Monthly Return (%)', fontsize=11, fontweight='bold')
-        ax1.set_title(f'Average Monthly Returns for {self.ticker}\nPeriod: {self.start_year} to {self.end_date[:4]}',
+        ax1.set_ylabel(f'{metric_label} Monthly Return (%)', fontsize=11, fontweight='bold')
+        ax1.set_title(f'{metric_label} Monthly Returns for {self.ticker}\nPeriod: {self.start_year} to {self.end_date[:4]}',
                      fontsize=12, fontweight='bold', pad=20)
         ax1.grid(axis='y', alpha=0.3, linestyle='--')
         ax1.spines['top'].set_visible(False)
@@ -531,7 +548,7 @@ class JSEAnalyzer:
             y = bar.get_y() + bar.get_height()
             annot1.xy = (x, y)
             month_name = self.months[index]
-            value = self.month_avg.iloc[index] * 100
+            value = metric_data.iloc[index] * 100
             text = f"{month_name}\n{value:.2f}%"
             annot1.set_text(text)
             annot1.get_bbox_patch().set_alpha(0.9)
@@ -552,6 +569,7 @@ class JSEAnalyzer:
         canvas1 = FigureCanvasTkAgg(fig1, chart_frame)
         canvas1.draw()
         canvas1.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.status_var.set(f"📊 Showing {metric_label} Returns for {self.ticker}")
 
         # Heatmap
         heatmap_frame = ttk.Frame(self.heatmap_frame)
