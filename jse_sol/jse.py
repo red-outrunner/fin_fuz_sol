@@ -1,6 +1,6 @@
 # jse2.py
-# Global Index Monthly Return Analyzer (Version 2.1)
-# Enhanced with interactive controls for bar chart (mean/median toggle)
+# Global Index Monthly Return Analyzer (Version 2.2)
+# Enhanced UI with tooltips, improved dark mode, and better layout spacing
 
 import yfinance as yf
 import pandas as pd
@@ -34,9 +34,33 @@ import re
 warnings.filterwarnings('ignore')
 matplotlib.use('TkAgg')
 
+class Tooltip:
+    """Simple tooltip class for Tkinter widgets."""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip = None
+        self.widget.bind("<Enter>", self.show_tooltip)
+        self.widget.bind("<Leave>", self.hide_tooltip)
+
+    def show_tooltip(self, event=None):
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        self.tooltip = tk.Toplevel(self.widget)
+        self.tooltip.wm_overrideredirect(True)
+        self.tooltip.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(self.tooltip, text=self.text, background="#ffffe0", relief="solid", borderwidth=1, padx=5, pady=3)
+        label.pack()
+
+    def hide_tooltip(self, event=None):
+        if self.tooltip:
+            self.tooltip.destroy()
+            self.tooltip = None
+
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.1"
+    VERSION = "2.2"
 
     def __init__(self):
         self.root = tk.Tk()
@@ -104,14 +128,14 @@ class JSEAnalyzer:
         self.style.map('Warning.TButton', background=[('active', '#d35400')])
 
     def setup_ui(self):
-        """Set up the main GUI components."""
+        """Set up the main GUI components with improved layout and tooltips."""
         # Main container
         main_container = tk.Frame(self.root, bg='#f0f0f0')
-        main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)  # Increased padding for better spacing
 
         # Header with title
         header_frame = ttk.Frame(main_container, style='Header.TFrame')
-        header_frame.pack(fill=tk.X, pady=(0, 15))
+        header_frame.pack(fill=tk.X, pady=(0, 20))
         title_label = ttk.Label(header_frame, text=f"📈 Global Index Monthly Return Analyzer (v{self.VERSION})",
                                style='Title.TLabel')
         title_label.pack(side=tk.LEFT, padx=10, pady=10)
@@ -119,16 +143,19 @@ class JSEAnalyzer:
                                          variable=self.dark_mode,
                                          command=self.toggle_dark_mode)
         dark_mode_check.pack(side=tk.RIGHT, padx=10, pady=10)
+        Tooltip(dark_mode_check, "Toggle dark mode for better visibility in low-light environments.")
 
         # Configuration frame
         config_frame = ttk.LabelFrame(main_container, text="⚙️ Configuration Panel",
-                                     style='Config.TLabelframe', padding="15")
-        config_frame.pack(fill=tk.X, pady=(0, 15))
+                                     style='Config.TLabelframe', padding="20")  # Increased padding
+        config_frame.pack(fill=tk.X, pady=(0, 20))
 
         # Ticker selection row
         ticker_row = ttk.Frame(config_frame)
-        ticker_row.pack(fill=tk.X, pady=(0, 10))
-        ttk.Label(ticker_row, text="Index/ETF:").pack(side=tk.LEFT, padx=(0, 10))
+        ticker_row.pack(fill=tk.X, pady=(0, 15))
+        ticker_label = ttk.Label(ticker_row, text="Index/ETF:")
+        ticker_label.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(ticker_label, "Select a predefined index or ETF for analysis.")
         self.ticker_var = tk.StringVar(value="🇿🇦 JSE All Share (^J203.JO)")
         ticker_combo = ttk.Combobox(ticker_row, textvariable=self.ticker_var,
                                    values=list(self.ticker_options.keys()),
@@ -141,6 +168,7 @@ class JSEAnalyzer:
                                       variable=self.use_custom_var,
                                       command=self.toggle_custom_ticker)
         custom_check.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(custom_check, "Enable to enter a custom ticker symbol not in the list.")
         self.custom_ticker_var = tk.StringVar()
         self.custom_ticker_entry = ttk.Entry(ticker_row, textvariable=self.custom_ticker_var,
                                             width=15, font=('Arial', 9))
@@ -148,7 +176,9 @@ class JSEAnalyzer:
         self.custom_ticker_entry.grid_remove()
 
         # Comparison ticker selection
-        ttk.Label(ticker_row, text="Compare With:").pack(side=tk.LEFT, padx=(10, 10))
+        compare_label = ttk.Label(ticker_row, text="Compare With:")
+        compare_label.pack(side=tk.LEFT, padx=(15, 10))
+        Tooltip(compare_label, "Select an index to compare with the primary ticker.")
         self.compare_var = tk.StringVar(value="")
         compare_combo = ttk.Combobox(ticker_row, textvariable=self.compare_var,
                                     values=list(self.ticker_options.keys()),
@@ -157,11 +187,14 @@ class JSEAnalyzer:
         add_compare_btn = ttk.Button(ticker_row, text="➕ Add Comparison",
                                     command=self.add_comparison_ticker, style='Secondary.TButton')
         add_compare_btn.pack(side=tk.LEFT)
+        Tooltip(add_compare_btn, "Add the selected ticker for comparative analysis.")
 
         # Date controls row
         date_row = ttk.Frame(config_frame)
-        date_row.pack(fill=tk.X, pady=(0, 10))
-        ttk.Label(date_row, text="Date Range:").pack(side=tk.LEFT, padx=(0, 10))
+        date_row.pack(fill=tk.X, pady=(0, 15))
+        date_range_label = ttk.Label(date_row, text="Date Range:")
+        date_range_label.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(date_range_label, "Choose a predefined date range or custom dates.")
         self.date_range_var = tk.StringVar(value="Custom")
         date_range_combo = ttk.Combobox(date_row, textvariable=self.date_range_var,
                                        values=["Custom", "Last 5 Years", "Last 10 Years",
@@ -169,12 +202,16 @@ class JSEAnalyzer:
                                        state="readonly", width=15, font=('Arial', 9))
         date_range_combo.pack(side=tk.LEFT, padx=(0, 15))
         date_range_combo.bind('<<ComboboxSelected>>', self.on_date_range_change)
-        ttk.Label(date_row, text="Start Year:").pack(side=tk.LEFT, padx=(0, 10))
+        start_year_label = ttk.Label(date_row, text="Start Year:")
+        start_year_label.pack(side=tk.LEFT, padx=(15, 10))
+        Tooltip(start_year_label, "Enter the starting year for custom date range.")
         self.start_year_var = tk.IntVar(value=self.start_year)
         self.start_year_entry = ttk.Entry(date_row, textvariable=self.start_year_var,
                                          width=8, font=('Arial', 9))
         self.start_year_entry.pack(side=tk.LEFT, padx=(0, 15))
-        ttk.Label(date_row, text="End Date:").pack(side=tk.LEFT, padx=(0, 10))
+        end_date_label = ttk.Label(date_row, text="End Date:")
+        end_date_label.pack(side=tk.LEFT, padx=(15, 10))
+        Tooltip(end_date_label, "Enter the end date in YYYY-MM-DD format for custom range.")
         self.end_date_var = tk.StringVar(value=self.end_date)
         self.end_date_entry = ttk.Entry(date_row, textvariable=self.end_date_var,
                                        width=12, font=('Arial', 9))
@@ -182,27 +219,33 @@ class JSEAnalyzer:
 
         # Action buttons row
         button_row = ttk.Frame(config_frame)
-        button_row.pack(fill=tk.X, pady=(10, 0))
+        button_row.pack(fill=tk.X, pady=(15, 0))
         analyze_btn = ttk.Button(button_row, text="🔍 Analyze Data",
                                 command=self.analyze_data, style='Primary.TButton')
         analyze_btn.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(analyze_btn, "Start the analysis with the selected parameters.")
         self.export_btn = ttk.Button(button_row, text="💾 Export to Excel",
                                     command=self.export_to_excel, state=tk.DISABLED,
                                     style='Success.TButton')
         self.export_btn.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(self.export_btn, "Export the analysis results to an Excel file.")
         self.toggle_benchmark_btn = ttk.Button(button_row, text="📊 Toggle Benchmark",
                                               command=self.toggle_benchmark_line,
                                               style='Secondary.TButton')
         self.toggle_benchmark_btn.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(self.toggle_benchmark_btn, "Toggle the overall average benchmark line on charts.")
         pdf_btn = ttk.Button(button_row, text="📄 Export PDF",
                             command=self.generate_pdf_report, style='Warning.TButton')
         pdf_btn.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(pdf_btn, "Generate and export a PDF report of the analysis.")
         ml_btn = ttk.Button(button_row, text="🤖 ML Analysis",
                            command=self.run_ml_analysis, style='Secondary.TButton')
         ml_btn.pack(side=tk.LEFT, padx=(0, 10))
+        Tooltip(ml_btn, "Perform machine learning analysis on monthly returns.")
         stats_btn = ttk.Button(button_row, text="🧮 Significance Test",
                               command=self.run_statistical_tests, style='Secondary.TButton')
         stats_btn.pack(side=tk.LEFT)
+        Tooltip(stats_btn, "Run statistical significance tests on the data.")
 
         # Results notebook
         notebook_frame = ttk.Frame(main_container)
@@ -216,7 +259,9 @@ class JSEAnalyzer:
         # Add metric selection to bar chart frame
         bar_control_frame = ttk.Frame(self.bar_frame)
         bar_control_frame.pack(fill=tk.X, pady=(5, 0))
-        ttk.Label(bar_control_frame, text="Metric:").pack(side=tk.LEFT, padx=(5, 5))
+        bar_metric_label = ttk.Label(bar_control_frame, text="Metric:")
+        bar_metric_label.pack(side=tk.LEFT, padx=(5, 5))
+        Tooltip(bar_metric_label, "Choose between mean or median for the bar chart.")
         metric_combo = ttk.Combobox(bar_control_frame, textvariable=self.bar_metric,
                                    values=["Mean", "Median"], state="readonly", width=10, font=('Arial', 9))
         metric_combo.pack(side=tk.LEFT, padx=(0, 5))
@@ -225,6 +270,7 @@ class JSEAnalyzer:
                                              command=self.toggle_benchmark_line,
                                              style='Secondary.TButton')
         self.toggle_benchmark_btn.pack(side=tk.LEFT, padx=(5, 0))
+        Tooltip(self.toggle_benchmark_btn, "Toggle the benchmark line in the bar chart.")
         self.heatmap_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.heatmap_frame, text="🌡️ Year-Month Heatmap")
         self.scatter_frame = ttk.Frame(self.notebook)
@@ -257,13 +303,23 @@ class JSEAnalyzer:
 
     # --- UI Handlers ---
     def toggle_dark_mode(self):
-        """Toggle between light and dark mode."""
+        """Toggle between light and dark mode with improved color application."""
         if self.dark_mode.get():
             self.root.configure(bg='#2c3e50')
             self.summary_text.configure(bg='#34495e', fg='#ecf0f1')
+            # Apply dark mode to more elements
+            self.style.configure('Config.TLabelframe', background='#34495e', foreground='#ecf0f1')
+            self.style.configure('Config.TLabelframe.Label', foreground='#ecf0f1')
+            self.style.configure('Title.TLabel', foreground='#ecf0f1')
+            self.style.configure('Header.TFrame', background='#1f618d')
         else:
             self.root.configure(bg='#f0f0f0')
             self.summary_text.configure(bg='#ffffff', fg='#2c3e50')
+            # Reset to light mode
+            self.style.configure('Config.TLabelframe', background='#f8f9fa', foreground='#2c3e50')
+            self.style.configure('Config.TLabelframe.Label', foreground='#2c3e50')
+            self.style.configure('Title.TLabel', foreground='#2c3e50')
+            self.style.configure('Header.TFrame', background='#3498db')
 
     def toggle_custom_ticker(self):
         """Toggle between predefined ticker dropdown and custom ticker entry."""
