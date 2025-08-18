@@ -1,7 +1,7 @@
 # jse2.py
-# Global Index Monthly Return Analyzer (Version 2.7)
+# Global Index Monthly Return Analyzer (Version 2.8)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
-# plain-English summary, and October forecast with fallback for pmdarima errors
+# plain-English summary, and upcoming month forecast with fallback for pmdarima errors
 
 import yfinance as yf
 import pandas as pd
@@ -73,7 +73,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.7"
+    VERSION = "2.8"
 
     def __init__(self):
         self.root = tk.Tk()
@@ -924,7 +924,7 @@ class JSEAnalyzer:
             self.status_var.set("❌ Statistical tests failed")
 
     def run_ml_analysis(self):
-        """Run advanced machine learning analysis with PCA, GMM, Isolation Forest, cluster visualization, and October forecast."""
+        """Run advanced machine learning analysis with PCA, GMM, Isolation Forest, cluster visualization, and upcoming month forecast."""
         if self.pivot is None:
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
@@ -1003,26 +1003,30 @@ class JSEAnalyzer:
             variance_text = f"We simplified the data into two main patterns, capturing {explained_variance:.2%} of the variation in monthly returns, risk, and positive performance. "
             variance_text += "This means the scatter plot below shows most of the key trends reliably." if explained_variance > 0.8 else "This means some patterns may not be fully captured in the plot."
             results += variance_text + "\n"
-            results += f"The analysis grouped the 12 months into {optimal_k} clusters based on similar return and risk profiles. For example, months like February may group together if they often have strong returns, while volatile months like October may form a separate group.\n"
+            results += f"The analysis grouped the 12 months into {optimal_k} clusters based on similar return and risk profiles. For example, months like February may group together if they often have strong returns, while volatile months like September may form a separate group.\n"
             if len(np.where(anomalies == -1)[0]) > 0:
                 anomaly_months = [self.months[i] for i in np.where(anomalies == -1)[0]]
                 results += f"Some months, like {', '.join(anomaly_months)}, stand out as unusual due to their unique return or risk patterns, possibly indicating higher volatility or significant market events.\n"
             else:
                 results += "No months were flagged as highly unusual, suggesting consistent patterns across the year.\n"
 
-            # October Forecast using ARIMA
-            results += "\nOCTOBER FORECAST:\n"
+            # Upcoming Month Forecast using ARIMA
+            results += "\nUPCOMING MONTH FORECAST:\n"
             results += "-" * 40 + "\n"
             try:
                 # Prepare data for ARIMA
                 returns = self.monthly_ret.to_frame()
-                # Determine forecast date
+                # Determine forecast date (next month)
                 end_date = pd.to_datetime(self.end_date)
-                forecast_year = end_date.year + 1 if end_date.month >= 10 else end_date.year
-                forecast_date = pd.to_datetime(f"{forecast_year}-10-31")
-                steps = (forecast_date.year - returns.index[-1].year) * 12 + (forecast_date.month - returns.index[-1].month)
+                current_year = end_date.year
+                current_month = end_date.month
+                forecast_month = current_month + 1 if current_month < 12 else 1
+                forecast_year = current_year if current_month < 12 else current_year + 1
+                forecast_month_name = self.months[forecast_month - 1]
+                forecast_date = pd.to_datetime(f"{forecast_year}-{forecast_month:02d}-28")  # Approximate end of month
+                steps = (forecast_year - returns.index[-1].year) * 12 + (forecast_month - returns.index[-1].month)
                 if steps <= 0:
-                    steps = 12  # Ensure at least one year ahead
+                    steps = 1  # Ensure at least one step ahead
 
                 if PMDARIMA_AVAILABLE:
                     # Use auto_arima to select optimal order
@@ -1042,16 +1046,16 @@ class JSEAnalyzer:
                 arima_fit = arima_model.fit()
                 # Forecast
                 forecast = arima_fit.get_forecast(steps=steps)
-                forecast_mean = forecast.predicted_mean[-1] * 100
+                forecast_mean = forecast.predicted_mean.iloc[-1] * 100
                 conf_int = forecast.conf_int(alpha=0.05).iloc[-1] * 100
-                results += f"Predicted return for October {forecast_year}: {forecast_mean:.2f}% (95% CI: {conf_int.iloc[0]:.2f}% to {conf_int.iloc[1]:.2f}%)\n"
+                results += f"Predicted return for {forecast_month_name} {forecast_year}: {forecast_mean:.2f}% (95% CI: {conf_int.iloc[0]:.2f}% to {conf_int.iloc[1]:.2f}%)\n"
                 # Project forecast into PCA space
-                october_stats = np.array([[forecast_mean / 100, self.pivot[10].std(), (self.pivot[10] > 0).sum() / self.pivot[10].count()]])
-                october_scaled = scaler.transform(october_stats)
-                october_pca = pca.transform(october_scaled)[0]
+                forecast_stats = np.array([[forecast_mean / 100, self.pivot[forecast_month].std(), (self.pivot[forecast_month] > 0).sum() / self.pivot[forecast_month].count()]])
+                forecast_scaled = scaler.transform(forecast_stats)
+                forecast_pca = pca.transform(forecast_scaled)[0]
             except Exception as e:
                 results += f"Forecasting failed: {str(e)}\n"
-                october_pca = None
+                forecast_pca = None
 
             ml_text.insert(1.0, results)
 
@@ -1069,10 +1073,10 @@ class JSEAnalyzer:
             if len(anomaly_indices) > 0:
                 ax4.scatter(features_reduced[anomaly_indices, 0], features_reduced[anomaly_indices, 1],
                            s=200, marker='x', c='red', label='Anomalies', linewidths=2)
-            # Plot forecasted October
-            if october_pca is not None:
-                ax4.scatter(october_pca[0], october_pca[1], s=200, marker='*', c='purple',
-                           label=f'Oct {forecast_year} Forecast', linewidths=2)
+            # Plot forecasted month
+            if forecast_pca is not None:
+                ax4.scatter(forecast_pca[0], forecast_pca[1], s=200, marker='*', c='purple',
+                           label=f'{forecast_month_name} {forecast_year} Forecast', linewidths=2)
             for i, month in enumerate(self.months):
                 ax4.annotate(month, (features_reduced[i, 0], features_reduced[i, 1]),
                             xytext=(5, 5), textcoords='offset points', fontsize=9, fontweight='bold',
