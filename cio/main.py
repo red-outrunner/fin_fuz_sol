@@ -1,213 +1,317 @@
-import pandas as pd
 import numpy as np
-import tkinter as tk
-from tkinter import filedialog
-import matplotlib.pyplot as plt
-import seaborn as sns
+import pandas as pd
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+import random
 
-def read_data():
+# --- 1. Client Profile Analysis ---
+class ClientProfile:
     """
-    Read portfolio data from CSV or Excel file selected by user
-    Returns a pandas DataFrame
+    Analyzes and quantifies a client's investment profile.
     """
-    # Create root window
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
-    
-    file_path = filedialog.askopenfilename(
-        title="Select Portfolio File",
-        filetypes=[
-            ("CSV files", "*.csv"),
-            ("Excel files", "*.xlsx"),
-            ("All files", "*.*")
-        ]
-    )
-    
-    # Destroy the root window
-    root.destroy()
-    
-    if not file_path:
-        raise FileNotFoundError("No file selected")
-    
-    # Read file based on extension
-    if file_path.endswith('.csv'):
-        df = pd.read_csv(file_path)
-    elif file_path.endswith('.xlsx'):
-        df = pd.read_excel(file_path)
-    else:
-        raise ValueError("Unsupported file format. Please use CSV or Excel.")
-    
-    # Validate required columns
-    required_columns = ['Asset Name', 'Type', 'Value (R)']
-    if not all(col in df.columns for col in required_columns):
-        raise ValueError(f"Missing required columns. Expected: {required_columns}")
-    
-    return df
-
-def calculate_allocation(df):
-    """
-    Group assets by type and calculate total per category
-    Calculate portfolio total and % allocation per category
-    """
-    # Group by type and sum values
-    allocation = df.groupby('Type')['Value (R)'].sum().reset_index()
-    
-    # Calculate total portfolio value
-    total_value = allocation['Value (R)'].sum()
-    
-    # Calculate percentage allocation
-    allocation['Percentage'] = (allocation['Value (R)'] / total_value * 100).round(2)
-    
-    return allocation, total_value
-
-def calculate_drift(allocation, targets={ 'Income': 40, 'Equity': 40, 'Alternative': 20 }):
-    """
-    Compare with target allocation and compute drift
-    """
-    # Merge with target allocations
-    target_df = pd.DataFrame(list(targets.items()), columns=['Type', 'Target'])
-    drift_df = pd.merge(allocation, target_df, on='Type', how='right')
-    drift_df['Drift'] = drift_df['Percentage'] - drift_df['Target']
-    drift_df['Drift'] = drift_df['Drift'].round(2)
-    
-    return drift_df
-
-def suggest_rebalance(drift_df, new_capital, total_value):
-    """
-    Recommend allocation of new capital to minimize drift
-    """
-    # Calculate the ideal allocation amounts
-    targets = dict(zip(drift_df['Type'], drift_df['Target']))
-    ideal_allocations = {k: (v/100) * (total_value + new_capital) for k, v in targets.items()}
-    
-    # Calculate current allocations
-    current_allocations = dict(zip(drift_df['Type'], drift_df['Value (R)']))
-    
-    # Calculate how much to add to each category
-    additional_allocations = {}
-    for category in targets.keys():
-        additional_allocations[category] = max(0, ideal_allocations[category] - current_allocations.get(category, 0))
-    
-    # Normalize to ensure the sum equals new_capital
-    total_suggested = sum(additional_allocations.values())
-    if total_suggested > 0:
-        adjustment_factor = new_capital / total_suggested
-        for category in additional_allocations:
-            additional_allocations[category] *= adjustment_factor
-    
-    # Round to nearest whole number
-    for category in additional_allocations:
-        additional_allocations[category] = round(additional_allocations[category])
-    
-    return additional_allocations
-
-def print_summary(df, allocation, drift_df, new_capital, rebalance_suggestion, total_value):
-    """
-    Print a summary of the portfolio analysis
-    """
-    print("="*60)
-    print("PORTFOLIO ALLOCATION ANALYSIS")
-    print("="*60)
-    
-    print(f"\nTotal Portfolio Value: R{total_value:,.2f}")
-    print(f"New Capital to Allocate: R{new_capital:,.2f}")
-    print(f"Total Value After Allocation: R{total_value + new_capital:,.2f}")
-    
-    print("\nCurrent vs Target Allocation:")
-    print("-" * 50)
-    for _, row in drift_df.iterrows():
-        status = "Overweight" if row['Drift'] > 0 else "Underweight" if row['Drift'] < 0 else "On Target"
-        print(f"{row['Type']:>12}: {row['Percentage']:>6.2f}% (Target: {row['Target']:>6.2f}%) [{status}]")
-    
-    print("\nSuggested Capital Allocation:")
-    print("-" * 50)
-    for category, amount in rebalance_suggestion.items():
-        print(f"{category:>12}: R{amount:>8,}")
-    
-    print("\nDetailed Asset Holdings:")
-    print("-" * 50)
-    for asset_type in df['Type'].unique():
-        print(f"\n{asset_type}:")
-        assets = df[df['Type'] == asset_type]
-        for _, asset in assets.iterrows():
-            print(f"  - {asset['Asset Name']}: R{asset['Value (R)']:,.2f}")
-
-def plot_allocation(allocation, drift_df, rebalance_suggestion, total_value, new_capital):
-    """
-    Create pie charts showing before and after rebalancing
-    """
-    # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 7))
-    
-    # Before rebalancing
-    ax1.pie(allocation['Value (R)'], labels=allocation['Type'], autopct='%1.1f%%', startangle=90)
-    ax1.set_title(f'Current Allocation (R{total_value:,.0f})')
-    
-    # After rebalancing
-    # Calculate new values after adding suggested capital
-    new_values = []
-    types = []
-    for _, row in drift_df.iterrows():
-        types.append(row['Type'])
-        current_value = row['Value (R)']
-        additional = rebalance_suggestion.get(row['Type'], 0)
-        new_values.append(current_value + additional)
-    
-    ax2.pie(new_values, labels=types, autopct='%1.1f%%', startangle=90)
-    ax2.set_title(f'Allocation After Adding R{new_capital:,.0f}')
-    
-    plt.tight_layout()
-    plt.show()
-
-def get_custom_targets():
-    """
-    Allow user to input custom allocation targets
-    """
-    print("Enter custom allocation targets (must sum to 100%):")
-    income = float(input("Income target (%): "))
-    equity = float(input("Equity target (%): "))
-    alternative = float(input("Alternative target (%): "))
-    
-    if abs(income + equity + alternative - 100) > 0.01:
-        print("Warning: Targets do not sum to 100%. Using default 40/40/20 allocation.")
-        return {'Income': 40, 'Equity': 40, 'Alternative': 20}
-    
-    return {'Income': income, 'Equity': equity, 'Alternative': alternative}
-
-def main():
-    try:
-        # Read data
-        df = read_data()
+    def __init__(self, risk_tolerance, investment_horizon, liquidity_needs, income, portfolio_preferences, sector_preferences):
+        """
+        Initializes the client profile.
         
-        # Calculate allocation
-        allocation, total_value = calculate_allocation(df)
-        
-        # Get targets (custom or default)
-        use_custom = input("Use custom allocation targets? (y/n): ").lower().startswith('y')
-        if use_custom:
-            targets = get_custom_targets()
-        else:
-            targets = {'Income': 40, 'Equity': 40, 'Alternative': 20}
-        
-        # Calculate drift
-        drift_df = calculate_drift(allocation, targets)
-        
-        # Get new capital amount
-        new_capital = float(input("Enter new capital to allocate (R): "))
-        
-        # Suggest rebalance
-        rebalance_suggestion = suggest_rebalance(drift_df, new_capital, total_value)
-        
-        # Print summary
-        print_summary(df, allocation, drift_df, new_capital, rebalance_suggestion, total_value)
-        
-        # Plot allocation
-        plot = input("\nShow pie charts? (y/n): ").lower().startswith('y')
-        if plot:
-            plot_allocation(allocation, drift_df, rebalance_suggestion, total_value, new_capital)
+        Args:
+            risk_tolerance (str): 'low', 'medium', 'high'
+            investment_horizon (int): Years
+            liquidity_needs (str): 'low', 'medium', 'high'
+            income (float): Annual income
+            portfolio_preferences (list): e.g., ['growth', 'value', 'ethical']
+            sector_preferences (list): e.g., ['tech', 'healthcare', 'energy']
+        """
+        self.risk_tolerance = risk_tolerance
+        self.investment_horizon = investment_horizon
+        self.liquidity_needs = liquidity_needs
+        self.income = income
+        self.portfolio_preferences = portfolio_preferences
+        self.sector_preferences = sector_preferences
+        self.risk_score = self._calculate_risk_score()
+
+    def _calculate_risk_score(self):
+        """
+        Converts client's qualitative risk tolerance into a numerical score.
+        A higher score means a higher tolerance for risk.
+        """
+        score = 0
+        # Risk Tolerance Mapping
+        if self.risk_tolerance == 'high':
+            score += 40
+        elif self.risk_tolerance == 'medium':
+            score += 20
+        else: # low
+            score += 5
+
+        # Investment Horizon Impact
+        if self.investment_horizon > 10: # Long-term
+            score += 20
+        elif self.investment_horizon > 5: # Medium-term
+            score += 10
+
+        # Liquidity Needs Impact (inverse relationship)
+        if self.liquidity_needs == 'low':
+            score += 15
+        elif self.liquidity_needs == 'medium':
+            score += 5
             
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        # Income can also play a role, higher income might support more risk
+        if self.income > 150000:
+            score += 10
 
-if __name__ == "__main__":
-    main()
+        # Normalize score to be between 0 and 100
+        return min(max(score, 0), 100)
+
+    def get_profile(self):
+        """Returns a summary of the client's profile."""
+        return {
+            "risk_tolerance": self.risk_tolerance,
+            "investment_horizon": self.investment_horizon,
+            "liquidity_needs": self.liquidity_needs,
+            "income": self.income,
+            "portfolio_preferences": self.portfolio_preferences,
+            "sector_preferences": self.sector_preferences,
+            "risk_score": self.risk_score
+        }
+
+# --- 2. Market Data Ingestion & Processing ---
+class MarketData:
+    """
+    Handles fetching and processing of market data.
+    In a real application, this would connect to APIs like Alpha Vantage, Bloomberg, or Reuters.
+    For this example, we'll simulate the data.
+    """
+    def __init__(self, assets):
+        self.assets = assets
+        self.historical_data = self._fetch_historical_data()
+        self.macro_indicators = self._fetch_macro_indicators()
+
+    def _fetch_historical_data(self):
+        """Simulates fetching historical price data for a list of assets."""
+        print("Fetching historical market data...")
+        data = {}
+        for asset in self.assets:
+            # Simulate daily prices for the last 3 years
+            dates = pd.date_range(end=pd.Timestamp.today(), periods=365 * 3)
+            # Simulate price movements with some randomness
+            price_movements = np.random.randn(len(dates)).cumsum()
+            start_price = random.uniform(50, 500)
+            prices = start_price + price_movements
+            data[asset] = pd.Series(prices, index=dates)
+        return pd.DataFrame(data)
+
+    def _fetch_macro_indicators(self):
+        """Simulates fetching macroeconomic indicators."""
+        print("Fetching macroeconomic indicators...")
+        dates = self.historical_data.index
+        gdp_growth = pd.Series(np.random.uniform(1.5, 3.5, size=len(dates)), index=dates)
+        inflation_rate = pd.Series(np.random.uniform(1.0, 4.0, size=len(dates)), index=dates)
+        return pd.DataFrame({'GDP_Growth': gdp_growth, 'Inflation': inflation_rate})
+
+    def get_data(self):
+        return self.historical_data, self.macro_indicators
+
+# --- 3. Predictive Modeling & Forecasting ---
+class PredictiveModel:
+    """
+    Forecasts future asset performance using predictive models.
+    This example uses a simple Linear Regression model.
+    Real-world models: ARIMA, GARCH, LSTMs, Gradient Boosting.
+    """
+    def __init__(self, data):
+        self.data = data
+        self.models = {}
+
+    def train(self):
+        """Trains a model for each asset."""
+        print("Training predictive models...")
+        for asset in self.data.columns:
+            df = self.data[[asset]].copy()
+            # Feature engineering: use lagged prices to predict future price
+            df['target'] = df[asset].shift(-30) # Predict 30 days ahead
+            df.dropna(inplace=True)
+            
+            X = df[[asset]]
+            y = df['target']
+            
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            model = LinearRegression()
+            model.fit(X_train, y_train)
+            self.models[asset] = model
+            print(f"  - Model for {asset} trained. Score: {model.score(X_test, y_test):.2f}")
+
+    def forecast(self):
+        """Generates future return projections."""
+        print("Forecasting future asset performance...")
+        forecasts = {}
+        for asset, model in self.models.items():
+            current_price = self.data[asset].iloc[-1]
+            predicted_price = model.predict([[current_price]])[0]
+            expected_return = (predicted_price - current_price) / current_price
+            
+            # Simulate volatility (standard deviation of daily returns)
+            volatility = self.data[asset].pct_change().std() * np.sqrt(252) # Annualized
+            
+            forecasts[asset] = {
+                "expected_return": expected_return,
+                "volatility": volatility,
+                "current_price": current_price
+            }
+        return forecasts
+
+# --- 4. Portfolio Optimization ---
+class PortfolioOptimizer:
+    """
+    Optimizes portfolio allocation based on client profile and forecasts.
+    This example uses a simple risk-based allocation.
+    Real-world models: Mean-Variance Optimization, Black-Litterman, Monte Carlo Simulation.
+    """
+    def __init__(self, client_profile, forecasts):
+        self.client_profile = client_profile
+        self.forecasts = forecasts
+
+    def optimize(self):
+        """
+        Determines the optimal asset allocation.
+        """
+        print("Optimizing portfolio allocation...")
+        risk_score = self.client_profile.risk_score
+        
+        # Simple allocation strategy based on risk score
+        # Higher risk score -> more allocation to higher return/volatility assets
+        
+        # Categorize assets by expected return
+        sorted_assets = sorted(self.forecasts.items(), key=lambda x: x[1]['expected_return'], reverse=True)
+        
+        allocations = {}
+        
+        # Define asset classes based on risk/return profile (simplified)
+        high_risk_assets = [a[0] for a in sorted_assets[:2]]
+        medium_risk_assets = [a[0] for a in sorted_assets[2:4]]
+        low_risk_assets = [a[0] for a in sorted_assets[4:]]
+
+        # Allocate based on risk score
+        if risk_score > 70: # Aggressive
+            allocations.update({asset: 0.30 for asset in high_risk_assets})
+            allocations.update({asset: 0.15 for asset in medium_risk_assets})
+            allocations.update({asset: 0.05 for asset in low_risk_assets})
+        elif risk_score > 40: # Moderate
+            allocations.update({asset: 0.15 for asset in high_risk_assets})
+            allocations.update({asset: 0.25 for asset in medium_risk_assets})
+            allocations.update({asset: 0.10 for asset in low_risk_assets})
+        else: # Conservative
+            allocations.update({asset: 0.05 for asset in high_risk_assets})
+            allocations.update({asset: 0.15 for asset in medium_risk_assets})
+            allocations.update({asset: 0.30 for asset in low_risk_assets})
+            
+        # Normalize to ensure sum is 100%
+        total_allocation = sum(allocations.values())
+        final_allocations = {asset: (alloc / total_allocation) for asset, alloc in allocations.items()}
+        
+        return final_allocations
+
+# --- 5. Main Virtual CIO Orchestrator ---
+class VirtualCIO:
+    """
+    The main class that orchestrates the entire process.
+    """
+    def __init__(self, client_info, market_assets):
+        self.client_info = client_info
+        self.market_assets = market_assets
+
+    def generate_recommendations(self):
+        """
+        Runs the full pipeline from client analysis to portfolio recommendation.
+        """
+        print("--- Starting Virtual CIO Analysis ---")
+        
+        # 1. Analyze Client Profile
+        client = ClientProfile(**self.client_info)
+        profile = client.get_profile()
+        print(f"\nAnalyzed Client Profile. Risk Score: {profile['risk_score']}")
+        
+        # 2. Get Market Data
+        market = MarketData(self.market_assets)
+        hist_data, _ = market.get_data()
+        
+        # 3. Train Model and Forecast
+        model = PredictiveModel(hist_data)
+        model.train()
+        forecasts = model.forecast()
+        
+        # 4. Optimize Portfolio
+        optimizer = PortfolioOptimizer(client, forecasts)
+        allocations = optimizer.optimize()
+        
+        # 5. Generate Output
+        portfolio_return = sum(allocations[asset] * forecasts[asset]['expected_return'] for asset in allocations)
+        portfolio_volatility = sum(allocations[asset] * forecasts[asset]['volatility'] for asset in allocations) # Simplified
+        
+        recommendations = {
+            "client_profile": profile,
+            "suggested_investments": {
+                asset: {
+                    "allocation_percentage": f"{allocations[asset]*100:.2f}%",
+                    "expected_return": f"{forecasts[asset]['expected_return']*100:.2f}%",
+                    "volatility": f"{forecasts[asset]['volatility']*100:.2f}%"
+                } for asset in allocations
+            },
+            "risk_adjusted_projections": {
+                "projected_annual_return": f"{portfolio_return*100:.2f}%",
+                "projected_annual_volatility": f"{portfolio_volatility*100:.2f}%"
+            },
+            "alerts": self._generate_alerts(forecasts)
+        }
+        
+        print("\n--- Recommendations Generated ---")
+        return recommendations
+
+    def _generate_alerts(self, forecasts):
+        """Generates alerts based on market conditions."""
+        alerts = []
+        high_volatility_assets = [asset for asset, data in forecasts.items() if data['volatility'] > 0.4]
+        if high_volatility_assets:
+            alerts.append(f"High volatility detected in: {', '.join(high_volatility_assets)}. Consider reviewing exposure.")
+        
+        # Example of a trend shift alert
+        # In a real scenario, this would compare recent performance to historical trends
+        if random.choice([True, False]):
+             alerts.append("Emerging trend detected in the Technology sector. Potential for upward momentum.")
+
+        if not alerts:
+            alerts.append("Market conditions appear stable. No immediate alerts.")
+            
+        return alerts
+
+# --- Example Usage ---
+if __name__ == '__main__':
+    # 1. Define Client Input
+    client_input = {
+        "risk_tolerance": "medium",
+        "investment_horizon": 15,
+        "liquidity_needs": "low",
+        "income": 120000,
+        "portfolio_preferences": ["growth", "ethical"],
+        "sector_preferences": ["tech", "healthcare"]
+    }
+    
+    # 2. Define Market Universe
+    # In a real scenario, this would be a much larger, dynamic list
+    market_universe = [
+        'AAPL', 'GOOGL', 'MSFT', # Tech
+        'JNJ', 'PFE', # Healthcare
+        'XOM', # Energy
+        'VTI', # Total Stock Market ETF
+        'BND'  # Total Bond Market ETF
+    ]
+    
+    # 3. Instantiate and Run the Virtual CIO
+    virtual_cio = VirtualCIO(client_info=client_input, market_assets=market_universe)
+    final_recommendations = virtual_cio.generate_recommendations()
+    
+    # 4. Print the Output
+    import json
+    print("\nFinal Investment Recommendations:")
+    print(json.dumps(final_recommendations, indent=2))
+
