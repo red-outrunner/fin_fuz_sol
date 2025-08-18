@@ -1,7 +1,7 @@
 # jse2.py
-# Global Index Monthly Return Analyzer (Version 2.6)
+# Global Index Monthly Return Analyzer (Version 2.7)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
-# plain-English summary, and October forecast using ARIMA
+# plain-English summary, and October forecast with fallback for pmdarima errors
 
 import yfinance as yf
 import pandas as pd
@@ -32,10 +32,17 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 from sklearn.ensemble import IsolationForest
-from pmdarima import auto_arima
 from statsmodels.tsa.arima.model import ARIMA
 import warnings
 import re
+
+# Try importing pmdarima, with fallback if it fails
+try:
+    from pmdarima import auto_arima
+    PMDARIMA_AVAILABLE = True
+except (ImportError, ValueError) as e:
+    PMDARIMA_AVAILABLE = False
+    print(f"Warning: Failed to import pmdarima ({str(e)}). Using fixed-order ARIMA for forecasting.")
 
 warnings.filterwarnings('ignore')
 matplotlib.use('TkAgg')
@@ -66,7 +73,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.6"
+    VERSION = "2.7"
 
     def __init__(self):
         self.root = tk.Tk()
@@ -1009,21 +1016,31 @@ class JSEAnalyzer:
             try:
                 # Prepare data for ARIMA
                 returns = self.monthly_ret.to_frame()
-                # Use auto_arima to select optimal order
-                model = auto_arima(returns['ret'], seasonal=True, m=12, suppress_warnings=True,
-                                 start_p=0, start_q=0, max_p=3, max_q=3, start_P=0, start_Q=0, max_P=2, max_Q=2)
-                arima_order = model.order
-                seasonal_order = model.seasonal_order
-                # Fit ARIMA model
-                arima_model = ARIMA(returns['ret'], order=arima_order, seasonal_order=seasonal_order)
-                arima_fit = arima_model.fit()
-                # Forecast for next October
+                # Determine forecast date
                 end_date = pd.to_datetime(self.end_date)
                 forecast_year = end_date.year + 1 if end_date.month >= 10 else end_date.year
                 forecast_date = pd.to_datetime(f"{forecast_year}-10-31")
                 steps = (forecast_date.year - returns.index[-1].year) * 12 + (forecast_date.month - returns.index[-1].month)
                 if steps <= 0:
                     steps = 12  # Ensure at least one year ahead
+
+                if PMDARIMA_AVAILABLE:
+                    # Use auto_arima to select optimal order
+                    model = auto_arima(returns['ret'], seasonal=True, m=12, suppress_warnings=True,
+                                     start_p=0, start_q=0, max_p=3, max_q=3, start_P=0, start_Q=0, max_P=2, max_Q=2)
+                    arima_order = model.order
+                    seasonal_order = model.seasonal_order
+                    results += f"ARIMA Model: Order={arima_order}, Seasonal Order={seasonal_order}\n"
+                else:
+                    # Fallback to fixed-order ARIMA(1,1,1)(1,1,1)[12]
+                    arima_order = (1, 1, 1)
+                    seasonal_order = (1, 1, 1, 12)
+                    results += f"ARIMA Model: Using fallback order=(1,1,1), seasonal_order=(1,1,1,12) due to pmdarima unavailability\n"
+
+                # Fit ARIMA model
+                arima_model = ARIMA(returns['ret'], order=arima_order, seasonal_order=seasonal_order)
+                arima_fit = arima_model.fit()
+                # Forecast
                 forecast = arima_fit.get_forecast(steps=steps)
                 forecast_mean = forecast.predicted_mean[-1] * 100
                 conf_int = forecast.conf_int(alpha=0.05).iloc[-1] * 100
