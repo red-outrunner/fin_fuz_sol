@@ -1,6 +1,6 @@
 # jse2.py
-# Global Index Monthly Return Analyzer (Version 2.3)
-# Enhanced ML analysis with PCA, GMM, and Isolation Forest
+# Global Index Monthly Return Analyzer (Version 2.4)
+# Enhanced ML analysis with PCA, GMM, Isolation Forest, and cluster visualization
 
 import yfinance as yf
 import pandas as pd
@@ -63,7 +63,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.3"
+    VERSION = "2.4"
 
     def __init__(self):
         self.root = tk.Tk()
@@ -244,7 +244,7 @@ class JSEAnalyzer:
         ml_btn = ttk.Button(button_row, text="🤖 ML Analysis",
                            command=self.run_ml_analysis, style='Secondary.TButton')
         ml_btn.pack(side=tk.LEFT, padx=(0, 10))
-        Tooltip(ml_btn, "Perform advanced machine learning analysis on monthly returns.")
+        Tooltip(ml_btn, "Perform advanced machine learning analysis with cluster visualization.")
         stats_btn = ttk.Button(button_row, text="🧮 Significance Test",
                               command=self.run_statistical_tests, style='Secondary.TButton')
         stats_btn.pack(side=tk.LEFT)
@@ -254,6 +254,7 @@ class JSEAnalyzer:
         notebook_frame = ttk.Frame(main_container)
         notebook_frame.pack(fill=tk.BOTH, expand=True)
         self.notebook = ttk.Notebook(notebook_frame, padding=5)
+        self.notebook.pack(fill=tk.BOTH, preset=True)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
         # Tabs
@@ -317,7 +318,7 @@ class JSEAnalyzer:
             self.root.configure(bg='#f0f0f0')
             self.summary_text.configure(bg='#ffffff', fg='#2c3e50')
             self.style.configure('Config.TLabelframe', background='#f8f9fa', foreground='#2c3e50')
-            self.style.configure('Config.TLabelframe.Label', foreground='#2c3e50')
+            self.style.configure('Config.TLabelframe.Label', foreground='#2c3e0')
             self.style.configure('Title.TLabel', foreground='#2c3e50')
             self.style.configure('Header.TFrame', background='#3498db')
 
@@ -914,15 +915,23 @@ class JSEAnalyzer:
             self.status_var.set("❌ Statistical tests failed")
 
     def run_ml_analysis(self):
-        """Run advanced machine learning analysis with PCA, GMM, and Isolation Forest."""
+        """Run advanced machine learning analysis with PCA, GMM, Isolation Forest, and cluster visualization."""
         if self.pivot is None:
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
         try:
             for widget in self.ml_frame.winfo_children():
                 widget.destroy()
-            ml_text = tk.Text(self.ml_frame, wrap=tk.WORD, font=('Consolas', 10))
-            ml_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+            # Create frame for text and plot
+            ml_frame_container = ttk.Frame(self.ml_frame)
+            ml_frame_container.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            ml_text = tk.Text(ml_frame_container, wrap=tk.WORD, font=('Consolas', 10), height=15)
+            ml_text.pack(fill=tk.X, padx=5, pady=(0, 5))
+            scrollbar = ttk.Scrollbar(ml_frame_container, orient=tk.VERTICAL, command=ml_text.yview)
+            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            ml_text.configure(yscrollcommand=scrollbar.set)
+
             results = "🤖 ADVANCED MACHINE LEARNING ANALYSIS\n"
             results += "=" * 50 + "\n"
 
@@ -937,7 +946,7 @@ class JSEAnalyzer:
             features_scaled = scaler.fit_transform(monthly_features[['avg_return', 'std_dev', 'positive_rate']])
 
             # PCA for dimensionality reduction
-            pca = PCA(n_components=2)  # Reduce to 2 components
+            pca = PCA(n_components=2)
             features_reduced = pca.fit_transform(features_scaled)
             explained_variance = pca.explained_variance_ratio_.sum()
             results += f"PCA: Reduced to 2 components, explaining {explained_variance:.2%} of variance\n"
@@ -948,7 +957,7 @@ class JSEAnalyzer:
             for k in range(1, 6):
                 gmm = GaussianMixture(n_components=k, random_state=42)
                 gmm.fit(features_reduced)
-                inertias.append(-gmm.score(features_reduced))  # Negative log-likelihood as proxy
+                inertias.append(-gmm.score(features_reduced))  # Negative log-likelihood
             optimal_k = np.argmin(np.diff(inertias)) + 2
             results += f"Optimal number of clusters (elbow method): {optimal_k}\n"
 
@@ -966,7 +975,6 @@ class JSEAnalyzer:
                 results += f"  Avg Return: {cluster_months['avg_return'].mean() * 100:+.2f}%\n"
                 results += f"  Avg Risk: {cluster_months['std_dev'].mean() * 100:.2f}%\n"
                 results += f"  Avg Pos Rate: {cluster_months['positive_rate'].mean() * 100:.1f}%\n"
-                # Report cluster probabilities
                 cluster_probs = probabilities[monthly_features['cluster'] == cluster_id].mean(axis=0)
                 results += f"  Cluster Probabilities: {', '.join([f'{p:.2f}' for p in cluster_probs])}\n"
             results += "\nISOLATION FOREST ANOMALY DETECTION:\n"
@@ -980,7 +988,76 @@ class JSEAnalyzer:
                 else:
                     results += f"{month}: Anomaly Score = {score:.3f}\n"
             ml_text.insert(1.0, results)
-            self.status_var.set("🤖 Advanced ML analysis completed")
+
+            # Cluster visualization
+            ml_plot_frame = ttk.Frame(ml_frame_container)
+            ml_plot_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            fig4, ax4 = plt.subplots(figsize=(12, 6))
+            colors = plt.cm.Set1(np.linspace(0, 1, optimal_k))
+            for cluster_id in range(optimal_k):
+                cluster_data = features_reduced[monthly_features['cluster'] == cluster_id]
+                ax4.scatter(cluster_data[:, 0], cluster_data[:, 1], s=150, alpha=0.7,
+                           c=[colors[cluster_id]], label=f'Cluster {cluster_id + 1}')
+            # Highlight anomalies
+            anomaly_indices = np.where(anomalies == -1)[0]
+            if len(anomaly_indices) > 0:
+                ax4.scatter(features_reduced[anomaly_indices, 0], features_reduced[anomaly_indices, 1],
+                           s=200, marker='x', c='red', label='Anomalies', linewidths=2)
+            for i, month in enumerate(self.months):
+                ax4.annotate(month, (features_reduced[i, 0], features_reduced[i, 1]),
+                            xytext=(5, 5), textcoords='offset points', fontsize=9, fontweight='bold',
+                            bbox=dict(boxstyle="round,pad=0.2", fc="white", alpha=0.7))
+            ax4.set_xlabel('Principal Component 1', fontsize=11, fontweight='bold')
+            ax4.set_ylabel('Principal Component 2', fontsize=11, fontweight='bold')
+            ax4.set_title(f'Monthly Clusters in PCA Space for {self.ticker}\nPeriod: {self.start_year} to {self.end_date[:4]}',
+                         fontsize=12, fontweight='bold', pad=20)
+            ax4.grid(True, alpha=0.3, linestyle='--')
+            ax4.spines['top'].set_visible(False)
+            ax4.spines['right'].set_visible(False)
+            ax4.legend(loc='upper right', framealpha=0.9)
+            annot4 = ax4.annotate("", xy=(0,0), xytext=(10,10), textcoords="offset points",
+                                 bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1, alpha=0.9),
+                                 arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
+                                 fontsize=9)
+            annot4.set_visible(False)
+            def update_annot_ml(ind):
+                index = ind["ind"][0]
+                pos = features_reduced[index]
+                annot4.xy = pos
+                month_name = self.months[index]
+                cluster_id = monthly_features['cluster'].iloc[index]
+                prob = max(probabilities[index])
+                score = anomaly_scores[index]
+                status = "Outlier" if anomalies[index] == -1 else "Normal"
+                text = f"{month_name}\nCluster: {cluster_id + 1}\nProb: {prob:.2f}\nAnomaly Score: {score:.3f} ({status})"
+                annot4.set_text(text)
+                annot4.get_bbox_patch().set_alpha(0.9)
+            def hover_ml(event):
+                vis = annot4.get_visible()
+                if event.inaxes == ax4:
+                    for i in range(len(self.months)):
+                        cont = ax4.contains_point((event.xdata, event.ydata))
+                        if cont:
+                            update_annot_ml({"ind": [i]})
+                            annot4.set_visible(True)
+                            fig4.canvas.draw_idle()
+                            return
+                    scatter = ax4.collections[0]
+                    cont, ind = scatter.contains(event)
+                    if cont:
+                        update_annot_ml(ind)
+                        annot4.set_visible(True)
+                        fig4.canvas.draw_idle()
+                        return
+                if vis:
+                    annot4.set_visible(False)
+                    fig4.canvas.draw_idle()
+            fig4.canvas.mpl_connect("motion_notify_event", hover_ml)
+            canvas4 = FigureCanvasTkAgg(fig4, ml_plot_frame)
+            canvas4.draw()
+            canvas4.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+            self.status_var.set("🤖 Advanced ML analysis with visualization completed")
         except Exception as e:
             messagebox.showerror("Error", f"Error running ML analysis: {e}")
             self.status_var.set("❌ ML analysis failed")
