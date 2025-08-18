@@ -1,6 +1,6 @@
 # jse2.py
-# Global Index Monthly Return Analyzer (Version 2.2)
-# Enhanced UI with tooltips, improved dark mode, and better layout spacing
+# Global Index Monthly Return Analyzer (Version 2.3)
+# Enhanced ML analysis with PCA, GMM, and Isolation Forest
 
 import yfinance as yf
 import pandas as pd
@@ -28,6 +28,9 @@ from reportlab.lib import colors
 import matplotlib.patches as patches
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.mixture import GaussianMixture
+from sklearn.ensemble import IsolationForest
 import warnings
 import re
 
@@ -60,7 +63,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.2"
+    VERSION = "2.3"
 
     def __init__(self):
         self.root = tk.Tk()
@@ -131,7 +134,7 @@ class JSEAnalyzer:
         """Set up the main GUI components with improved layout and tooltips."""
         # Main container
         main_container = tk.Frame(self.root, bg='#f0f0f0')
-        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)  # Increased padding for better spacing
+        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Header with title
         header_frame = ttk.Frame(main_container, style='Header.TFrame')
@@ -147,7 +150,7 @@ class JSEAnalyzer:
 
         # Configuration frame
         config_frame = ttk.LabelFrame(main_container, text="⚙️ Configuration Panel",
-                                     style='Config.TLabelframe', padding="20")  # Increased padding
+                                     style='Config.TLabelframe', padding="20")
         config_frame.pack(fill=tk.X, pady=(0, 20))
 
         # Ticker selection row
@@ -241,7 +244,7 @@ class JSEAnalyzer:
         ml_btn = ttk.Button(button_row, text="🤖 ML Analysis",
                            command=self.run_ml_analysis, style='Secondary.TButton')
         ml_btn.pack(side=tk.LEFT, padx=(0, 10))
-        Tooltip(ml_btn, "Perform machine learning analysis on monthly returns.")
+        Tooltip(ml_btn, "Perform advanced machine learning analysis on monthly returns.")
         stats_btn = ttk.Button(button_row, text="🧮 Significance Test",
                               command=self.run_statistical_tests, style='Secondary.TButton')
         stats_btn.pack(side=tk.LEFT)
@@ -256,7 +259,6 @@ class JSEAnalyzer:
         # Tabs
         self.bar_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.bar_frame, text="📊 Average Returns")
-        # Add metric selection to bar chart frame
         bar_control_frame = ttk.Frame(self.bar_frame)
         bar_control_frame.pack(fill=tk.X, pady=(5, 0))
         bar_metric_label = ttk.Label(bar_control_frame, text="Metric:")
@@ -307,7 +309,6 @@ class JSEAnalyzer:
         if self.dark_mode.get():
             self.root.configure(bg='#2c3e50')
             self.summary_text.configure(bg='#34495e', fg='#ecf0f1')
-            # Apply dark mode to more elements
             self.style.configure('Config.TLabelframe', background='#34495e', foreground='#ecf0f1')
             self.style.configure('Config.TLabelframe.Label', foreground='#ecf0f1')
             self.style.configure('Title.TLabel', foreground='#ecf0f1')
@@ -315,7 +316,6 @@ class JSEAnalyzer:
         else:
             self.root.configure(bg='#f0f0f0')
             self.summary_text.configure(bg='#ffffff', fg='#2c3e50')
-            # Reset to light mode
             self.style.configure('Config.TLabelframe', background='#f8f9fa', foreground='#2c3e50')
             self.style.configure('Config.TLabelframe.Label', foreground='#2c3e50')
             self.style.configure('Title.TLabel', foreground='#2c3e50')
@@ -567,7 +567,6 @@ class JSEAnalyzer:
         chart_frame = ttk.Frame(self.bar_frame)
         chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         fig1, ax1 = plt.subplots(figsize=(12, 6))
-        # Select data based on metric
         metric_data = self.month_avg if self.bar_metric.get() == "Mean" else self.month_median
         metric_label = "Average" if self.bar_metric.get() == "Mean" else "Median"
         bars = ax1.bar(range(1, 13), metric_data*100, alpha=0.8, color='#3498db',
@@ -915,7 +914,7 @@ class JSEAnalyzer:
             self.status_var.set("❌ Statistical tests failed")
 
     def run_ml_analysis(self):
-        """Run machine learning analysis with dynamic cluster selection."""
+        """Run advanced machine learning analysis with PCA, GMM, and Isolation Forest."""
         if self.pivot is None:
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
@@ -924,7 +923,7 @@ class JSEAnalyzer:
                 widget.destroy()
             ml_text = tk.Text(self.ml_frame, wrap=tk.WORD, font=('Consolas', 10))
             ml_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            results = "🤖 MACHINE LEARNING ANALYSIS\n"
+            results = "🤖 ADVANCED MACHINE LEARNING ANALYSIS\n"
             results += "=" * 50 + "\n"
 
             # Prepare data
@@ -937,20 +936,28 @@ class JSEAnalyzer:
             scaler = StandardScaler()
             features_scaled = scaler.fit_transform(monthly_features[['avg_return', 'std_dev', 'positive_rate']])
 
-            # Elbow method to suggest optimal clusters
+            # PCA for dimensionality reduction
+            pca = PCA(n_components=2)  # Reduce to 2 components
+            features_reduced = pca.fit_transform(features_scaled)
+            explained_variance = pca.explained_variance_ratio_.sum()
+            results += f"PCA: Reduced to 2 components, explaining {explained_variance:.2%} of variance\n"
+            results += "-" * 40 + "\n"
+
+            # Elbow method for optimal clusters using GMM
             inertias = []
             for k in range(1, 6):
-                kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
-                kmeans.fit(features_scaled)
-                inertias.append(kmeans.inertia_)
-            optimal_k = np.argmin(np.diff(inertias)) + 2  # Simple heuristic
+                gmm = GaussianMixture(n_components=k, random_state=42)
+                gmm.fit(features_reduced)
+                inertias.append(-gmm.score(features_reduced))  # Negative log-likelihood as proxy
+            optimal_k = np.argmin(np.diff(inertias)) + 2
             results += f"Optimal number of clusters (elbow method): {optimal_k}\n"
 
-            # K-means clustering
-            kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
-            clusters = kmeans.fit_predict(features_scaled)
+            # Gaussian Mixture Model clustering
+            gmm = GaussianMixture(n_components=optimal_k, random_state=42)
+            clusters = gmm.fit_predict(features_reduced)
             monthly_features['cluster'] = clusters
-            results += f"MONTH CLUSTERING RESULTS (K-Means, k={optimal_k}):\n"
+            probabilities = gmm.predict_proba(features_reduced)
+            results += f"GMM CLUSTERING RESULTS (n_components={optimal_k}):\n"
             results += "-" * 40 + "\n"
             for cluster_id in range(optimal_k):
                 cluster_months = monthly_features[monthly_features['cluster'] == cluster_id]
@@ -959,17 +966,21 @@ class JSEAnalyzer:
                 results += f"  Avg Return: {cluster_months['avg_return'].mean() * 100:+.2f}%\n"
                 results += f"  Avg Risk: {cluster_months['std_dev'].mean() * 100:.2f}%\n"
                 results += f"  Avg Pos Rate: {cluster_months['positive_rate'].mean() * 100:.1f}%\n"
-            results += "POTENTIAL ANOMALIES:\n"
-            results += "-" * 25 + "\n"
-            distances = kmeans.transform(features_scaled)
-            min_distances = np.min(distances, axis=1)
-            anomaly_indices = np.argsort(min_distances)[-3:]
-            for idx in anomaly_indices:
-                month_name = self.months[int(monthly_features.iloc[idx]['month']) - 1]
-                distance = min_distances[idx]
-                results += f"{month_name}: Distance={distance:.3f}\n"
+                # Report cluster probabilities
+                cluster_probs = probabilities[monthly_features['cluster'] == cluster_id].mean(axis=0)
+                results += f"  Cluster Probabilities: {', '.join([f'{p:.2f}' for p in cluster_probs])}\n"
+            results += "\nISOLATION FOREST ANOMALY DETECTION:\n"
+            results += "-" * 40 + "\n"
+            iso_forest = IsolationForest(contamination=0.1, random_state=42)
+            anomalies = iso_forest.fit_predict(features_scaled)
+            anomaly_scores = -iso_forest.decision_function(features_scaled)
+            for i, (score, month) in enumerate(zip(anomaly_scores, self.months)):
+                if anomalies[i] == -1:
+                    results += f"{month}: Anomaly Score = {score:.3f} (Outlier)\n"
+                else:
+                    results += f"{month}: Anomaly Score = {score:.3f}\n"
             ml_text.insert(1.0, results)
-            self.status_var.set("🤖 ML analysis completed")
+            self.status_var.set("🤖 Advanced ML analysis completed")
         except Exception as e:
             messagebox.showerror("Error", f"Error running ML analysis: {e}")
             self.status_var.set("❌ ML analysis failed")
