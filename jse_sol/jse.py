@@ -1,6 +1,7 @@
 # jse2.py
-# Global Index Monthly Return Analyzer (Version 2.4)
+# Global Index Monthly Return Analyzer (Version 2.5)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, and cluster visualization
+# Fixed Tkinter pack error in setup_ui (preset -> expand)
 
 import yfinance as yf
 import pandas as pd
@@ -63,7 +64,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.4"
+    VERSION = "2.5"
 
     def __init__(self):
         self.root = tk.Tk()
@@ -254,7 +255,6 @@ class JSEAnalyzer:
         notebook_frame = ttk.Frame(main_container)
         notebook_frame.pack(fill=tk.BOTH, expand=True)
         self.notebook = ttk.Notebook(notebook_frame, padding=5)
-        self.notebook.pack(fill=tk.BOTH, preset=True)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
         # Tabs
@@ -318,7 +318,7 @@ class JSEAnalyzer:
             self.root.configure(bg='#f0f0f0')
             self.summary_text.configure(bg='#ffffff', fg='#2c3e50')
             self.style.configure('Config.TLabelframe', background='#f8f9fa', foreground='#2c3e50')
-            self.style.configure('Config.TLabelframe.Label', foreground='#2c3e0')
+            self.style.configure('Config.TLabelframe.Label', foreground='#2c3e50')
             self.style.configure('Title.TLabel', foreground='#2c3e50')
             self.style.configure('Header.TFrame', background='#3498db')
 
