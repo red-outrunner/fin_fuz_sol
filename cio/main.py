@@ -1,317 +1,423 @@
+#!/usr/bin/env python3
+"""
+Predictive Investment Decision Algorithm (PIDA) - Virtual CIO
+Single file implementation for capital allocation decisions
+"""
+
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-import random
+from datetime import datetime, timedelta
+from typing import Dict, List, Tuple, Any
+import warnings
+import pprint
 
-# --- 1. Client Profile Analysis ---
-class ClientProfile:
-    """
-    Analyzes and quantifies a client's investment profile.
-    """
-    def __init__(self, risk_tolerance, investment_horizon, liquidity_needs, income, portfolio_preferences, sector_preferences):
-        """
-        Initializes the client profile.
-        
-        Args:
-            risk_tolerance (str): 'low', 'medium', 'high'
-            investment_horizon (int): Years
-            liquidity_needs (str): 'low', 'medium', 'high'
-            income (float): Annual income
-            portfolio_preferences (list): e.g., ['growth', 'value', 'ethical']
-            sector_preferences (list): e.g., ['tech', 'healthcare', 'energy']
-        """
-        self.risk_tolerance = risk_tolerance
-        self.investment_horizon = investment_horizon
-        self.liquidity_needs = liquidity_needs
-        self.income = income
-        self.portfolio_preferences = portfolio_preferences
-        self.sector_preferences = sector_preferences
-        self.risk_score = self._calculate_risk_score()
+warnings.filterwarnings('ignore')
 
-    def _calculate_risk_score(self):
-        """
-        Converts client's qualitative risk tolerance into a numerical score.
-        A higher score means a higher tolerance for risk.
-        """
-        score = 0
-        # Risk Tolerance Mapping
-        if self.risk_tolerance == 'high':
-            score += 40
-        elif self.risk_tolerance == 'medium':
-            score += 20
-        else: # low
-            score += 5
+# Suppress scientific notation
+pd.set_option('display.float_format', lambda x: '%.4f' % x)
 
-        # Investment Horizon Impact
-        if self.investment_horizon > 10: # Long-term
-            score += 20
-        elif self.investment_horizon > 5: # Medium-term
-            score += 10
-
-        # Liquidity Needs Impact (inverse relationship)
-        if self.liquidity_needs == 'low':
-            score += 15
-        elif self.liquidity_needs == 'medium':
-            score += 5
-            
-        # Income can also play a role, higher income might support more risk
-        if self.income > 150000:
-            score += 10
-
-        # Normalize score to be between 0 and 100
-        return min(max(score, 0), 100)
-
-    def get_profile(self):
-        """Returns a summary of the client's profile."""
-        return {
-            "risk_tolerance": self.risk_tolerance,
-            "investment_horizon": self.investment_horizon,
-            "liquidity_needs": self.liquidity_needs,
-            "income": self.income,
-            "portfolio_preferences": self.portfolio_preferences,
-            "sector_preferences": self.sector_preferences,
-            "risk_score": self.risk_score
-        }
-
-# --- 2. Market Data Ingestion & Processing ---
-class MarketData:
-    """
-    Handles fetching and processing of market data.
-    In a real application, this would connect to APIs like Alpha Vantage, Bloomberg, or Reuters.
-    For this example, we'll simulate the data.
-    """
-    def __init__(self, assets):
-        self.assets = assets
-        self.historical_data = self._fetch_historical_data()
-        self.macro_indicators = self._fetch_macro_indicators()
-
-    def _fetch_historical_data(self):
-        """Simulates fetching historical price data for a list of assets."""
-        print("Fetching historical market data...")
-        data = {}
-        for asset in self.assets:
-            # Simulate daily prices for the last 3 years
-            dates = pd.date_range(end=pd.Timestamp.today(), periods=365 * 3)
-            # Simulate price movements with some randomness
-            price_movements = np.random.randn(len(dates)).cumsum()
-            start_price = random.uniform(50, 500)
-            prices = start_price + price_movements
-            data[asset] = pd.Series(prices, index=dates)
-        return pd.DataFrame(data)
-
-    def _fetch_macro_indicators(self):
-        """Simulates fetching macroeconomic indicators."""
-        print("Fetching macroeconomic indicators...")
-        dates = self.historical_data.index
-        gdp_growth = pd.Series(np.random.uniform(1.5, 3.5, size=len(dates)), index=dates)
-        inflation_rate = pd.Series(np.random.uniform(1.0, 4.0, size=len(dates)), index=dates)
-        return pd.DataFrame({'GDP_Growth': gdp_growth, 'Inflation': inflation_rate})
-
-    def get_data(self):
-        return self.historical_data, self.macro_indicators
-
-# --- 3. Predictive Modeling & Forecasting ---
-class PredictiveModel:
-    """
-    Forecasts future asset performance using predictive models.
-    This example uses a simple Linear Regression model.
-    Real-world models: ARIMA, GARCH, LSTMs, Gradient Boosting.
-    """
-    def __init__(self, data):
-        self.data = data
-        self.models = {}
-
-    def train(self):
-        """Trains a model for each asset."""
-        print("Training predictive models...")
-        for asset in self.data.columns:
-            df = self.data[[asset]].copy()
-            # Feature engineering: use lagged prices to predict future price
-            df['target'] = df[asset].shift(-30) # Predict 30 days ahead
-            df.dropna(inplace=True)
-            
-            X = df[[asset]]
-            y = df['target']
-            
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            model = LinearRegression()
-            model.fit(X_train, y_train)
-            self.models[asset] = model
-            print(f"  - Model for {asset} trained. Score: {model.score(X_test, y_test):.2f}")
-
-    def forecast(self):
-        """Generates future return projections."""
-        print("Forecasting future asset performance...")
-        forecasts = {}
-        for asset, model in self.models.items():
-            current_price = self.data[asset].iloc[-1]
-            predicted_price = model.predict([[current_price]])[0]
-            expected_return = (predicted_price - current_price) / current_price
-            
-            # Simulate volatility (standard deviation of daily returns)
-            volatility = self.data[asset].pct_change().std() * np.sqrt(252) # Annualized
-            
-            forecasts[asset] = {
-                "expected_return": expected_return,
-                "volatility": volatility,
-                "current_price": current_price
-            }
-        return forecasts
-
-# --- 4. Portfolio Optimization ---
-class PortfolioOptimizer:
-    """
-    Optimizes portfolio allocation based on client profile and forecasts.
-    This example uses a simple risk-based allocation.
-    Real-world models: Mean-Variance Optimization, Black-Litterman, Monte Carlo Simulation.
-    """
-    def __init__(self, client_profile, forecasts):
-        self.client_profile = client_profile
-        self.forecasts = forecasts
-
-    def optimize(self):
-        """
-        Determines the optimal asset allocation.
-        """
-        print("Optimizing portfolio allocation...")
-        risk_score = self.client_profile.risk_score
-        
-        # Simple allocation strategy based on risk score
-        # Higher risk score -> more allocation to higher return/volatility assets
-        
-        # Categorize assets by expected return
-        sorted_assets = sorted(self.forecasts.items(), key=lambda x: x[1]['expected_return'], reverse=True)
-        
-        allocations = {}
-        
-        # Define asset classes based on risk/return profile (simplified)
-        high_risk_assets = [a[0] for a in sorted_assets[:2]]
-        medium_risk_assets = [a[0] for a in sorted_assets[2:4]]
-        low_risk_assets = [a[0] for a in sorted_assets[4:]]
-
-        # Allocate based on risk score
-        if risk_score > 70: # Aggressive
-            allocations.update({asset: 0.30 for asset in high_risk_assets})
-            allocations.update({asset: 0.15 for asset in medium_risk_assets})
-            allocations.update({asset: 0.05 for asset in low_risk_assets})
-        elif risk_score > 40: # Moderate
-            allocations.update({asset: 0.15 for asset in high_risk_assets})
-            allocations.update({asset: 0.25 for asset in medium_risk_assets})
-            allocations.update({asset: 0.10 for asset in low_risk_assets})
-        else: # Conservative
-            allocations.update({asset: 0.05 for asset in high_risk_assets})
-            allocations.update({asset: 0.15 for asset in medium_risk_assets})
-            allocations.update({asset: 0.30 for asset in low_risk_assets})
-            
-        # Normalize to ensure sum is 100%
-        total_allocation = sum(allocations.values())
-        final_allocations = {asset: (alloc / total_allocation) for asset, alloc in allocations.items()}
-        
-        return final_allocations
-
-# --- 5. Main Virtual CIO Orchestrator ---
 class VirtualCIO:
     """
-    The main class that orchestrates the entire process.
+    Virtual Chief Investment Officer for automated capital allocation
     """
-    def __init__(self, client_info, market_assets):
-        self.client_info = client_info
-        self.market_assets = market_assets
-
-    def generate_recommendations(self):
-        """
-        Runs the full pipeline from client analysis to portfolio recommendation.
-        """
-        print("--- Starting Virtual CIO Analysis ---")
+    
+    def __init__(self):
+        """Initializes the VirtualCIO instance."""
+        self.client_profiles = {}
+        self.market_data = {}
+        self.asset_universe = self._initialize_asset_universe()
+        self.optimization_history = {}
         
-        # 1. Analyze Client Profile
-        client = ClientProfile(**self.client_info)
-        profile = client.get_profile()
-        print(f"\nAnalyzed Client Profile. Risk Score: {profile['risk_score']}")
+    def _initialize_asset_universe(self) -> Dict:
+        """Initialize available investment assets with base characteristics."""
+        return {
+            'SPY': {'type': 'equity', 'sector': 'broad_market', 'risk': 1.0, 'expected_return': 0.08},
+            'QQQ': {'type': 'equity', 'sector': 'technology', 'risk': 1.2, 'expected_return': 0.10},
+            'IWM': {'type': 'equity', 'sector': 'small_cap', 'risk': 1.3, 'expected_return': 0.09},
+            'EFA': {'type': 'equity', 'sector': 'international', 'risk': 1.1, 'expected_return': 0.07},
+            'EEM': {'type': 'equity', 'sector': 'emerging_markets', 'risk': 1.5, 'expected_return': 0.12},
+            'AGG': {'type': 'bond', 'sector': 'us_bonds', 'risk': 0.3, 'expected_return': 0.03},
+            'LQD': {'type': 'bond', 'sector': 'corporate_bonds', 'risk': 0.5, 'expected_return': 0.04},
+            'TLT': {'type': 'bond', 'sector': 'treasury_bonds', 'risk': 0.8, 'expected_return': 0.05},
+            'VNQ': {'type': 'reit', 'sector': 'real_estate', 'risk': 0.9, 'expected_return': 0.06},
+            'GLD': {'type': 'commodity', 'sector': 'precious_metals', 'risk': 1.0, 'expected_return': 0.05}
+        }
+    
+    def set_client_profile(self, client_id: str, profile_data: Dict) -> None:
+        """Set or update a client's profile."""
+        self.client_profiles[client_id] = {
+            'profile': profile_data,
+            'timestamp': datetime.now()
+        }
+    
+    def simulate_market_data(self) -> Dict:
+        """Simulate real-time market data for demonstration purposes."""
+        np.random.seed(int(datetime.now().timestamp()))  # Use current time for dynamic results
         
-        # 2. Get Market Data
-        market = MarketData(self.market_assets)
-        hist_data, _ = market.get_data()
-        
-        # 3. Train Model and Forecast
-        model = PredictiveModel(hist_data)
-        model.train()
-        forecasts = model.forecast()
-        
-        # 4. Optimize Portfolio
-        optimizer = PortfolioOptimizer(client, forecasts)
-        allocations = optimizer.optimize()
-        
-        # 5. Generate Output
-        portfolio_return = sum(allocations[asset] * forecasts[asset]['expected_return'] for asset in allocations)
-        portfolio_volatility = sum(allocations[asset] * forecasts[asset]['volatility'] for asset in allocations) # Simplified
-        
-        recommendations = {
-            "client_profile": profile,
-            "suggested_investments": {
-                asset: {
-                    "allocation_percentage": f"{allocations[asset]*100:.2f}%",
-                    "expected_return": f"{forecasts[asset]['expected_return']*100:.2f}%",
-                    "volatility": f"{forecasts[asset]['volatility']*100:.2f}%"
-                } for asset in allocations
-            },
-            "risk_adjusted_projections": {
-                "projected_annual_return": f"{portfolio_return*100:.2f}%",
-                "projected_annual_volatility": f"{portfolio_volatility*100:.2f}%"
-            },
-            "alerts": self._generate_alerts(forecasts)
+        # Simulate current market conditions
+        market_conditions = {
+            'volatility_regime': np.random.choice(['low', 'normal', 'high'], p=[0.3, 0.5, 0.2]),
+            'market_trend': np.random.choice(['bull', 'sideways', 'bear'], p=[0.4, 0.4, 0.2]),
+            'economic_cycle': np.random.choice(['expansion', 'peak', 'contraction', 'trough'], 
+                                             p=[0.35, 0.25, 0.25, 0.15])
         }
         
-        print("\n--- Recommendations Generated ---")
-        return recommendations
-
-    def _generate_alerts(self, forecasts):
-        """Generates alerts based on market conditions."""
-        alerts = []
-        high_volatility_assets = [asset for asset, data in forecasts.items() if data['volatility'] > 0.4]
-        if high_volatility_assets:
-            alerts.append(f"High volatility detected in: {', '.join(high_volatility_assets)}. Consider reviewing exposure.")
+        # Simulate asset correlations based on market regime
+        correlation_matrix = self._generate_correlation_matrix(market_conditions)
         
-        # Example of a trend shift alert
-        # In a real scenario, this would compare recent performance to historical trends
-        if random.choice([True, False]):
-             alerts.append("Emerging trend detected in the Technology sector. Potential for upward momentum.")
-
-        if not alerts:
-            alerts.append("Market conditions appear stable. No immediate alerts.")
+        # Simulate current asset metrics
+        asset_metrics = {}
+        for asset, info in self.asset_universe.items():
+            # Adjust returns based on market conditions
+            base_return = info['expected_return']
+            market_impact = self._calculate_market_impact(market_conditions, info['sector'])
+            current_return = base_return * (1 + market_impact)
             
+            # Adjust risk based on volatility regime
+            vol_multiplier = {'low': 0.7, 'normal': 1.0, 'high': 1.5}[market_conditions['volatility_regime']]
+            current_risk = info['risk'] * vol_multiplier
+            
+            asset_metrics[asset] = {
+                'expected_return': max(0.001, current_return),  # Ensure a minimum positive return
+                'risk': current_risk,
+                'sharpe_ratio': current_return / current_risk if current_risk > 0 else 0,
+                'sector': info['sector']
+            }
+        
+        return {
+            'market_conditions': market_conditions,
+            'correlation_matrix': correlation_matrix,
+            'asset_metrics': asset_metrics
+        }
+    
+    def _generate_correlation_matrix(self, market_conditions: Dict) -> pd.DataFrame:
+        """Generate a correlation matrix based on market conditions."""
+        assets = list(self.asset_universe.keys())
+        n_assets = len(assets)
+        
+        # Base correlation matrix
+        base_corr = np.full((n_assets, n_assets), 0.3)
+        np.fill_diagonal(base_corr, 1.0)
+        
+        # Adjust correlations based on market regime
+        corr_adjustment = 0.0
+        if market_conditions['volatility_regime'] == 'high':
+            corr_adjustment = 0.3  # Higher correlations during stress
+        elif market_conditions['market_trend'] == 'bear':
+            corr_adjustment = 0.2  # Higher correlations in bear markets
+        
+        adjusted_corr = base_corr + np.full((n_assets, n_assets), corr_adjustment)
+        adjusted_corr = np.minimum(adjusted_corr, 0.9)  # Cap maximum correlation at 0.9
+        np.fill_diagonal(adjusted_corr, 1.0) # Ensure diagonal is 1.0
+        
+        return pd.DataFrame(adjusted_corr, index=assets, columns=assets)
+    
+    def _calculate_market_impact(self, market_conditions: Dict, sector: str) -> float:
+        """Calculate the market's impact on specific sectors."""
+        impact = 0.0
+        
+        # Market trend impact
+        trend_impact = {'bull': 0.1, 'sideways': 0.0, 'bear': -0.1}[market_conditions['market_trend']]
+        impact += trend_impact
+        
+        # Economic cycle impact by sector
+        cycle_impacts = {
+            'expansion': {'technology': 0.15, 'small_cap': 0.12, 'real_estate': 0.08, 'emerging_markets': 0.10, 'broad_market': 0.08},
+            'peak': {'technology': 0.05, 'small_cap': 0.02, 'real_estate': 0.03, 'emerging_markets': -0.02, 'broad_market': 0.01},
+            'contraction': {'technology': -0.08, 'small_cap': -0.12, 'real_estate': -0.05, 'emerging_markets': -0.15, 'broad_market': -0.08, 'us_bonds': 0.05, 'treasury_bonds': 0.06},
+            'trough': {'technology': -0.05, 'small_cap': -0.08, 'real_estate': -0.03, 'emerging_markets': -0.10, 'broad_market': -0.05, 'us_bonds': 0.08, 'treasury_bonds': 0.09}
+        }
+        
+        cycle = market_conditions['economic_cycle']
+        sector_impact = cycle_impacts[cycle].get(sector, 0.0)
+        impact += sector_impact
+        
+        return impact
+    
+    def calculate_client_risk_profile(self, client_data: Dict) -> Dict:
+        """Calculate a comprehensive client risk profile."""
+        # Risk tolerance scoring (1-10 scale)
+        risk_tolerance = client_data.get('risk_tolerance', 5)
+        
+        # Investment horizon scoring
+        horizon = client_data.get('investment_horizon', 10)  # years
+        horizon_score = min(10, max(1, horizon / 2))  # Scale 1-10
+        
+        # Liquidity needs scoring
+        liquidity_needs = client_data.get('liquidity_needs', 'moderate')
+        liquidity_scores = {'high': 2, 'moderate': 5, 'low': 8}
+        liquidity_score = liquidity_scores.get(liquidity_needs, 5)
+        
+        # Income requirements and stability
+        income = client_data.get('income', 100000)
+        income_stability = client_data.get('income_stability', 'stable')
+        stability_multiplier = {'volatile': 0.7, 'stable': 1.0, 'highly_stable': 1.2}[income_stability]
+        
+        # Calculate composite risk score (1-10)
+        composite_risk = (risk_tolerance * 0.4 + horizon_score * 0.3 + liquidity_score * 0.3) * stability_multiplier
+        
+        # Adjust for constraints
+        if liquidity_needs == 'high':
+            composite_risk = min(composite_risk, 4)  # Cap risk for high liquidity needs
+        
+        return {
+            'risk_tolerance': risk_tolerance,
+            'horizon_score': horizon_score,
+            'liquidity_score': liquidity_score,
+            'composite_risk': min(10, max(1, composite_risk)),
+            'income_requirements': income,
+            'preferred_sectors': client_data.get('sector_preferences', []),
+            'asset_preferences': client_data.get('portfolio_preferences', [])
+        }
+    
+    def optimize_portfolio(self, client_profile: Dict, market_data: Dict) -> Dict:
+        """Optimize portfolio allocation using a simplified mean-variance approach."""
+        risk_profile = self.calculate_client_risk_profile(client_profile)
+        
+        eligible_assets = self._filter_assets_by_preferences(risk_profile['preferred_sectors'], risk_profile['asset_preferences'])
+        
+        asset_metrics = market_data['asset_metrics']
+        selected_assets = [asset for asset in eligible_assets if asset in asset_metrics]
+
+        if len(selected_assets) < 2:
+            selected_assets = list(self.asset_universe.keys()) # Fallback
+        
+        returns = np.array([asset_metrics[a]['expected_return'] for a in selected_assets])
+        risks = np.array([asset_metrics[a]['risk'] for a in selected_assets])
+        corr_matrix = market_data['correlation_matrix'].loc[selected_assets, selected_assets]
+        
+        weights = self._mean_variance_optimization(returns, risks, corr_matrix.values, risk_profile['composite_risk'])
+        weights = self._apply_constraints(weights, risk_profile, selected_assets)
+        
+        expected_risk = self._calculate_portfolio_risk(weights, risks, corr_matrix.values)
+        expected_return = np.sum(weights * returns)
+
+        return {
+            'assets': selected_assets,
+            'weights': weights,
+            'expected_return': expected_return,
+            'expected_risk': expected_risk,
+            'sharpe_ratio': expected_return / expected_risk if expected_risk > 0 else 0
+        }
+    
+    def _filter_assets_by_preferences(self, preferred_sectors: List[str], asset_preferences: List[str]) -> List[str]:
+        """Filter assets based on client preferences."""
+        if not preferred_sectors and not asset_preferences:
+            return list(self.asset_universe.keys())
+        
+        eligible_assets = set()
+        for asset, info in self.asset_universe.items():
+            if info['sector'] in preferred_sectors or info['type'] in asset_preferences:
+                eligible_assets.add(asset)
+        
+        return list(eligible_assets) if eligible_assets else list(self.asset_universe.keys())
+    
+    def _mean_variance_optimization(self, returns: np.array, risks: np.array, 
+                                  correlation_matrix: np.array, risk_tolerance: float) -> np.array:
+        """Simplified mean-variance optimization based on risk-adjusted returns."""
+        n_assets = len(returns)
+        if n_assets == 0:
+            return np.array([])
+
+        # Adjust returns based on risk, favoring higher risk-adjusted returns
+        risk_adjusted_returns = returns / (risks + 1e-8)
+        
+        # Scale weights by risk-adjusted returns and client risk tolerance
+        weights = risk_adjusted_returns * (risk_tolerance / 5.0) # Normalize around a mid-point risk tolerance
+        
+        # Normalize weights to sum to 1
+        weights = np.maximum(weights, 0)  # No short positions
+        weight_sum = np.sum(weights)
+        if weight_sum > 0:
+            weights /= weight_sum
+        else:
+            weights = np.ones(n_assets) / n_assets # Fallback to equal weights
+        
+        return weights
+    
+    def _calculate_portfolio_risk(self, weights: np.array, risks: np.array, 
+                                correlation_matrix: np.array) -> float:
+        """Calculate portfolio risk (standard deviation)."""
+        if len(weights) == 0:
+            return 0.0
+        std_devs = np.diag(risks)
+        covariance_matrix = std_devs @ correlation_matrix @ std_devs
+        portfolio_variance = weights.T @ covariance_matrix @ weights
+        return np.sqrt(portfolio_variance)
+    
+    def _apply_constraints(self, weights: np.array, risk_profile: Dict, assets: List[str]) -> np.array:
+        """Apply various portfolio constraints."""
+        if len(weights) == 0:
+            return np.array([])
+            
+        # Individual position limits (no single position > 30%)
+        weights = np.minimum(weights, 0.30)
+        
+        # Sector concentration limits
+        sector_weights = {}
+        for i, asset in enumerate(assets):
+            sector = self.asset_universe[asset]['sector']
+            sector_weights[sector] = sector_weights.get(sector, 0) + weights[i]
+        
+        for sector, weight in sector_weights.items():
+            if weight > 0.40:  # 40% sector limit
+                adjustment_factor = 0.40 / weight
+                for i, asset in enumerate(assets):
+                    if self.asset_universe[asset]['sector'] == sector:
+                        weights[i] *= adjustment_factor
+        
+        # Liquidity constraint for clients with high liquidity needs
+        if risk_profile['liquidity_score'] <= 3:
+            for i, asset in enumerate(assets):
+                sector = self.asset_universe[asset]['sector']
+                if sector in ['emerging_markets', 'small_cap', 'real_estate']:
+                    weights[i] *= 0.7  # Reduce exposure to less liquid assets by 30%
+        
+        # Re-normalize weights to sum to 1
+        weight_sum = np.sum(weights)
+        if weight_sum > 0:
+            weights /= weight_sum
+        else:
+            weights = np.ones(len(weights)) / len(weights)
+        
+        return weights
+    
+    def generate_investment_recommendations(self, client_id: str, client_data: Dict) -> Dict:
+        """Generate complete investment recommendations for a client."""
+        self.set_client_profile(client_id, client_data)
+        market_data = self.simulate_market_data()
+        portfolio = self.optimize_portfolio(client_data, market_data)
+        recommendations = self._format_recommendations(portfolio, client_data, market_data)
+        
+        self.optimization_history[client_id] = {
+            'timestamp': datetime.now(),
+            'portfolio': portfolio,
+            'recommendations': recommendations
+        }
+        
+        return recommendations
+    
+    def _format_recommendations(self, portfolio: Dict, client_data: Dict, market_data: Dict) -> Dict:
+        """Format recommendations into a user-friendly dictionary."""
+        risk_profile = self.calculate_client_risk_profile(client_data)
+        
+        asset_details = []
+        total_investment = client_data.get('total_investment', 1000000) # Default to $1M
+        
+        for i, asset in enumerate(portfolio['assets']):
+            weight = portfolio['weights'][i]
+            asset_details.append({
+                'asset': asset,
+                'name': self._get_asset_name(asset),
+                'allocation_percentage': round(weight * 100, 2),
+                'allocation_amount': f"${weight * total_investment:,.0f}",
+                'expected_return': f"{market_data['asset_metrics'][asset]['expected_return']*100:.2f}%",
+                'risk_level': f"{market_data['asset_metrics'][asset]['risk']:.2f}",
+                'sector': self.asset_universe[asset]['sector']
+            })
+            
+        return {
+            'summary': {
+                'client_risk_profile': f"Risk Level {risk_profile['composite_risk']:.1f}/10",
+                'portfolio_expected_return': f"{portfolio['expected_return']*100:.2f}%",
+                'portfolio_expected_risk': f"{portfolio['expected_risk']*100:.2f}%",
+                'portfolio_sharpe_ratio': f"{portfolio['sharpe_ratio']:.3f}",
+                'market_conditions': market_data['market_conditions']
+            },
+            'asset_allocations': asset_details,
+            'scenarios': self._generate_scenario_analysis(portfolio),
+            'alerts': self._generate_alerts(client_data, market_data, portfolio),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+    
+    def _get_asset_name(self, asset: str) -> str:
+        """Get the full name for an asset ticker."""
+        names = {
+            'SPY': 'S&P 500 ETF', 'QQQ': 'NASDAQ 100 ETF', 'IWM': 'Russell 2000 ETF',
+            'EFA': 'Developed Markets ETF', 'EEM': 'Emerging Markets ETF',
+            'AGG': 'US Aggregate Bond ETF', 'LQD': 'Corporate Bond ETF',
+            'TLT': '20+ Year Treasury ETF', 'VNQ': 'Real Estate ETF', 'GLD': 'Gold ETF'
+        }
+        return names.get(asset, asset)
+    
+    def _generate_scenario_analysis(self, portfolio: Dict) -> Dict:
+        """Generate a simple scenario analysis for the portfolio."""
+        base_return = portfolio['expected_return']
+        base_risk = portfolio['expected_risk']
+        
+        return {
+            'bull_market': {'description': 'Strong market growth (+15%)', 'projected_return': f"{(base_return + 0.08)*100:.2f}%"},
+            'bear_market': {'description': 'Significant market downturn (-20%)', 'projected_return': f"{(base_return - 0.12)*100:.2f}%"},
+            'high_volatility': {'description': 'Market volatility increases by 50%', 'projected_risk': f"{(base_risk * 1.5)*100:.2f}%"}
+        }
+    
+    def _generate_alerts(self, client_data: Dict, market_data: Dict, portfolio: Dict) -> List[Dict]:
+        """Generate alerts based on market conditions and portfolio composition."""
+        alerts = []
+        market_conditions = market_data['market_conditions']
+        risk_profile = self.calculate_client_risk_profile(client_data)
+
+        # Market condition alerts
+        if market_conditions['volatility_regime'] == 'high':
+            alerts.append({'type': 'Market', 'message': 'High volatility detected. Consider defensive positioning.'})
+        if market_conditions['market_trend'] == 'bear':
+            alerts.append({'type': 'Market', 'message': 'Bear market trend identified. Portfolio may see drawdowns.'})
+        if market_conditions['economic_cycle'] == 'contraction':
+            alerts.append({'type': 'Market', 'message': 'Economic contraction phase. Cyclical assets may underperform.'})
+
+        # Portfolio-specific alerts
+        if portfolio['expected_risk'] > (risk_profile['composite_risk'] / 10):
+            alerts.append({'type': 'Portfolio', 'message': f"Portfolio risk ({portfolio['expected_risk']:.2f}) exceeds client's target risk level ({risk_profile['composite_risk'] / 10:.2f})."})
+        
+        # Concentration alerts
+        for asset in portfolio['assets']:
+            weight = portfolio['weights'][portfolio['assets'].index(asset)]
+            if weight > 0.25: # Alert if any single asset is > 25%
+                alerts.append({'type': 'Concentration', 'message': f"High concentration in {asset} ({weight*100:.1f}%). Review exposure."})
+
         return alerts
 
-# --- Example Usage ---
-if __name__ == '__main__':
-    # 1. Define Client Input
-    client_input = {
-        "risk_tolerance": "medium",
-        "investment_horizon": 15,
-        "liquidity_needs": "low",
-        "income": 120000,
-        "portfolio_preferences": ["growth", "ethical"],
-        "sector_preferences": ["tech", "healthcare"]
+def main():
+    """Main function to demonstrate the VirtualCIO class."""
+    
+    # Create an instance of the Virtual CIO
+    cio = VirtualCIO()
+    
+    # Define a sample client profile
+    client_1_data = {
+        'risk_tolerance': 7,               # Scale 1-10
+        'investment_horizon': 20,          # In years
+        'liquidity_needs': 'low',          # high, moderate, low
+        'income': 150000,                  # Annual income
+        'income_stability': 'highly_stable', # volatile, stable, highly_stable
+        'sector_preferences': ['technology', 'broad_market'], # e.g., 'technology', 'real_estate'
+        'portfolio_preferences': ['equity'], # e.g., 'equity', 'bond'
+        'total_investment': 500000
     }
     
-    # 2. Define Market Universe
-    # In a real scenario, this would be a much larger, dynamic list
-    market_universe = [
-        'AAPL', 'GOOGL', 'MSFT', # Tech
-        'JNJ', 'PFE', # Healthcare
-        'XOM', # Energy
-        'VTI', # Total Stock Market ETF
-        'BND'  # Total Bond Market ETF
-    ]
+    # Generate investment recommendations for the client
+    print("--- Generating Recommendations for Client 1 (Growth Oriented) ---")
+    recommendations = cio.generate_investment_recommendations('client_1', client_1_data)
     
-    # 3. Instantiate and Run the Virtual CIO
-    virtual_cio = VirtualCIO(client_info=client_input, market_assets=market_universe)
-    final_recommendations = virtual_cio.generate_recommendations()
+    # Pretty print the results
+    pprint.pprint(recommendations)
     
-    # 4. Print the Output
-    import json
-    print("\nFinal Investment Recommendations:")
-    print(json.dumps(final_recommendations, indent=2))
+    # Define a second, more conservative client
+    client_2_data = {
+        'risk_tolerance': 3,
+        'investment_horizon': 5,
+        'liquidity_needs': 'moderate',
+        'income': 80000,
+        'income_stability': 'stable',
+        'sector_preferences': ['us_bonds', 'corporate_bonds'],
+        'portfolio_preferences': ['bond'],
+        'total_investment': 1200000
+    }
+    
+    print("\n--- Generating Recommendations for Client 2 (Conservative) ---")
+    recommendations_2 = cio.generate_investment_recommendations('client_2', client_2_data)
+    pprint.pprint(recommendations_2)
 
+
+if __name__ == "__main__":
+    main()
