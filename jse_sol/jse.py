@@ -627,13 +627,12 @@ class JSEAnalyzer:
     def update_bar_chart(self):
         """Update the bar chart with proper metrics and benchmark."""
         for widget in self.bar_frame.winfo_children():
-            if widget != self.bar_frame.winfo_children()[0]:  # Preserve control frame
+            if widget != self.bar_frame.winfo_children()[0]:  # P
                 widget.destroy()
-
         chart_frame = ttk.Frame(self.bar_frame)
         chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        fig1, ax1 = plt.subplots(figsize=(12, 6))
+        fig1, ax1 = plt.subplots(figsize=(10, 4))
         metric_data = self.month_avg if self.bar_metric.get() == "Mean" else self.month_median
         metric_label = "Average" if self.bar_metric.get() == "Mean" else "Median"
 
@@ -641,10 +640,10 @@ class JSEAnalyzer:
                       edgecolor='#2980b9', linewidth=1)
 
         ax1.set_xticks(range(1, 13))
-        ax1.set_xticklabels(self.months, fontsize=10)
-        ax1.set_ylabel(f'{metric_label} Monthly Return (%)', fontsize=11, fontweight='bold')
+        ax1.set_xticklabels(self.months, fontsize=9)
+        ax1.set_ylabel(f'{metric_label} Monthly Return (%)', fontsize=9, fontweight='bold')
         ax1.set_title(f'{metric_label} Monthly Returns for {self.ticker}\nPeriod: {self.start_year_var.get()} to {self.end_date_var.get()[:4]}',
-                     fontsize=12, fontweight='bold', pad=20)
+                     fontsize=10, fontweight='bold', pad=15)
         ax1.grid(axis='y', alpha=0.3, linestyle='--')
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
