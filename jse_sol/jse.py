@@ -661,10 +661,9 @@ class JSEAnalyzer:
             if height < 0:
                 bar.set_color('#e74c3c')
                 bar.set_edgecolor('#c0392b')
-
-            ax1.text(bar.get_x() + bar.get_width()/2., height + (0.1 if height >= 0 else -0.3),
+            ax1.text(bar.get_x() + bar.get_width()/2., height + (0.05 if height >= 0 else -0.2),
                     f'{height:.1f}%', ha='center', va='bottom' if height >= 0 else 'top',
-                    fontsize=8, fontweight='bold')
+                    fontsize=6, fontweight='bold')
 
         annot1 = ax1.annotate("", xy=(0,0), xytext=(10,10), textcoords="offset points",
                              bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1, alpha=0.9),
