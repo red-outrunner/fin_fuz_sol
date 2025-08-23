@@ -157,7 +157,7 @@ class JSEAnalyzer:
 
         # Configuration frame
         config_frame = ttk.LabelFrame(main_container, text="⚙️ Configuration Panel",
-                                     style='Config.TLabelframe', padding="20")
+                                     style='Config.TLabelframe', padding="10")
         config_frame.pack(fill=tk.X, pady=(0, 20))
 
         # Ticker selection row
