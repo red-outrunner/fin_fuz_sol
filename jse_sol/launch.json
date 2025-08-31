@@ -1,0 +1,13 @@
+// filepath: .vscode/launch.json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug jse.py",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/jse_sol/jse.py",
+      "console": "integratedTerminal"
+    }
+  ]
+}
