@@ -1,0 +1,23 @@
+2025-09-27 19:27:09,876 - INFO - --- Application Start: Global Index Analyzer v2.9.0 ---
+2025-09-27 19:27:10,758 - INFO - Cache directory set to: cache_v2_9_0
+2025-09-27 19:27:10,758 - INFO - UI styles configured.
+2025-09-27 19:27:11,410 - INFO - UI setup complete.
+2025-09-27 19:27:11,410 - INFO - Application initialized successfully.
+2025-09-27 19:27:11,410 - INFO - Starting Tkinter main loop.
+2025-09-27 19:29:26,793 - INFO - Date range changed to: Last 5 Years
+2025-09-27 19:29:28,631 - INFO - 'Analyze Data' button clicked.
+2025-09-27 19:29:28,633 - INFO - Validating user inputs.
+2025-09-27 19:29:28,636 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 2020, End: 2025-09-27
+2025-09-27 19:29:28,639 - INFO - Starting data download for ticker: ^J203.JO
+2025-09-27 19:29:30,809 - INFO - Data download complete. Processing data...
+2025-09-27 19:29:30,838 - INFO - Data processing complete. Updating UI.
+2025-09-27 19:29:30,839 - INFO - Updating all charts.
+2025-09-27 19:29:31,216 - INFO - Updating bar chart with metric: Average
+2025-09-27 19:29:31,469 - INFO - Updating heatmap.
+2025-09-27 19:29:31,925 - INFO - Updating risk vs return scatter plot.
+2025-09-27 19:29:32,182 - INFO - Updating comparison chart.
+2025-09-27 19:29:32,182 - INFO - No comparison data to display.
+2025-09-27 19:29:32,182 - INFO - Updating summary tab.
+2025-09-27 19:29:32,182 - INFO - Summary tab updated.
+2025-09-27 19:29:32,185 - INFO - Updating summary tab.
+2025-09-27 19:29:32,186 - INFO - Summary tab updated.
