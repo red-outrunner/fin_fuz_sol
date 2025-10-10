@@ -17,7 +17,6 @@ import os
 import pickle
 import threading
 import json
-from jse.gui.watchlist_panel import WatchListPanel
 from scipy import stats
 from statsmodels.tsa.seasonal import seasonal_decompose
 import matplotlib.animation as animation
