@@ -1,0 +1,68 @@
+2025-10-12 08:21:00,826 - INFO - --- Application Start: Global Index Analyzer v2.9.0 (PyQt6) (PyQt6) ---
+2025-10-12 08:21:00,827 - INFO - Cache directory set to: cache_v2_9_0_(PyQt6)
+2025-10-12 08:21:01,089 - INFO - Date range changed to: Custom
+2025-10-12 08:21:01,090 - INFO - Application initialized successfully.
+2025-10-12 08:21:01,090 - INFO - Toggling dark mode to OFF.
+2025-10-12 08:21:09,529 - INFO - Input validation successful: {'start_year': 1990, 'end_date': '2025-10-12', 'ticker': '^J203.JO', 'end_year': '2025'}
+2025-10-12 08:21:11,286 - INFO - Saved data for ^J203.JO to cache: cache_v2_9_0_(PyQt6)/J203_JO_1990_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:21:11,328 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:21:11,991 - INFO - Summary tab updated.
+2025-10-12 08:21:46,324 - INFO - Custom ticker mode: True
+2025-10-12 08:22:09,046 - INFO - Input validation successful: {'start_year': 1990, 'end_date': '2025-10-12', 'ticker': 'ned.jo', 'end_year': '2025'}
+2025-10-12 08:22:10,266 - INFO - Saved data for ned.jo to cache: cache_v2_9_0_(PyQt6)/ned_jo_1990_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:22:10,278 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:22:10,923 - INFO - Summary tab updated.
+2025-10-12 08:22:25,358 - INFO - Toggling dark mode to ON.
+2025-10-12 08:22:25,361 - INFO - Updating charts. Dark mode: True
+2025-10-12 08:22:31,131 - INFO - Input validation successful: {'start_year': 1990, 'end_date': '2025-10-12', 'ticker': 'ned.jo', 'end_year': '2025'}
+2025-10-12 08:22:31,133 - INFO - Loaded cached data for ned.jo from cache_v2_9_0_(PyQt6)/ned_jo_1990_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:22:31,146 - INFO - Updating charts. Dark mode: True
+2025-10-12 08:22:31,838 - INFO - Summary tab updated.
+2025-10-12 08:22:44,448 - INFO - Date range changed to: Last 5 Years
+2025-10-12 08:22:47,909 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'ned.jo', 'end_year': '2025'}
+2025-10-12 08:22:48,748 - INFO - Saved data for ned.jo to cache: cache_v2_9_0_(PyQt6)/ned_jo_2020_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:22:48,757 - INFO - Updating charts. Dark mode: True
+2025-10-12 08:22:49,135 - INFO - Summary tab updated.
+2025-10-12 08:22:52,214 - INFO - Toggling dark mode to OFF.
+2025-10-12 08:22:52,222 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:23:12,094 - INFO - Added '🇿🇦 JSE All Share (^J203.JO)' (^J203.JO) to comparison list.
+2025-10-12 08:23:12,095 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'ned.jo', 'end_year': '2025'}
+2025-10-12 08:23:12,096 - INFO - Starting parallel analysis for comparison tickers.
+2025-10-12 08:23:12,796 - INFO - Saved data for ^J203.JO to cache: cache_v2_9_0_(PyQt6)/J203_JO_2020_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:23:12,804 - INFO - Successfully processed comparison data for ^J203.JO.
+2025-10-12 08:23:12,805 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:24:06,602 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'stxcap.jo', 'end_year': '2025'}
+2025-10-12 08:24:07,381 - INFO - Saved data for stxcap.jo to cache: cache_v2_9_0_(PyQt6)/stxcap_jo_2020_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:24:07,391 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:24:07,828 - INFO - Summary tab updated.
+2025-10-12 08:24:07,929 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'stxcap.jo', 'end_year': '2025'}
+2025-10-12 08:24:07,933 - INFO - Starting parallel analysis for comparison tickers.
+2025-10-12 08:24:07,934 - INFO - Loaded cached data for ^J203.JO from cache_v2_9_0_(PyQt6)/J203_JO_2020_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:24:07,947 - INFO - Successfully processed comparison data for ^J203.JO.
+2025-10-12 08:24:07,947 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:24:56,177 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'stxcap.jo', 'end_year': '2025'}
+2025-10-12 08:25:12,021 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'stxcap.jo', 'end_year': '2025'}
+2025-10-12 08:25:29,127 - INFO - Toggling dark mode to ON.
+2025-10-12 08:25:29,132 - INFO - Updating charts. Dark mode: True
+2025-10-12 08:25:59,414 - INFO - Toggling dark mode to OFF.
+2025-10-12 08:25:59,421 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:03,106 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'PMR.jo', 'end_year': '2025'}
+2025-10-12 08:56:04,323 - INFO - Saved data for PMR.jo to cache: cache_v2_9_0_(PyQt6)/PMR_jo_2020_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:56:04,337 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:04,982 - INFO - Summary tab updated.
+2025-10-12 08:56:05,083 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'PMR.jo', 'end_year': '2025'}
+2025-10-12 08:56:05,088 - INFO - Starting parallel analysis for comparison tickers.
+2025-10-12 08:56:05,089 - INFO - Loaded cached data for ^J203.JO from cache_v2_9_0_(PyQt6)/J203_JO_2020_2025_v2_9_0 (PyQt6).pkl
+2025-10-12 08:56:05,103 - INFO - Successfully processed comparison data for ^J203.JO.
+2025-10-12 08:56:05,103 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:28,775 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:29,738 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:30,971 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:32,642 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:33,773 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:38,226 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:40,683 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:41,207 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:41,635 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:56:42,575 - INFO - Updating charts. Dark mode: False
+2025-10-12 08:57:19,673 - INFO - Input validation successful: {'start_year': 2020, 'end_date': '2025-10-12', 'ticker': 'PMR.jo', 'end_year': '2025'}

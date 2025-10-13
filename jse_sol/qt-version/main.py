@@ -42,7 +42,9 @@ from PyQt6.QtCore import (
 from PyQt6.QtGui import QPalette, QColor, QFont
 
 # Matplotlib-PyQt Integration
-from matplotlib.backends.backend_qt6agg import FigureCanvasQTAgg as FigureCanvas
+# FIX: Use the generic backend_qtagg import path for FigureCanvasQTAgg
+# This works regardless of whether Matplotlib is configured for PyQt6 or PySide6.
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 # Try importing pmdarima, with fallback if it fails
