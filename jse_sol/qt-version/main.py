@@ -407,7 +407,12 @@ class JSEAnalyzer(QMainWindow):
         self.ml_results = None
         self.stat_results = None # To store statistical test results
 
-        # --- FIX: Define cache_dir before worker uses it ---
+        # --- FIX: Define status_bar and cache_dir early ---
+        # 1. Initialize Status Bar
+        self.status_bar = self.statusBar()
+        self.status_bar.showMessage("✨ Initializing Application...")
+
+        # 2. Initialize Cache Directory
         self.cache_dir = f"cache_v{self.VERSION.replace('.', '_').replace(' ', '_')}"
         os.makedirs(self.cache_dir, exist_ok=True)
         self.logger.info(f"Cache directory set to: {self.cache_dir}")
@@ -428,17 +433,18 @@ class JSEAnalyzer(QMainWindow):
         self.analysis_worker.primary_data_ready.connect(self.handle_primary_data_ready)
         self.analysis_worker.ml_data_ready.connect(self.handle_ml_data_ready)
         self.analysis_worker.comparison_data_ready.connect(self.handle_comparison_data_ready)
+        # This connection now works because self.status_bar exists
         self.analysis_worker.progress.connect(self.status_bar.showMessage)
         self.analysis_worker.error.connect(lambda e: QMessageBox.critical(self, "Worker Error", e))
         self.analysis_worker.finished.connect(self.worker_thread.quit) # Stop the thread when the task finishes
-        
-        # Cache directory (removed redundancy)
         
         self.setup_ui()
         self.logger.info("Application initialized successfully.")
         
         # Apply default theme
         self.toggle_dark_mode(self.dark_mode_check.isChecked())
+        # Set final initial message
+        self.status_bar.showMessage("✨ Ready - Select an index and click Analyze")
 
 
     # --- UI Setup ---
@@ -672,8 +678,9 @@ class JSEAnalyzer(QMainWindow):
         self.bar_frame.layout().insertLayout(0, bar_controls) # Insert above the chart
 
         # --- Status Bar ---
-        self.status_bar = self.statusBar()
-        self.status_bar.showMessage("✨ Ready - Select an index and click Analyze")
+        # Note: self.status_bar is now created in __init__
+        # self.status_bar = self.statusBar() 
+        # self.status_bar.showMessage("✨ Ready - Select an index and click Analyze")
         
         self.on_date_range_change() # Initial date setting
 
