@@ -301,6 +301,7 @@ class DataAnalysisWorker(QObject):
             
             # --- 3. Clustering (KMeans) ---
             self.progress.emit(f"Running KMeans Clustering (k={n_clusters})...")
+            # Suppress KMean's n_init warning by setting it explicitly to 'auto'
             kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init='auto')
             clusters = kmeans.fit_predict(X_scaled)
             
@@ -313,17 +314,20 @@ class DataAnalysisWorker(QObject):
             self.progress.emit("Running Time Series Forecast...")
             
             # Use AutoARIMA if available, otherwise fixed ARIMA(p, d, q) from settings
+            arima_order = None
             if PMDARIMA_AVAILABLE:
                 self.progress.emit("Using AutoARIMA for optimal order selection...")
                 model = auto_arima(
                     monthly_ret, seasonal=False, stepwise=True,
                     suppress_warnings=True, error_action='ignore', max_p=5, max_q=5
                 )
+                arima_order = model.order
             else:
                 order = (arima_order_p, arima_order_d, arima_order_q)
                 self.progress.emit(f"Using fixed ARIMA{order}...")
                 model = ARIMA(monthly_ret, order=order)
                 model = model.fit()
+                arima_order = order
 
             # Forecast for the next month (next period after last data point)
             forecast_steps = 1
@@ -345,7 +349,7 @@ class DataAnalysisWorker(QObject):
                 'forecast_date': monthly_ret.index[-1] + timedelta(days=31), # Approx next month end
                 'n_clusters': n_clusters,
                 'contamination': contamination,
-                'arima_order': model.order if PMDARIMA_AVAILABLE else (arima_order_p, arima_order_d, arima_order_q)
+                'arima_order': arima_order
             }
             
             self.data_ready.emit(ml_results)
@@ -360,7 +364,7 @@ class DataAnalysisWorker(QObject):
 # --- Main Application Class (PyQt6) ---
 class JSEAnalyzer(QMainWindow):
     """A PyQt6 application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.1 (PyQt6 - ML Tunable)" # Updated version
+    VERSION = "2.9.2 (PyQt6 - Report Export)" # Updated version
 
     def __init__(self):
         super().__init__()
@@ -378,6 +382,7 @@ class JSEAnalyzer(QMainWindow):
         self.comparison_tickers = [] # List of ticker strings
         self.months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         self.ml_results = None
+        self.stat_results = None # To store statistical test results
 
         # Thread management
         self.worker_thread = None
@@ -507,11 +512,12 @@ class JSEAnalyzer(QMainWindow):
         self.export_btn.setEnabled(False)
         action_row.addWidget(self.export_btn)
         
-        self.pdf_btn = QPushButton("📄 Export PDF")
-        self.pdf_btn.clicked.connect(self.generate_pdf_report)
-        self.pdf_btn.setStyleSheet("background-color: #f39c12; color: white;")
-        self.pdf_btn.setEnabled(False)
-        action_row.addWidget(self.pdf_btn)
+        # Changed PDF button to Export Report
+        self.report_btn = QPushButton("📄 Export Report")
+        self.report_btn.clicked.connect(self.generate_report)
+        self.report_btn.setStyleSheet("background-color: #f39c12; color: white;")
+        self.report_btn.setEnabled(False)
+        action_row.addWidget(self.report_btn)
         
         self.ml_btn = QPushButton("🤖 ML Analysis")
         self.ml_btn.clicked.connect(self.run_ml_analysis)
@@ -776,6 +782,7 @@ class JSEAnalyzer(QMainWindow):
         # Reset state and disable buttons
         self.data = None
         self.ml_results = None
+        self.stat_results = None # Reset stat results
         self.set_buttons_enabled(False)
 
         # Create worker and thread
@@ -856,9 +863,12 @@ class JSEAnalyzer(QMainWindow):
     
     def set_buttons_enabled(self, enabled):
         """Enables/disables action buttons based on analysis status."""
+        # Enable Export Report only if *any* complex analysis has been run
+        report_ready = enabled and (self.pivot is not None) and (self.stat_results is not None or self.ml_results is not None)
+
         self.analyze_btn.setEnabled(enabled)
         self.export_btn.setEnabled(enabled and self.pivot is not None)
-        self.pdf_btn.setEnabled(enabled and self.pivot is not None)
+        self.report_btn.setEnabled(report_ready) # Use the new report button
         self.ml_btn.setEnabled(enabled and self.pivot is not None)
         self.stats_btn.setEnabled(enabled and self.pivot is not None)
         self.add_compare_btn.setEnabled(enabled)
@@ -1088,10 +1098,19 @@ class JSEAnalyzer(QMainWindow):
         summary += f"{'='*50}\n"
         summary += "📈 MONTHLY AVERAGE RETURNS:\n"
         summary += "-" * 30 + "\n"
+        
+        monthly_summary_data = []
         for month_num, month_name in enumerate(self.months, 1):
             if month_num in self.month_avg.index:
                 avg_ret = self.month_avg[month_num] * 100
                 summary += f"{month_name:3}: {avg_ret:+6.2f}%\n"
+                monthly_summary_data.append({
+                    'Month': month_name, 
+                    'Avg_Ret_Pct': avg_ret,
+                    'Med_Ret_Pct': self.month_median[month_num] * 100,
+                    'Std_Dev_Pct': self.pivot.std()[month_num] * 100
+                })
+
         summary += f"\n{'='*50}\n"
         overall_avg_pct = self.overall_avg * 100
         summary += f"🎯 OVERALL AVERAGE RETURN: {overall_avg_pct:+6.2f}%\n"
@@ -1133,10 +1152,117 @@ class JSEAnalyzer(QMainWindow):
             QMessageBox.critical(self, "Error", f"Error exporting data: {e}")
             self.status_bar.showMessage("❌ Export failed")
 
-    def generate_pdf_report(self):
-        """Placeholder for PDF generation (requires reportlab setup not included in this migration)."""
-        QMessageBox.information(self, "Info", "PDF Report generation is a complex feature that needs dedicated reportlab integration. Functionality is disabled in this version.")
+    def generate_report(self):
+        """Generates a Markdown report summarizing all analysis tabs."""
+        if self.pivot is None:
+            QMessageBox.warning(self, "Warning", "Please run primary analysis first.")
+            return
+
+        if self.stat_results is None:
+            QMessageBox.warning(self, "Warning", "Please run Statistical Tests before generating the full report.")
+            return
+            
+        if self.ml_results is None:
+            QMessageBox.warning(self, "Warning", "Please run ML Analysis before generating the full report.")
+            return
+
+        report_content = self._generate_markdown_report_content()
         
+        filename_base = f"{self.current_ticker.replace('^', '').replace('.JO', '').replace('.SS', '')}_Report_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
+        filepath, _ = QFileDialog.getSaveFileName(self, "Export Analysis Report (Markdown)", filename_base, "Markdown Files (*.md)")
+        
+        if not filepath: return
+
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(report_content)
+            
+            QMessageBox.information(self, "Success", f"✅ Report exported to {filepath}")
+            self.status_bar.showMessage(f"📄 Report exported to {filepath}")
+        except Exception as e:
+            self.logger.exception("Error exporting report.")
+            QMessageBox.critical(self, "Error", f"Error exporting report: {e}")
+            self.status_bar.showMessage("❌ Report export failed")
+
+    def _generate_markdown_report_content(self):
+        """Helper to compile report content from analysis results."""
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # --- 1. Header & General Summary ---
+        report = f"# Monthly Return Analysis Report: {self.current_ticker}\n\n"
+        report += f"**Generated On:** {date_str}\n"
+        report += f"**Analysis Period:** {self.start_year_spin.value()} to {self.end_date_entry.text()[:4]} ({len(self.pivot)} years)\n"
+        report += f"**Total Months Analyzed:** {len(self.monthly_ret)}\n\n"
+        report += "---\n\n"
+
+        # --- 2. Summary Statistics (from update_summary) ---
+        report += "## 📈 Monthly Return Summary\n\n"
+        
+        overall_avg_pct = self.overall_avg * 100
+        best_month_idx = self.month_avg.idxmax()
+        worst_month_idx = self.month_avg.idxmin()
+        best_month_name = self.months[best_month_idx - 1]
+        worst_month_name = self.months[worst_month_idx - 1]
+        
+        report += f"| Metric | Value |\n"
+        report += f"| :--- | :--- |\n"
+        report += f"| **Overall Average Monthly Return** | {overall_avg_pct:+.2f}% |\n"
+        report += f"| **Best Month** | {best_month_name} ({self.month_avg[best_month_idx]*100:+.2f}%) |\n"
+        report += f"| **Worst Month** | {worst_month_name} ({self.month_avg[worst_month_idx]*100:+.2f}%) |\n\n"
+        
+        # Monthly breakdown table
+        report += "### Monthly Breakdown (Averages, Medians, and Risk)\n\n"
+        report += "| Month | Avg. Return (%) | Median Return (%) | Standard Deviation (%) |\n"
+        report += "| :---: | :---: | :---: | :---: |\n"
+        for month_num, month_name in enumerate(self.months, 1):
+             if month_num in self.month_avg.index:
+                avg_ret = self.month_avg[month_num] * 100
+                med_ret = self.month_median[month_num] * 100
+                std_dev = self.pivot.std()[month_num] * 100
+                report += f"| {month_name} | {avg_ret:+.2f} | {med_ret:+.2f} | {std_dev:.2f} |\n"
+        report += "\n"
+
+        # --- 3. Statistical Tests ---
+        report += "## 🧮 Statistical Significance\n\n"
+        if self.stat_results:
+            # We assume stat_results is the formatted string from run_statistical_tests
+            report += "```\n"
+            report += self.stat_results.strip()
+            report += "\n```\n\n"
+        else:
+            report += "*Statistical tests were not run.*\n\n"
+
+        # --- 4. Machine Learning Analysis ---
+        report += "## 🤖 Machine Learning Insights\n\n"
+        if self.ml_results:
+            forecast_date_str = self.ml_results['forecast_date'].strftime('%Y-%m')
+            forecast_mean_pct = self.ml_results['forecast_mean'] * 100
+            pca_variance = self.ml_results['pca_explained_variance']
+            n_clusters = self.ml_results['n_clusters']
+            contamination = self.ml_results['contamination']
+            arima_order = self.ml_results['arima_order']
+            
+            # Forecast
+            report += "### Time Series Forecast\n\n"
+            report += f"The next forecasted monthly return (for {forecast_date_str}) is **{forecast_mean_pct:+.4f}%**.\n"
+            report += f"Model Used: {'AutoARIMA' if PMDARIMA_AVAILABLE else 'ARIMA'} with order {arima_order}.\n\n"
+            
+            # Clustering & Anomaly Detection
+            report += "### Clustering and Anomaly Detection\n\n"
+            report += f"- **KMeans Clusters (k):** {n_clusters}\n"
+            report += f"- **PCA Components (PC1+PC2):** These components capture {pca_variance[0]*100:.2f}% and {pca_variance[1]*100:.2f}% of the monthly return pattern variance, respectively.\n"
+            
+            anomalies = np.where(self.ml_results['anom_pred'] == -1)[0]
+            if len(anomalies) > 0:
+                anomaly_months = [self.months[i] for i in anomalies]
+                report += f"- **Anomalous Months (Isolation Forest, Contamination {contamination:.2f}):** {', '.join(anomaly_months)}\n\n"
+            else:
+                report += f"- **Anomalies:** No significant anomalies detected (Contamination {contamination:.2f}).\n\n"
+        else:
+            report += "*ML analysis was not run.*\n\n"
+            
+        return report
+
     # --- ML and Stats ---
     def run_statistical_tests(self):
         """Run statistical significance tests."""
@@ -1160,7 +1286,7 @@ class JSEAnalyzer(QMainWindow):
             else:
                 results += "  Conclusion: Monthly returns are likely normally distributed (p >= 0.05).\n"
                 
-            results += "\n--- Annualized Returns Significance ---\n\n"
+            results += "\n--- Mean Return Significance ---\n\n"
             
             # 2. T-Test against Zero (Check if mean return is significantly different from zero)
             t_test = stats.ttest_1samp(self.monthly_ret, 0)
@@ -1173,12 +1299,15 @@ class JSEAnalyzer(QMainWindow):
             else:
                 results += "  Conclusion: The mean return is NOT statistically different from zero (p >= 0.05).\n"
 
+            self.stat_results = results # Store results for report export
             self.stats_text.setText(results)
+            self.set_buttons_enabled(True) # Re-enable buttons to update report_btn state
             self.status_bar.showMessage("🧮 Statistical tests completed")
         except Exception as e:
             self.logger.exception("Error running statistical tests.")
             QMessageBox.critical(self, "Error", f"Error running statistical tests: {e}")
             self.status_bar.showMessage("❌ Statistical tests failed")
+            self.stat_results = None
 
     def run_ml_analysis(self):
         """Initiates ML analysis in a QThread."""
@@ -1215,7 +1344,7 @@ class JSEAnalyzer(QMainWindow):
     def handle_ml_data_ready(self, results):
         """Processes ML analysis results on the main thread."""
         self.ml_results = results
-        self.set_buttons_enabled(True)
+        self.set_buttons_enabled(True) # Re-enable buttons to update report_btn state
         self.update_ml_tab()
         self.status_bar.showMessage("🤖 Advanced ML analysis completed")
 

@@ -1,10 +1,13 @@
-2025-10-14 17:39:46,570 - INFO - --- Application Start: Global Index Analyzer v2.9.1 (PyQt6 - ML Tunable) (PyQt6) ---
-2025-10-14 17:39:46,570 - INFO - Cache directory set to: cache_v2_9_1_(PyQt6_-_ML_Tunable)
-2025-10-14 17:39:46,709 - INFO - Date range changed to: Custom
-2025-10-14 17:39:46,709 - INFO - Application initialized successfully.
-2025-10-14 17:39:46,709 - INFO - Toggling dark mode to OFF.
-2025-10-14 17:40:38,250 - INFO - Input validation successful: {'start_year': 1990, 'end_date': '2025-10-14', 'ticker': '^J203.JO', 'end_year': '2025', 'ml_n_clusters': 3, 'ml_contamination': 0.1, 'ml_arima_p': 5, 'ml_arima_d': 1, 'ml_arima_q': 0}
-2025-10-14 17:40:40,626 - INFO - Saved data for ^J203.JO to cache: cache_v2_9_1_(PyQt6_-_ML_Tunable)/J203_JO_1990_2025_v2_9_1 (PyQt6 - ML Tunable).pkl
-2025-10-14 17:40:40,738 - INFO - Updating charts. Dark mode: False
-2025-10-14 17:40:41,803 - INFO - Summary tab updated.
-2025-10-14 17:40:43,307 - INFO - Input validation successful: {'start_year': 1990, 'end_date': '2025-10-14', 'ticker': '^J203.JO', 'end_year': '2025', 'ml_n_clusters': 3, 'ml_contamination': 0.1, 'ml_arima_p': 5, 'ml_arima_d': 1, 'ml_arima_q': 0}
+2025-10-15 18:57:43,036 - INFO - --- Application Start: Global Index Analyzer v2.9.2 (PyQt6 - Report Export) (PyQt6) ---
+2025-10-15 18:57:43,037 - INFO - Cache directory set to: cache_v2_9_2_(PyQt6_-_Report_Export)
+2025-10-15 18:57:43,479 - INFO - Date range changed to: Custom
+2025-10-15 18:57:43,480 - INFO - Application initialized successfully.
+2025-10-15 18:57:43,480 - INFO - Toggling dark mode to OFF.
+2025-10-15 18:57:50,498 - INFO - Date range changed to: Last 10 Years
+2025-10-15 18:57:52,267 - INFO - Input validation successful: {'start_year': 2015, 'end_date': '2025-10-15', 'ticker': '^J203.JO', 'end_year': '2025', 'ml_n_clusters': 3, 'ml_contamination': 0.1, 'ml_arima_p': 5, 'ml_arima_d': 1, 'ml_arima_q': 0}
+2025-10-15 18:57:54,277 - INFO - Saved data for ^J203.JO to cache: cache_v2_9_2_(PyQt6_-_Report_Export)/J203_JO_2015_2025_v2_9_2 (PyQt6 - Report Export).pkl
+2025-10-15 18:57:54,318 - INFO - Updating charts. Dark mode: False
+2025-10-15 18:57:55,369 - INFO - Summary tab updated.
+2025-10-15 18:58:37,893 - INFO - Input validation successful: {'start_year': 2015, 'end_date': '2025-10-15', 'ticker': '^J203.JO', 'end_year': '2025', 'ml_n_clusters': 3, 'ml_contamination': 0.1, 'ml_arima_p': 5, 'ml_arima_d': 1, 'ml_arima_q': 0}
+2025-10-15 18:59:06,631 - INFO - Input validation successful: {'start_year': 2015, 'end_date': '2025-10-15', 'ticker': '^J203.JO', 'end_year': '2025', 'ml_n_clusters': 10, 'ml_contamination': 0.030000000000000013, 'ml_arima_p': 5, 'ml_arima_d': 1, 'ml_arima_q': 0}
+2025-10-15 18:59:17,187 - INFO - Input validation successful: {'start_year': 2015, 'end_date': '2025-10-15', 'ticker': '^J203.JO', 'end_year': '2025', 'ml_n_clusters': 2, 'ml_contamination': 0.030000000000000013, 'ml_arima_p': 5, 'ml_arima_d': 1, 'ml_arima_q': 0}
