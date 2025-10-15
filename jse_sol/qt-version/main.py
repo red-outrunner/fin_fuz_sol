@@ -34,7 +34,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QLineEdit, QComboBox, QPushButton, QCheckBox, QTextEdit,
     QTabWidget, QGroupBox, QMessageBox, QFileDialog, QSizePolicy, QSpinBox,
-    QFrame
+    QFrame, QDoubleSpinBox
 )
 from PyQt6.QtCore import (
     QObject, QThread, pyqtSignal, QDate, Qt, QTimer
@@ -277,9 +277,16 @@ class DataAnalysisWorker(QObject):
         return self.process_ticker_data(data, ticker)
         
     def run_ml_analysis(self, monthly_ret, pivot):
-        """Runs the ML analysis (KMeans, PCA, ARIMA) in the worker thread."""
+        """Runs the ML analysis (KMeans, PCA, ARIMA) in the worker thread, using user settings."""
         try:
             self.progress.emit("🤖 Starting ML Analysis...")
+            
+            # Retrieve parameters from settings
+            n_clusters = self.settings.get('ml_n_clusters', 3)
+            contamination = self.settings.get('ml_contamination', 0.1)
+            arima_order_p = self.settings.get('ml_arima_p', 5)
+            arima_order_d = self.settings.get('ml_arima_d', 1)
+            arima_order_q = self.settings.get('ml_arima_q', 0)
             
             # --- 1. Data Preparation ---
             # Use the monthly returns for clustering/PCA
@@ -293,26 +300,29 @@ class DataAnalysisWorker(QObject):
             features_reduced = pca.fit_transform(X_scaled)
             
             # --- 3. Clustering (KMeans) ---
-            self.progress.emit("Running KMeans Clustering (k=3)...")
-            kmeans = KMeans(n_clusters=3, random_state=42, n_init='auto')
+            self.progress.emit(f"Running KMeans Clustering (k={n_clusters})...")
+            kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init='auto')
             clusters = kmeans.fit_predict(X_scaled)
             
             # --- 4. Anomaly Detection (Isolation Forest) ---
-            self.progress.emit("Running Isolation Forest Anomaly Detection...")
-            iso_forest = IsolationForest(contamination=0.1, random_state=42)
+            self.progress.emit(f"Running Isolation Forest Anomaly Detection (Contamination={contamination})...")
+            iso_forest = IsolationForest(contamination=contamination, random_state=42)
             anom_pred = iso_forest.fit_predict(X_scaled)
             
             # --- 5. Time Series Forecast (ARIMA/AutoARIMA) ---
             self.progress.emit("Running Time Series Forecast...")
             
-            # Use AutoARIMA if available, otherwise fixed ARIMA(5, 1, 0)
+            # Use AutoARIMA if available, otherwise fixed ARIMA(p, d, q) from settings
             if PMDARIMA_AVAILABLE:
+                self.progress.emit("Using AutoARIMA for optimal order selection...")
                 model = auto_arima(
                     monthly_ret, seasonal=False, stepwise=True,
                     suppress_warnings=True, error_action='ignore', max_p=5, max_q=5
                 )
             else:
-                model = ARIMA(monthly_ret, order=(5, 1, 0))
+                order = (arima_order_p, arima_order_d, arima_order_q)
+                self.progress.emit(f"Using fixed ARIMA{order}...")
+                model = ARIMA(monthly_ret, order=order)
                 model = model.fit()
 
             # Forecast for the next month (next period after last data point)
@@ -332,7 +342,10 @@ class DataAnalysisWorker(QObject):
                 'anom_pred': anom_pred,
                 'pca_explained_variance': pca.explained_variance_ratio_,
                 'forecast_mean': forecast_mean,
-                'forecast_date': monthly_ret.index[-1] + timedelta(days=31) # Approx next month end
+                'forecast_date': monthly_ret.index[-1] + timedelta(days=31), # Approx next month end
+                'n_clusters': n_clusters,
+                'contamination': contamination,
+                'arima_order': model.order if PMDARIMA_AVAILABLE else (arima_order_p, arima_order_d, arima_order_q)
             }
             
             self.data_ready.emit(ml_results)
@@ -347,7 +360,7 @@ class DataAnalysisWorker(QObject):
 # --- Main Application Class (PyQt6) ---
 class JSEAnalyzer(QMainWindow):
     """A PyQt6 application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.0 (PyQt6)"
+    VERSION = "2.9.1 (PyQt6 - ML Tunable)" # Updated version
 
     def __init__(self):
         super().__init__()
@@ -533,8 +546,55 @@ class JSEAnalyzer(QMainWindow):
         self.stats_text.setReadOnly(True)
         self.stats_layout.addWidget(self.stats_text)
         
+        # --- ML Content and Controls ---
         self.ml_content = QWidget()
         self.ml_layout = QVBoxLayout(self.ml_content)
+        
+        # ML Parameter Group
+        ml_params_group = QGroupBox("ML Parameters")
+        ml_params_layout = QGridLayout(ml_params_group)
+        
+        # KMeans Cluster Count
+        ml_params_layout.addWidget(QLabel("KMeans Clusters (k):"), 0, 0)
+        self.ml_n_clusters_spin = QSpinBox()
+        self.ml_n_clusters_spin.setRange(2, 10)
+        self.ml_n_clusters_spin.setValue(3)
+        self.ml_n_clusters_spin.setToolTip("Number of clusters for KMeans analysis of monthly return patterns.")
+        ml_params_layout.addWidget(self.ml_n_clusters_spin, 0, 1)
+
+        # Isolation Forest Contamination
+        ml_params_layout.addWidget(QLabel("Anomaly Contamination:"), 1, 0)
+        self.ml_contamination_spin = QDoubleSpinBox()
+        self.ml_contamination_spin.setRange(0.01, 0.5)
+        self.ml_contamination_spin.setSingleStep(0.01)
+        self.ml_contamination_spin.setDecimals(2)
+        self.ml_contamination_spin.setValue(0.10)
+        self.ml_contamination_spin.setToolTip("Expected proportion of outliers in the data (Isolation Forest).")
+        ml_params_layout.addWidget(self.ml_contamination_spin, 1, 1)
+        
+        # ARIMA Order (P, D, Q) for fallback/fixed model
+        ml_params_layout.addWidget(QLabel("ARIMA Order (P, D, Q):"), 0, 2)
+        arima_order_layout = QHBoxLayout()
+        self.ml_arima_p_spin = QSpinBox()
+        self.ml_arima_p_spin.setRange(0, 10); self.ml_arima_p_spin.setValue(5)
+        self.ml_arima_d_spin = QSpinBox()
+        self.ml_arima_d_spin.setRange(0, 2); self.ml_arima_d_spin.setValue(1)
+        self.ml_arima_q_spin = QSpinBox()
+        self.ml_arima_q_spin.setRange(0, 10); self.ml_arima_q_spin.setValue(0)
+        
+        arima_order_layout.addWidget(QLabel("P:"))
+        arima_order_layout.addWidget(self.ml_arima_p_spin)
+        arima_order_layout.addWidget(QLabel("D:"))
+        arima_order_layout.addWidget(self.ml_arima_d_spin)
+        arima_order_layout.addWidget(QLabel("Q:"))
+        arima_order_layout.addWidget(self.ml_arima_q_spin)
+        arima_order_layout.addStretch(1)
+        
+        ml_params_layout.addLayout(arima_order_layout, 0, 3)
+        
+        ml_params_layout.setColumnStretch(4, 1)
+        self.ml_layout.addWidget(ml_params_group)
+        
         self.ml_text = QTextEdit()
         self.ml_text.setReadOnly(True)
         self.ml_layout.addWidget(self.ml_text)
@@ -608,9 +668,13 @@ class JSEAnalyzer(QMainWindow):
             app.setPalette(QApplication.instance().style().standardPalette())
             
         QApplication.instance().setPalette(palette)
-        self.summary_text.setStyleSheet(f"background-color: {dark_color.name() if is_dark else 'white'}; color: {light_color.name() if is_dark else '#2c3e50'};")
-        self.stats_text.setStyleSheet(f"background-color: {dark_color.name() if is_dark else 'white'}; color: {light_color.name() if is_dark else '#2c3e50'};")
-        self.ml_text.setStyleSheet(f"background-color: {dark_color.name() if is_dark else 'white'}; color: {light_color.name() if is_dark else '#2c3e50'};")
+        # Use QSS for text edits to control background/text colors independent of the system palette
+        text_bg = dark_color.name() if is_dark else 'white'
+        text_fg = light_color.name() if is_dark else '#2c3e50'
+        style_sheet = f"background-color: {text_bg}; color: {text_fg};"
+        self.summary_text.setStyleSheet(style_sheet)
+        self.stats_text.setStyleSheet(style_sheet)
+        self.ml_text.setStyleSheet(style_sheet)
 
         self.update_charts(force_redraw=True) # Redraw Matplotlib charts
 
@@ -689,6 +753,14 @@ class JSEAnalyzer(QMainWindow):
             
             self.current_ticker = settings['ticker']
             settings['end_year'] = settings['end_date'][:4]
+            
+            # --- Capture ML Parameters ---
+            settings['ml_n_clusters'] = self.ml_n_clusters_spin.value()
+            settings['ml_contamination'] = self.ml_contamination_spin.value()
+            settings['ml_arima_p'] = self.ml_arima_p_spin.value()
+            settings['ml_arima_d'] = self.ml_arima_d_spin.value()
+            settings['ml_arima_q'] = self.ml_arima_q_spin.value()
+            
             self.logger.info(f"Input validation successful: {settings}")
             return settings
         except ValueError as e:
@@ -1123,6 +1195,7 @@ class JSEAnalyzer(QMainWindow):
         
         # Create worker and thread
         self.worker_thread = QThread()
+        # Pass the updated settings including ML parameters
         self.current_worker = DataAnalysisWorker(settings, self.logger, self.cache_dir, self.VERSION)
         self.current_worker.moveToThread(self.worker_thread)
 
@@ -1156,26 +1229,34 @@ class JSEAnalyzer(QMainWindow):
         forecast_date_str = self.ml_results['forecast_date'].strftime('%Y-%m')
         forecast_mean_pct = self.ml_results['forecast_mean'] * 100
         pca_variance = self.ml_results['pca_explained_variance']
+        n_clusters = self.ml_results['n_clusters']
+        contamination = self.ml_results['contamination']
+        arima_order = self.ml_results['arima_order']
         
         summary = "--- ML Analysis Summary ---\n\n"
         summary += f"🔮 Forecast for {forecast_date_str}:\n"
         summary += f"  Predicted Mean Monthly Return: {forecast_mean_pct:+.4f}%\n"
-        summary += f"  (Based on {'AutoARIMA' if PMDARIMA_AVAILABLE else 'ARIMA(5,1,0)'})\n\n"
+        
+        if PMDARIMA_AVAILABLE:
+             summary += f"  (Model: AutoARIMA{arima_order})\n\n"
+        else:
+             summary += f"  (Model: ARIMA{arima_order} - Fixed Order)\n\n"
         
         summary += f"📊 PCA Components:\n"
         summary += f"  PC1 Explains: {pca_variance[0]*100:.2f}%\n"
         summary += f"  PC2 Explains: {pca_variance[1]*100:.2f}%\n"
         summary += "  (The plot below visualizes the months using these two main components)\n\n"
         
-        summary += f"🧩 KMeans Clustering (k=3):\n"
-        summary += "  The 12 months are grouped into 3 clusters based on their historical yearly returns.\n"
+        summary += f"🧩 KMeans Clustering (k={n_clusters}):\n"
+        summary += f"  The 12 months are grouped into {n_clusters} clusters based on their historical yearly returns.\n"
         summary += "  Cluster 1, 2, 3 details are visualized in the plot.\n\n"
         
         summary += f"🚨 Isolation Forest Anomaly Detection:\n"
+        summary += f"  Contamination parameter used: {contamination:.2f}\n"
         anomalies = np.where(self.ml_results['anom_pred'] == -1)[0]
         if len(anomalies) > 0:
             anomaly_months = [self.months[i] for i in anomalies]
-            summary += f"  Detected Anomalous Months (10% contamination): {', '.join(anomaly_months)}\n"
+            summary += f"  Detected Anomalous Months: {', '.join(anomaly_months)}\n"
         else:
             summary += "  No anomalies detected in monthly return patterns.\n"
         
@@ -1191,7 +1272,9 @@ class JSEAnalyzer(QMainWindow):
         clusters = self.ml_results['clusters']
         anom_pred = self.ml_results['anom_pred']
         
-        cols = ['#3498db', '#e74c3c', '#2ecc71'] # Blue, Red, Green
+        # Ensure enough colors for n_clusters
+        base_cols = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#34495e', '#c0392b', '#7f8c8d']
+        cols = base_cols[:n_clusters] 
         
         for cl in np.unique(clusters):
             idx = np.where(clusters == cl)
@@ -1211,8 +1294,10 @@ class JSEAnalyzer(QMainWindow):
         # Plot Anomalies
         anom_idx = np.where(anom_pred == -1)
         if np.any(anom_idx):
+            # Use a distinctive color for anomalies (e.g., bright yellow)
+            anom_color = '#f1c40f' 
             ax.scatter(features_reduced[anom_idx, 0], features_reduced[anom_idx, 1],
-                       s=200, marker='X', c='#f1c40f', label='Anomaly', linewidths=2, edgecolors=style['fg'])
+                       s=200, marker='X', c=anom_color, label='Anomaly', linewidths=2, edgecolors=style['fg'])
             for i in anom_idx[0]:
                  ax.annotate(self.months[i], (features_reduced[i, 0], features_reduced[i, 1]),
                            xytext=(3, 3), textcoords='offset points', fontsize=9, fontweight='bold',
