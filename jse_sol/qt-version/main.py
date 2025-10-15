@@ -82,7 +82,8 @@ class DataAnalysisWorker(QObject):
     finished = pyqtSignal()
     error = pyqtSignal(str)
     progress = pyqtSignal(str)
-    data_ready = pyqtSignal(dict) # Primary analysis results
+    primary_data_ready = pyqtSignal(dict) # Primary analysis results
+    ml_data_ready = pyqtSignal(dict)       # ML analysis results
     comparison_data_ready = pyqtSignal(dict) # Comparison analysis results
 
     def __init__(self, settings, logger, cache_dir, version, parent=None):
@@ -92,11 +93,33 @@ class DataAnalysisWorker(QObject):
         self.cache_dir = cache_dir
         self.VERSION = version
         self._is_running = True
+        self.task_type = None
+        self.primary_data = None # Store data needed for comparison/ML
 
     def stop(self):
         """Allows external stopping of the worker."""
         self._is_running = False
 
+    def set_task(self, task_type, settings, primary_data=None):
+        """Sets the task and relevant data/settings for the next run."""
+        self.task_type = task_type
+        self.settings = settings
+        self.primary_data = primary_data
+
+    def run(self):
+        """The main execution method, dispatching based on task_type."""
+        if self.task_type == 'primary':
+            self.run_primary_analysis()
+        elif self.task_type == 'comparison':
+            # primary_data is expected to be passed via set_task
+            self.run_comparison_analysis(self.primary_data['comparison_tickers'], self.primary_data['primary_data_for_compare'])
+        elif self.task_type == 'ml':
+            # primary_data is expected to be passed via set_task
+            self.run_ml_analysis(self.primary_data['monthly_ret'], self.primary_data['pivot'])
+        else:
+            self.error.emit("Worker started without a valid task type.")
+            self.finished.emit()
+            
     def get_price_column(self, data):
         """Determine the correct price column to use (Close or Adj Close)."""
         if "Adj Close" in data.columns:
@@ -114,8 +137,6 @@ class DataAnalysisWorker(QObject):
         """Load data from cache if available."""
         cache_file = self.get_cache_filename(ticker, start_year, end_date)
         if os.path.exists(cache_file):
-            # Cache check improvement: Don't check age, check file integrity/existence.
-            # Assuming historical data is immutable.
             try:
                 with open(cache_file, 'rb') as f:
                     data = pickle.load(f)
@@ -185,7 +206,9 @@ class DataAnalysisWorker(QObject):
             if data is None:
                 max_retries = 3
                 for attempt in range(max_retries):
-                    if not self._is_running: return
+                    if not self._is_running: 
+                        self.finished.emit()
+                        return
                     try:
                         self.progress.emit(f"Downloading {ticker} (attempt {attempt+1}/{max_retries})...")
                         data = yf.download(
@@ -209,7 +232,7 @@ class DataAnalysisWorker(QObject):
             self.progress.emit("⚙️ Processing data...")
             results = self.process_ticker_data(data, ticker)
             
-            self.data_ready.emit(results)
+            self.primary_data_ready.emit(results)
             self.finished.emit()
             
         except Exception as e:
@@ -223,12 +246,12 @@ class DataAnalysisWorker(QObject):
         self.logger.info("Starting parallel analysis for comparison tickers.")
         
         comparison_data_results = {}
-        tickers_to_fetch = [t for t in comparison_tickers if t != self.settings['ticker']]
-        
-        # Add primary data results to comparison list to avoid re-download
+        # Ensure the primary data is included first
         if primary_data is not None:
              comparison_data_results[self.settings['ticker']] = primary_data
 
+        tickers_to_fetch = [t for t in comparison_tickers if t != self.settings['ticker']]
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             futures = {
                 executor.submit(self._fetch_and_process_single_ticker, ticker): ticker
@@ -352,7 +375,7 @@ class DataAnalysisWorker(QObject):
                 'arima_order': arima_order
             }
             
-            self.data_ready.emit(ml_results)
+            self.ml_data_ready.emit(ml_results)
             self.finished.emit()
             
         except Exception as e:
@@ -364,7 +387,7 @@ class DataAnalysisWorker(QObject):
 # --- Main Application Class (PyQt6) ---
 class JSEAnalyzer(QMainWindow):
     """A PyQt6 application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.2 (PyQt6 - Report Export)" # Updated version
+    VERSION = "2.9.3 (PyQt6 - Thread Reuse)" # Updated version
 
     def __init__(self):
         super().__init__()
@@ -384,14 +407,32 @@ class JSEAnalyzer(QMainWindow):
         self.ml_results = None
         self.stat_results = None # To store statistical test results
 
-        # Thread management
-        self.worker_thread = None
-        self.current_worker = None
-        
-        # Cache directory
+        # --- FIX: Define cache_dir before worker uses it ---
         self.cache_dir = f"cache_v{self.VERSION.replace('.', '_').replace(' ', '_')}"
         os.makedirs(self.cache_dir, exist_ok=True)
         self.logger.info(f"Cache directory set to: {self.cache_dir}")
+        # --- END FIX ---
+
+        # Thread Management (Refactored for reuse)
+        self.worker_thread = QThread()
+        # Initialize worker with default settings, will be updated per task
+        default_settings = self.get_current_settings() 
+        # This line now correctly accesses self.cache_dir
+        self.analysis_worker = DataAnalysisWorker(default_settings, self.logger, self.cache_dir, self.VERSION) 
+        self.analysis_worker.moveToThread(self.worker_thread)
+
+        # Connect the general run method to the thread start signal
+        self.worker_thread.started.connect(self.analysis_worker.run)
+        
+        # Connect worker signals to main thread handlers
+        self.analysis_worker.primary_data_ready.connect(self.handle_primary_data_ready)
+        self.analysis_worker.ml_data_ready.connect(self.handle_ml_data_ready)
+        self.analysis_worker.comparison_data_ready.connect(self.handle_comparison_data_ready)
+        self.analysis_worker.progress.connect(self.status_bar.showMessage)
+        self.analysis_worker.error.connect(lambda e: QMessageBox.critical(self, "Worker Error", e))
+        self.analysis_worker.finished.connect(self.worker_thread.quit) # Stop the thread when the task finishes
+        
+        # Cache directory (removed redundancy)
         
         self.setup_ui()
         self.logger.info("Application initialized successfully.")
@@ -738,20 +779,15 @@ class JSEAnalyzer(QMainWindow):
             QMessageBox.warning(self, "Warning", "Ticker already added for comparison.")
 
     # --- Data and Analysis Control ---
-    def validate_inputs(self):
-        """Validate user inputs and set self.settings."""
+    def get_current_settings(self):
+        """Retrieves and validates current user inputs."""
         settings = {}
         try:
             settings['start_year'] = self.start_year_spin.value()
-            if settings['start_year'] < 1900 or settings['start_year'] > datetime.now().year:
-                raise ValueError(f"Start year must be between 1900 and {datetime.now().year}.")
-
             settings['end_date'] = self.end_date_entry.text().strip()
-            datetime.strptime(settings['end_date'], "%Y-%m-%d")
-
+            
             if self.custom_ticker_check.isChecked():
                 ticker = self.custom_ticker_entry.text().strip()
-                if not ticker: raise ValueError("Custom ticker cannot be empty.")
                 settings['ticker'] = ticker
             else:
                 ticker_name = self.ticker_combo.currentText()
@@ -767,39 +803,33 @@ class JSEAnalyzer(QMainWindow):
             settings['ml_arima_d'] = self.ml_arima_d_spin.value()
             settings['ml_arima_q'] = self.ml_arima_q_spin.value()
             
-            self.logger.info(f"Input validation successful: {settings}")
             return settings
-        except ValueError as e:
-            QMessageBox.critical(self, "Input Error", str(e))
-            self.status_bar.showMessage(f"❌ Input validation failed: {str(e)}")
-            return None
+        except Exception as e:
+             # Basic validation failure (e.g., date parsing)
+             QMessageBox.critical(self, "Input Error", f"Input validation failed: {e}")
+             return None
+
 
     def analyze_data(self):
-        """Initiates primary data analysis in a QThread."""
-        settings = self.validate_inputs()
+        """Initiates primary data analysis using the reused QThread."""
+        settings = self.get_current_settings()
         if settings is None: return
+        
+        # Check if the thread is currently running another task
+        if self.worker_thread.isRunning():
+            QMessageBox.warning(self, "Busy", "Worker thread is currently running another analysis. Please wait.")
+            return
 
         # Reset state and disable buttons
         self.data = None
         self.ml_results = None
-        self.stat_results = None # Reset stat results
+        self.stat_results = None
         self.set_buttons_enabled(False)
 
-        # Create worker and thread
-        self.worker_thread = QThread()
-        self.current_worker = DataAnalysisWorker(settings, self.logger, self.cache_dir, self.VERSION)
-        self.current_worker.moveToThread(self.worker_thread)
+        # 1. Configure the worker for the primary task
+        self.analysis_worker.set_task('primary', settings)
 
-        # Connect signals/slots
-        self.worker_thread.started.connect(self.current_worker.run_primary_analysis)
-        self.current_worker.data_ready.connect(self.handle_primary_data_ready)
-        self.current_worker.progress.connect(self.status_bar.showMessage)
-        self.current_worker.error.connect(lambda e: QMessageBox.critical(self, "Analysis Error", e))
-        self.current_worker.finished.connect(self.worker_thread.quit)
-        self.current_worker.finished.connect(self.current_worker.deleteLater)
-        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-
-        # Start the thread
+        # 2. Start the thread (which calls self.analysis_worker.run())
         self.worker_thread.start()
         self.status_bar.showMessage(f"🔍 Analyzing {self.current_ticker}...")
 
@@ -823,34 +853,32 @@ class JSEAnalyzer(QMainWindow):
             QTimer.singleShot(100, self.analyze_comparison_data)
 
     def analyze_comparison_data(self):
-        """Initiates comparison analysis in a QThread."""
+        """Initiates comparison analysis using the reused QThread."""
         if not self.comparison_tickers: return
-
-        settings = self.validate_inputs()
+        
+        settings = self.get_current_settings()
         if settings is None: return
 
-        # Reuse existing primary data for comparison
+        if self.worker_thread.isRunning():
+            QMessageBox.warning(self, "Busy", "Worker thread is currently running another analysis. Please wait.")
+            return
+            
+        # Prepare data structure for the worker
         primary_data_for_compare = {
             'month_avg': self.month_avg, 'pivot': self.pivot, 'monthly_ret': self.monthly_ret,
             'month_median': self.month_median, 'overall_avg': self.overall_avg, 'data': self.data
         }
+        worker_data = {
+            'comparison_tickers': self.comparison_tickers,
+            'primary_data_for_compare': primary_data_for_compare
+        }
         
         self.set_buttons_enabled(False)
 
-        # Create worker and thread for comparison (can reuse settings)
-        self.worker_thread = QThread()
-        self.current_worker = DataAnalysisWorker(settings, self.logger, self.cache_dir, self.VERSION)
-        self.current_worker.moveToThread(self.worker_thread)
+        # 1. Configure the worker for the comparison task
+        self.analysis_worker.set_task('comparison', settings, primary_data=worker_data)
 
-        # Connect signals/slots
-        self.worker_thread.started.connect(lambda: self.current_worker.run_comparison_analysis(self.comparison_tickers, primary_data_for_compare))
-        self.current_worker.comparison_data_ready.connect(self.handle_comparison_data_ready)
-        self.current_worker.progress.connect(self.status_bar.showMessage)
-        self.current_worker.finished.connect(self.worker_thread.quit)
-        self.current_worker.finished.connect(self.current_worker.deleteLater)
-        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
-
-        # Start the thread
+        # 2. Start the thread
         self.worker_thread.start()
         self.status_bar.showMessage(f"🔄 Analyzing {len(self.comparison_tickers)} comparison tickers...")
 
@@ -863,19 +891,25 @@ class JSEAnalyzer(QMainWindow):
     
     def set_buttons_enabled(self, enabled):
         """Enables/disables action buttons based on analysis status."""
-        # Enable Export Report only if *any* complex analysis has been run
-        report_ready = enabled and (self.pivot is not None) and (self.stat_results is not None or self.ml_results is not None)
+        is_running = self.worker_thread.isRunning()
+        
+        # Base enablement: buttons are enabled only if worker is NOT running
+        self.analyze_btn.setEnabled(not is_running)
+        self.add_compare_btn.setEnabled(not is_running)
+        
+        # Conditional enablement: requires basic data analysis (self.pivot is not None)
+        can_run_secondary = not is_running and (self.pivot is not None)
+        self.export_btn.setEnabled(can_run_secondary)
+        self.ml_btn.setEnabled(can_run_secondary)
+        self.stats_btn.setEnabled(can_run_secondary)
+        
+        # Report button enablement: requires data + stat OR ML results
+        report_ready = can_run_secondary and (self.stat_results is not None or self.ml_results is not None)
+        self.report_btn.setEnabled(report_ready)
 
-        self.analyze_btn.setEnabled(enabled)
-        self.export_btn.setEnabled(enabled and self.pivot is not None)
-        self.report_btn.setEnabled(report_ready) # Use the new report button
-        self.ml_btn.setEnabled(enabled and self.pivot is not None)
-        self.stats_btn.setEnabled(enabled and self.pivot is not None)
-        self.add_compare_btn.setEnabled(enabled)
-        # Ticker selection controls remain enabled for configuration changes
-        self.ticker_combo.setEnabled(enabled and not self.custom_ticker_check.isChecked())
-        self.custom_ticker_check.setEnabled(enabled)
-
+        # Ticker selection controls state
+        self.ticker_combo.setEnabled(not is_running and not self.custom_ticker_check.isChecked())
+        self.custom_ticker_check.setEnabled(not is_running)
 
     # --- Visualization Methods ---
     def get_plot_style(self):
@@ -1158,13 +1192,10 @@ class JSEAnalyzer(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please run primary analysis first.")
             return
 
-        if self.stat_results is None:
-            QMessageBox.warning(self, "Warning", "Please run Statistical Tests before generating the full report.")
-            return
-            
-        if self.ml_results is None:
-            QMessageBox.warning(self, "Warning", "Please run ML Analysis before generating the full report.")
-            return
+        # Simplified check for report, rely on button logic being correct
+        if self.stat_results is None and self.ml_results is None:
+             QMessageBox.warning(self, "Warning", "Please run Statistical Tests or ML Analysis before generating the full report.")
+             return
 
         report_content = self._generate_markdown_report_content()
         
@@ -1310,34 +1341,32 @@ class JSEAnalyzer(QMainWindow):
             self.stat_results = None
 
     def run_ml_analysis(self):
-        """Initiates ML analysis in a QThread."""
+        """Initiates ML analysis using the reused QThread."""
         if self.pivot is None:
             QMessageBox.warning(self, "Warning", "No data available. Please analyze data first.")
             return
 
-        settings = self.validate_inputs()
+        settings = self.get_current_settings()
         if settings is None: return
+
+        if self.worker_thread.isRunning():
+            QMessageBox.warning(self, "Busy", "Worker thread is currently running another analysis. Please wait.")
+            return
 
         self.ml_text.clear()
         self.clear_layout(self.ml_plot_frame.layout())
         self.set_buttons_enabled(False)
         
-        # Create worker and thread
-        self.worker_thread = QThread()
-        # Pass the updated settings including ML parameters
-        self.current_worker = DataAnalysisWorker(settings, self.logger, self.cache_dir, self.VERSION)
-        self.current_worker.moveToThread(self.worker_thread)
+        # Prepare data structure for the worker
+        worker_data = {
+            'monthly_ret': self.monthly_ret,
+            'pivot': self.pivot
+        }
 
-        # Connect signals/slots
-        self.worker_thread.started.connect(lambda: self.current_worker.run_ml_analysis(self.monthly_ret, self.pivot))
-        self.current_worker.data_ready.connect(self.handle_ml_data_ready)
-        self.current_worker.progress.connect(self.status_bar.showMessage)
-        self.current_worker.error.connect(lambda e: QMessageBox.critical(self, "ML Analysis Error", e))
-        self.current_worker.finished.connect(self.worker_thread.quit)
-        self.current_worker.finished.connect(self.current_worker.deleteLater)
-        self.worker_thread.finished.connect(self.worker_thread.deleteLater)
+        # 1. Configure the worker for the ML task
+        self.analysis_worker.set_task('ml', settings, primary_data=worker_data)
 
-        # Start the thread
+        # 2. Start the thread
         self.worker_thread.start()
         self.status_bar.showMessage("🤖 Starting ML Analysis...")
 
@@ -1458,5 +1487,4 @@ if __name__ == "__main__":
     app.setStyle("Fusion") 
 
     main_window = JSEAnalyzer()
-    main_window.show()
     sys.exit(app.exec())
