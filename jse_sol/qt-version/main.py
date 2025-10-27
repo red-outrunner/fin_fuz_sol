@@ -2,11 +2,6 @@
 # Global Index Monthly Return Analyzer (PyQt6 Version)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
-#
-# v2.9.5: Caching Improvements
-# - Switched from pickle to joblib for compressed caching (smaller files, faster I/O).
-# - Added 1-day cache expiration (os.path.getmtime) to refresh stale data.
-# - Added a "Clear Cache" button to the UI for manual invalidation.
 
 import sys
 import yfinance as yf
@@ -25,7 +20,6 @@ import re
 import concurrent.futures
 import logging
 import time
-# import joblib # Added for compressed caching <-- REMOVED from top-level imports
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -137,41 +131,27 @@ class DataAnalysisWorker(QObject):
 
     def get_cache_filename(self, ticker, start_year, end_date):
         """Generate cache filename with versioning."""
-        # Use .joblib extension for compressed data
-        return f"{self.cache_dir}/{ticker.replace('^', '').replace('.', '_')}_{start_year}_{end_date[:4]}_v{self.VERSION.replace('.', '_')}.joblib"
+        return f"{self.cache_dir}/{ticker.replace('^', '').replace('.', '_')}_{start_year}_{end_date[:4]}_v{self.VERSION.replace('.', '_')}.pkl"
 
     def load_cached_data(self, ticker, start_year, end_date):
-        """Load data from cache if available and not expired."""
-        import joblib # <-- ADDED import here
+        """Load data from cache if available."""
         cache_file = self.get_cache_filename(ticker, start_year, end_date)
         if os.path.exists(cache_file):
             try:
-                # 1. Check for cache expiration (1 day)
-                file_mod_time = os.path.getmtime(cache_file)
-                if (time.time() - file_mod_time) > 86400: # 86400 seconds = 1 day
-                    self.logger.warning(f"Cache expired for {ticker}. Refreshing data.")
-                    os.remove(cache_file) # Remove stale cache
-                    return None
-                    
-                # 2. Load using joblib
-                data = joblib.load(cache_file)
-                self.logger.info(f"Loaded cached data for {ticker} from {cache_file}")
-                return data
+                with open(cache_file, 'rb') as f:
+                    data = pickle.load(f)
+                    self.logger.info(f"Loaded cached data for {ticker} from {cache_file}")
+                    return data
             except Exception as e:
-                self.logger.error(f"Error loading cache for {ticker}: {e}. Deleting corrupt cache.")
-                try:
-                    os.remove(cache_file) # Remove corrupt cache file
-                except OSError as oe:
-                    self.logger.error(f"Could not remove corrupt cache file {cache_file}: {oe}")
+                self.logger.error(f"Error loading cache for {ticker}: {e}")
         return None
 
     def save_cached_data(self, ticker, start_year, end_date, data):
-        """Cache downloaded data locally using joblib with compression."""
-        import joblib # <-- ADDED import here
+        """Cache downloaded data locally."""
         cache_file = self.get_cache_filename(ticker, start_year, end_date)
         try:
-            # 3. Save using joblib with compression
-            joblib.dump(data, cache_file, compress=3, protocol=4) # protocol=4 for compatibility
+            with open(cache_file, 'wb') as f:
+                pickle.dump(data, f)
             self.logger.info(f"Saved data for {ticker} to cache: {cache_file}")
         except Exception as e:
             self.logger.error(f"Error saving cache for {ticker}: {e}")
@@ -407,7 +387,7 @@ class DataAnalysisWorker(QObject):
 # --- Main Application Class (PyQt6) ---
 class JSEAnalyzer(QMainWindow):
     """A PyQt6 application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.5 (Cache-Optimized)" # Updated version
+    VERSION = "2.9.4 (PyQt6 - Init Fix)" # Updated version
 
     def __init__(self):
         super().__init__()
@@ -432,8 +412,7 @@ class JSEAnalyzer(QMainWindow):
         self.status_bar.showMessage("✨ Initializing Application...")
 
         # 2. Initialize Cache Directory
-        # Version is in the filename now, but a root cache dir is still needed
-        self.cache_dir = "cache_data"
+        self.cache_dir = f"cache_v{self.VERSION.replace('.', '_').replace(' ', '_')}"
         os.makedirs(self.cache_dir, exist_ok=True)
         self.logger.info(f"Cache directory set to: {self.cache_dir}")
 
@@ -599,13 +578,6 @@ class JSEAnalyzer(QMainWindow):
         self.stats_btn.clicked.connect(self.run_statistical_tests)
         self.stats_btn.setEnabled(False)
         action_row.addWidget(self.stats_btn)
-        
-        # New Clear Cache Button
-        self.clear_cache_btn = QPushButton("🗑️ Clear Cache")
-        self.clear_cache_btn.clicked.connect(self.clear_cache)
-        self.clear_cache_btn.setStyleSheet("background-color: #e74c3c; color: white;")
-        self.clear_cache_btn.setToolTip("Deletes all locally cached data files, forcing a re-download on next analysis.")
-        action_row.addWidget(self.clear_cache_btn)
         
         action_row.addStretch(1)
         config_layout.addLayout(action_row)
@@ -934,7 +906,6 @@ class JSEAnalyzer(QMainWindow):
         # Base enablement: buttons are enabled only if worker is NOT running
         self.analyze_btn.setEnabled(not is_running)
         self.add_compare_btn.setEnabled(not is_running)
-        self.clear_cache_btn.setEnabled(not is_running)
         
         # Conditional enablement: requires basic data analysis (self.pivot is not None)
         can_run_secondary = not is_running and (self.pivot is not None)
@@ -1333,56 +1304,6 @@ class JSEAnalyzer(QMainWindow):
             
         return report
 
-    def clear_cache(self):
-        """
-        Clears all files from the application's cache directory after user confirmation.
-        """
-        if self.worker_thread.isRunning():
-            QMessageBox.warning(self, "Busy", "Cannot clear cache while an analysis is running. Please wait.")
-            return
-
-        reply = QMessageBox.question(self, "Confirm Clear Cache",
-                                     f"Are you sure you want to delete all files in the cache directory?\n({self.cache_dir})\n\n"
-                                     "Data will be re-downloaded on the next analysis.",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                     QMessageBox.StandardButton.No)
-        
-        if reply == QMessageBox.StandardButton.No:
-            self.status_bar.showMessage("Cache clear cancelled.")
-            return
-
-        self.logger.info(f"User initiated cache clearing for: {self.cache_dir}")
-        deleted_count = 0
-        failed_count = 0
-
-        try:
-            for filename in os.listdir(self.cache_dir):
-                file_path = os.path.join(self.cache_dir, filename)
-                try:
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.remove(file_path)
-                        deleted_count += 1
-                    elif os.path.isdir(file_path):
-                        # Optionally clear subdirs if any, but for now, let's assume flat
-                        self.logger.warning(f"Skipping subdirectory in cache: {file_path}")
-                except Exception as e:
-                    self.logger.error(f"Failed to delete cache file {file_path}: {e}")
-                    failed_count += 1
-            
-            summary_msg = f"✅ Cache cleared. Deleted {deleted_count} files."
-            if failed_count > 0:
-                summary_msg += f" ⚠️ Failed to delete {failed_count} files."
-            
-            QMessageBox.information(self, "Cache Cleared", summary_msg)
-            self.status_bar.showMessage(summary_msg)
-            self.logger.info(summary_msg)
-
-        except Exception as e:
-            error_msg = f"Error during cache clearing: {e}"
-            self.logger.exception(error_msg)
-            QMessageBox.critical(self, "Error", error_msg)
-            self.status_bar.showMessage("❌ Cache clearing failed.")
-            
     # --- ML and Stats ---
     def run_statistical_tests(self):
         """Run statistical significance tests."""
