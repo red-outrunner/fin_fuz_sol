@@ -1,5 +1,5 @@
-2025-10-27 17:10:20,523 - INFO - --- Application Start: Global Index Analyzer v2.9.4 (PyQt6 - Init Fix) (PyQt6) ---
-2025-10-27 17:10:20,574 - INFO - Cache directory set to: cache_v2_9_4_(PyQt6_-_Init_Fix)
-2025-10-27 17:10:20,609 - INFO - Date range changed to: Custom
-2025-10-27 17:10:20,609 - INFO - Application initialized successfully.
-2025-10-27 17:10:20,609 - INFO - Toggling dark mode to OFF.
+2025-10-27 17:14:57,998 - INFO - --- Application Start: Global Index Analyzer v2.9.4 (PyQt6 - Init Fix) (PyQt6) ---
+2025-10-27 17:14:58,013 - INFO - Cache directory set to: cache_v2_9_4_(PyQt6_-_Init_Fix)
+2025-10-27 17:14:58,040 - INFO - Date range changed to: Custom
+2025-10-27 17:14:58,040 - INFO - Application initialized successfully.
+2025-10-27 17:14:58,040 - INFO - Toggling dark mode to OFF.
