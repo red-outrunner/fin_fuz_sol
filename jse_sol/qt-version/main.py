@@ -25,7 +25,7 @@ import re
 import concurrent.futures
 import logging
 import time
-import joblib # Added for compressed caching
+# import joblib # Added for compressed caching <-- REMOVED from top-level imports
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -142,6 +142,7 @@ class DataAnalysisWorker(QObject):
 
     def load_cached_data(self, ticker, start_year, end_date):
         """Load data from cache if available and not expired."""
+        import joblib # <-- ADDED import here
         cache_file = self.get_cache_filename(ticker, start_year, end_date)
         if os.path.exists(cache_file):
             try:
@@ -166,6 +167,7 @@ class DataAnalysisWorker(QObject):
 
     def save_cached_data(self, ticker, start_year, end_date, data):
         """Cache downloaded data locally using joblib with compression."""
+        import joblib # <-- ADDED import here
         cache_file = self.get_cache_filename(ticker, start_year, end_date)
         try:
             # 3. Save using joblib with compression
@@ -1575,3 +1577,4 @@ if __name__ == "__main__":
 
     main_window = JSEAnalyzer()
     sys.exit(app.exec())
+
