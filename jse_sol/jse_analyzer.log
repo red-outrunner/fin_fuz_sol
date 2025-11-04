@@ -1,22 +1,86 @@
-2025-10-27 17:29:22,869 - INFO - --- Application Start: Global Index Analyzer v2.9.0 ---
-2025-10-27 17:29:24,673 - INFO - Cache directory set to: cache_v2_9_0
-2025-10-27 17:29:24,674 - INFO - UI styles configured.
-2025-10-27 17:29:25,129 - INFO - UI setup complete.
-2025-10-27 17:29:25,129 - INFO - Application initialized successfully.
-2025-10-27 17:29:25,129 - INFO - Starting Tkinter main loop.
-2025-10-27 17:29:29,039 - INFO - 'Analyze Data' button clicked.
-2025-10-27 17:29:29,040 - INFO - Validating user inputs.
-2025-10-27 17:29:29,044 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-10-27
-2025-10-27 17:29:29,046 - INFO - Starting data download for ticker: ^J203.JO
-2025-10-27 17:29:31,158 - INFO - Data download complete. Processing data...
-2025-10-27 17:29:31,199 - INFO - Data processing complete. Updating UI.
-2025-10-27 17:29:31,199 - INFO - Updating all charts.
-2025-10-27 17:29:31,725 - INFO - Updating bar chart with metric: Average
-2025-10-27 17:29:32,046 - INFO - Updating heatmap.
-2025-10-27 17:29:32,816 - INFO - Updating risk vs return scatter plot.
-2025-10-27 17:29:33,092 - INFO - Updating comparison chart.
-2025-10-27 17:29:33,093 - INFO - No comparison data to display.
-2025-10-27 17:29:33,093 - INFO - Updating summary tab.
-2025-10-27 17:29:33,093 - INFO - Summary tab updated.
-2025-10-27 17:29:33,105 - INFO - Updating summary tab.
-2025-10-27 17:29:33,106 - INFO - Summary tab updated.
+2025-10-27 21:41:49,627 - INFO - --- Application Start: Global Index Analyzer v2.9.0 ---
+2025-10-27 21:41:50,656 - INFO - Cache directory set to: cache_v2_9_0
+2025-10-27 21:41:50,656 - INFO - UI styles configured.
+2025-10-27 21:41:50,957 - INFO - UI setup complete.
+2025-10-27 21:41:50,957 - INFO - Application initialized successfully.
+2025-10-27 21:41:50,957 - INFO - Starting Tkinter main loop.
+2025-10-27 21:42:03,983 - INFO - Switched to custom ticker input.
+2025-10-27 21:42:24,414 - INFO - 'Analyze Data' button clicked.
+2025-10-27 21:42:24,415 - INFO - Validating user inputs.
+2025-10-27 21:42:24,419 - INFO - Input validation successful. Ticker: stxcap.jo, Start: 1990, End: 2025-10-27
+2025-10-27 21:42:24,422 - INFO - Starting data download for ticker: stxcap.jo
+2025-10-27 21:42:26,113 - INFO - Data download complete. Processing data...
+2025-10-27 21:42:26,153 - INFO - Data processing complete. Updating UI.
+2025-10-27 21:42:26,153 - INFO - Updating all charts.
+2025-10-27 21:42:26,502 - INFO - Updating bar chart with metric: Average
+2025-10-27 21:42:26,802 - INFO - Updating heatmap.
+2025-10-27 21:42:27,233 - INFO - Updating risk vs return scatter plot.
+2025-10-27 21:42:27,489 - INFO - Updating comparison chart.
+2025-10-27 21:42:27,489 - INFO - No comparison data to display.
+2025-10-27 21:42:27,489 - INFO - Updating summary tab.
+2025-10-27 21:42:27,490 - INFO - Summary tab updated.
+2025-10-27 21:42:27,493 - INFO - Updating summary tab.
+2025-10-27 21:42:27,493 - INFO - Summary tab updated.
+2025-10-27 21:42:42,921 - INFO - Date range changed to: Last 20 Years
+2025-10-27 21:42:44,076 - INFO - 'Analyze Data' button clicked.
+2025-10-27 21:42:44,077 - INFO - Validating user inputs.
+2025-10-27 21:42:44,078 - INFO - Input validation successful. Ticker: stxcap.jo, Start: 2005, End: 2025-10-27
+2025-10-27 21:42:44,079 - INFO - Starting data download for ticker: stxcap.jo
+2025-10-27 21:42:44,645 - INFO - Data download complete. Processing data...
+2025-10-27 21:42:44,658 - INFO - Data processing complete. Updating UI.
+2025-10-27 21:42:44,658 - INFO - Updating all charts.
+2025-10-27 21:42:44,720 - INFO - Updating bar chart with metric: Average
+2025-10-27 21:42:44,854 - INFO - Updating heatmap.
+2025-10-27 21:42:45,213 - INFO - Updating risk vs return scatter plot.
+2025-10-27 21:42:45,468 - INFO - Updating comparison chart.
+2025-10-27 21:42:45,468 - INFO - No comparison data to display.
+2025-10-27 21:42:45,468 - INFO - Updating summary tab.
+2025-10-27 21:42:45,469 - INFO - Summary tab updated.
+2025-10-27 21:42:45,469 - INFO - Updating summary tab.
+2025-10-27 21:42:45,470 - INFO - Summary tab updated.
+2025-10-27 21:42:51,702 - INFO - Switched to predefined ticker dropdown.
+2025-10-27 21:42:54,106 - INFO - 'Analyze Data' button clicked.
+2025-10-27 21:42:54,107 - INFO - Validating user inputs.
+2025-10-27 21:42:54,109 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 2005, End: 2025-10-27
+2025-10-27 21:42:54,110 - INFO - Starting data download for ticker: ^J203.JO
+2025-10-27 21:42:59,841 - INFO - Data download complete. Processing data...
+2025-10-27 21:42:59,859 - INFO - Data processing complete. Updating UI.
+2025-10-27 21:42:59,860 - INFO - Updating all charts.
+2025-10-27 21:42:59,924 - INFO - Updating bar chart with metric: Average
+2025-10-27 21:43:00,070 - INFO - Updating heatmap.
+2025-10-27 21:43:00,614 - INFO - Updating risk vs return scatter plot.
+2025-10-27 21:43:00,867 - INFO - Updating comparison chart.
+2025-10-27 21:43:00,868 - INFO - No comparison data to display.
+2025-10-27 21:43:00,868 - INFO - Updating summary tab.
+2025-10-27 21:43:00,868 - INFO - Summary tab updated.
+2025-10-27 21:43:00,869 - INFO - Updating summary tab.
+2025-10-27 21:43:00,869 - INFO - Summary tab updated.
+2025-10-27 21:43:13,512 - INFO - Switched to custom ticker input.
+2025-10-27 21:43:18,391 - INFO - Switched to predefined ticker dropdown.
+2025-10-27 21:43:23,392 - INFO - Switched to custom ticker input.
+2025-10-27 21:43:39,120 - INFO - Date range changed to: Last 5 Years
+2025-10-27 21:43:39,778 - INFO - 'Analyze Data' button clicked.
+2025-10-27 21:43:39,779 - INFO - Validating user inputs.
+2025-10-27 21:43:39,781 - INFO - Input validation successful. Ticker: stxcap.jo, Start: 2020, End: 2025-10-27
+2025-10-27 21:43:39,783 - INFO - Starting data download for ticker: stxcap.jo
+2025-10-27 21:43:40,710 - INFO - Data download complete. Processing data...
+2025-10-27 21:43:40,724 - INFO - Data processing complete. Updating UI.
+2025-10-27 21:43:40,724 - INFO - Updating all charts.
+2025-10-27 21:43:40,788 - INFO - Updating bar chart with metric: Average
+2025-10-27 21:43:40,925 - INFO - Updating heatmap.
+2025-10-27 21:43:41,287 - INFO - Updating risk vs return scatter plot.
+2025-10-27 21:43:41,540 - INFO - Updating comparison chart.
+2025-10-27 21:43:41,540 - INFO - No comparison data to display.
+2025-10-27 21:43:41,540 - INFO - Updating summary tab.
+2025-10-27 21:43:41,541 - INFO - Summary tab updated.
+2025-10-27 21:43:41,542 - INFO - Updating summary tab.
+2025-10-27 21:43:41,542 - INFO - Summary tab updated.
+2025-10-27 21:43:44,840 - INFO - Added '🇿🇦 JSE All Share (^J203.JO)' (^J203.JO) to comparison list.
+2025-10-27 21:43:44,841 - INFO - Starting analysis for comparison tickers.
+2025-10-27 21:43:44,843 - INFO - No cache found for ^J203.JO. Downloading from yfinance.
+2025-10-27 21:43:44,844 - INFO - No cache found for stxcap.jo. Downloading from yfinance.
+2025-10-27 21:43:44,910 - INFO - Saved data for stxcap.jo to cache: cache_v2_9_0/stxcap_jo_2020_2025_v2_9_0.pkl
+2025-10-27 21:43:44,926 - INFO - Successfully processed comparison data for stxcap.jo.
+2025-10-27 21:43:44,927 - INFO - Saved data for ^J203.JO to cache: cache_v2_9_0/J203_JO_2020_2025_v2_9_0.pkl
+2025-10-27 21:43:44,938 - INFO - Successfully processed comparison data for ^J203.JO.
+2025-10-27 21:43:44,938 - INFO - Updating comparison chart.
