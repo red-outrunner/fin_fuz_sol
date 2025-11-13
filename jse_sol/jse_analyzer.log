@@ -1,77 +1,102 @@
-2025-11-13 22:07:36,566 - INFO - --- Application Start: Global Index Analyzer v2.9.7 ---
-2025-11-13 22:07:36,839 - INFO - Cache directory set to: cache_v2_9_7
-2025-11-13 22:07:36,839 - INFO - UI styles configured.
-2025-11-13 22:07:37,381 - INFO - UI setup complete.
-2025-11-13 22:07:37,381 - INFO - Application initialized successfully.
-2025-11-13 22:07:37,381 - INFO - Starting Tkinter main loop.
-2025-11-13 22:07:44,889 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:07:44,890 - INFO - Validating user inputs.
-2025-11-13 22:07:44,892 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 1990, End: 2025-11-13
-2025-11-13 22:07:44,893 - INFO - Starting data download for ticker: ^J252.JO
-2025-11-13 22:07:48,651 - ERROR - HTTP Error 404: 
-2025-11-13 22:07:49,412 - ERROR - 
+2025-11-13 22:14:38,645 - INFO - --- Application Start: Global Index Analyzer v2.9.8 ---
+2025-11-13 22:14:38,892 - INFO - Cache directory set to: cache_v2_9_8
+2025-11-13 22:14:38,893 - INFO - UI styles configured.
+2025-11-13 22:14:38,966 - INFO - UI setup complete.
+2025-11-13 22:14:38,966 - INFO - Application initialized successfully.
+2025-11-13 22:14:38,966 - INFO - Starting Tkinter main loop.
+2025-11-13 22:14:47,774 - INFO - 'Analyze Data' button clicked.
+2025-11-13 22:14:47,775 - INFO - Validating user inputs.
+2025-11-13 22:14:47,779 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 1990, End: 2025-11-13
+2025-11-13 22:14:47,781 - INFO - Starting data download for ticker: ^J258.JO
+2025-11-13 22:14:50,196 - INFO - Data download complete. Processing data...
+2025-11-13 22:14:50,207 - INFO - Data processing complete. Updating UI.
+2025-11-13 22:14:50,207 - INFO - Updating all charts.
+2025-11-13 22:14:50,264 - INFO - Updating bar chart with metric: Average
+2025-11-13 22:14:50,372 - INFO - Updating heatmap.
+2025-11-13 22:14:50,865 - INFO - Updating risk vs return scatter plot.
+2025-11-13 22:14:51,056 - INFO - Updating comparison chart.
+2025-11-13 22:14:51,056 - INFO - No comparison data to display.
+2025-11-13 22:14:51,056 - INFO - Updating summary tab.
+2025-11-13 22:14:51,056 - INFO - Summary tab updated.
+2025-11-13 22:14:51,058 - INFO - Updating summary tab.
+2025-11-13 22:14:51,058 - INFO - Summary tab updated.
+2025-11-13 22:14:53,408 - INFO - Configuration panel hidden.
+2025-11-13 22:14:57,620 - INFO - Configuration panel shown.
+2025-11-13 22:15:01,089 - INFO - 'ML Analysis' button clicked.
+2025-11-13 22:15:01,090 - INFO - ML analysis completed successfully.
+2025-11-13 22:15:06,376 - INFO - 'Significance Test' button clicked.
+2025-11-13 22:15:06,390 - INFO - Statistical tests completed successfully.
+2025-11-13 22:15:18,493 - INFO - Configuration panel hidden.
+2025-11-13 22:15:21,706 - INFO - Configuration panel shown.
+2025-11-13 22:15:25,921 - INFO - Date range changed to: Last 10 Years
+2025-11-13 22:15:26,792 - INFO - 'Analyze Data' button clicked.
+2025-11-13 22:15:26,792 - INFO - Validating user inputs.
+2025-11-13 22:15:26,794 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 2015, End: 2025-11-13
+2025-11-13 22:15:26,795 - INFO - Starting data download for ticker: ^J258.JO
+2025-11-13 22:15:27,675 - INFO - Data download complete. Processing data...
+2025-11-13 22:15:27,684 - INFO - Data processing complete. Updating UI.
+2025-11-13 22:15:27,684 - INFO - Updating all charts.
+2025-11-13 22:15:27,725 - INFO - Updating bar chart with metric: Average
+2025-11-13 22:15:27,808 - INFO - Updating heatmap.
+2025-11-13 22:15:28,203 - INFO - Updating risk vs return scatter plot.
+2025-11-13 22:15:28,378 - INFO - Updating comparison chart.
+2025-11-13 22:15:28,378 - INFO - No comparison data to display.
+2025-11-13 22:15:28,378 - INFO - Updating summary tab.
+2025-11-13 22:15:28,378 - INFO - Summary tab updated.
+2025-11-13 22:15:28,379 - INFO - Updating summary tab.
+2025-11-13 22:15:28,380 - INFO - Summary tab updated.
+2025-11-13 22:15:32,215 - INFO - 'Analyze Data' button clicked.
+2025-11-13 22:15:32,216 - INFO - Validating user inputs.
+2025-11-13 22:15:32,217 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 2015, End: 2025-11-13
+2025-11-13 22:15:32,219 - INFO - Starting data download for ticker: ^J258.JO
+2025-11-13 22:15:32,275 - INFO - Data download complete. Processing data...
+2025-11-13 22:15:32,285 - INFO - Data processing complete. Updating UI.
+2025-11-13 22:15:32,285 - INFO - Updating all charts.
+2025-11-13 22:15:32,326 - INFO - Updating bar chart with metric: Average
+2025-11-13 22:15:32,410 - INFO - Updating heatmap.
+2025-11-13 22:15:32,715 - INFO - Updating risk vs return scatter plot.
+2025-11-13 22:15:32,897 - INFO - Updating comparison chart.
+2025-11-13 22:15:32,897 - INFO - No comparison data to display.
+2025-11-13 22:15:32,897 - INFO - Updating summary tab.
+2025-11-13 22:15:32,898 - INFO - Summary tab updated.
+2025-11-13 22:15:32,898 - INFO - Updating summary tab.
+2025-11-13 22:15:32,899 - INFO - Summary tab updated.
+2025-11-13 22:16:31,693 - INFO - 'Analyze Data' button clicked.
+2025-11-13 22:16:31,694 - INFO - Validating user inputs.
+2025-11-13 22:16:31,696 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 2015, End: 2025-11-13
+2025-11-13 22:16:31,697 - INFO - Starting data download for ticker: ^J252.JO
+2025-11-13 22:16:35,297 - ERROR - HTTP Error 404: 
+2025-11-13 22:16:36,045 - ERROR - 
 1 Failed download:
-2025-11-13 22:07:49,413 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:07:50,826 - ERROR - HTTP Error 404: 
-2025-11-13 22:07:51,552 - ERROR - 
+2025-11-13 22:16:36,045 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-13 22:16:36,586 - INFO - 'Analyze Data' button clicked.
+2025-11-13 22:16:36,587 - INFO - Validating user inputs.
+2025-11-13 22:16:36,588 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 2015, End: 2025-11-13
+2025-11-13 22:16:36,590 - INFO - Starting data download for ticker: ^J252.JO
+2025-11-13 22:16:36,602 - ERROR - 
 1 Failed download:
-2025-11-13 22:07:51,552 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:07:51,578 - ERROR - 
+2025-11-13 22:16:36,603 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-13 22:16:36,608 - ERROR - 
 1 Failed download:
-2025-11-13 22:07:51,578 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:07:51,588 - INFO - Data download complete. Processing data...
-2025-11-13 22:07:51,588 - ERROR - An error occurred during data analysis.
+2025-11-13 22:16:36,615 - WARNING - Network error on attempt 2/3 for ^J252.JO: No objects to concatenate
+2025-11-13 22:16:36,625 - ERROR - 
+1 Failed download:
+2025-11-13 22:16:36,625 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-13 22:16:36,646 - ERROR - 
+1 Failed download:
+2025-11-13 22:16:36,646 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-13 22:16:36,655 - INFO - Data download complete. Processing data...
+2025-11-13 22:16:36,655 - ERROR - An error occurred during data analysis.
 Traceback (most recent call last):
   File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 584, in worker
     raise ValueError("No data returned from Yahoo Finance. Check ticker symbol or internet connection.")
 ValueError: No data returned from Yahoo Finance. Check ticker symbol or internet connection.
-2025-11-13 22:07:59,810 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:07:59,811 - INFO - Validating user inputs.
-2025-11-13 22:07:59,812 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-13
-2025-11-13 22:07:59,813 - INFO - Starting data download for ticker: ^J203.JO
-2025-11-13 22:08:00,846 - INFO - Data download complete. Processing data...
-2025-11-13 22:08:00,858 - INFO - Data processing complete. Updating UI.
-2025-11-13 22:08:00,858 - INFO - Updating all charts.
-2025-11-13 22:08:00,918 - INFO - Updating bar chart with metric: Average
-2025-11-13 22:08:01,031 - INFO - Updating heatmap.
-2025-11-13 22:08:01,520 - INFO - Updating risk vs return scatter plot.
-2025-11-13 22:08:01,691 - INFO - Updating comparison chart.
-2025-11-13 22:08:01,691 - INFO - No comparison data to display.
-2025-11-13 22:08:01,691 - INFO - Updating summary tab.
-2025-11-13 22:08:01,691 - INFO - Summary tab updated.
-2025-11-13 22:08:01,695 - INFO - Updating summary tab.
-2025-11-13 22:08:01,696 - INFO - Summary tab updated.
-2025-11-13 22:08:05,192 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:08:05,193 - INFO - Validating user inputs.
-2025-11-13 22:08:05,195 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 1990, End: 2025-11-13
-2025-11-13 22:08:05,196 - INFO - Starting data download for ticker: ^J258.JO
-2025-11-13 22:08:06,286 - INFO - Data download complete. Processing data...
-2025-11-13 22:08:06,296 - INFO - Data processing complete. Updating UI.
-2025-11-13 22:08:06,296 - INFO - Updating all charts.
-2025-11-13 22:08:06,338 - INFO - Updating bar chart with metric: Average
-2025-11-13 22:08:06,420 - INFO - Updating heatmap.
-2025-11-13 22:08:06,847 - INFO - Updating risk vs return scatter plot.
-2025-11-13 22:08:07,013 - INFO - Updating comparison chart.
-2025-11-13 22:08:07,013 - INFO - No comparison data to display.
-2025-11-13 22:08:07,013 - INFO - Updating summary tab.
-2025-11-13 22:08:07,014 - INFO - Summary tab updated.
-2025-11-13 22:08:07,014 - INFO - Updating summary tab.
-2025-11-13 22:08:07,014 - INFO - Summary tab updated.
-2025-11-13 22:08:15,604 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:08:15,605 - INFO - Validating user inputs.
-2025-11-13 22:08:15,606 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 1990, End: 2025-11-13
-2025-11-13 22:08:15,607 - INFO - Starting data download for ticker: ^J252.JO
-2025-11-13 22:08:15,621 - ERROR - 
+2025-11-13 22:16:37,786 - ERROR - HTTP Error 401: 
+2025-11-13 22:16:38,632 - ERROR - 
 1 Failed download:
-2025-11-13 22:08:15,621 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:08:15,641 - ERROR - 
-1 Failed download:
-2025-11-13 22:08:15,641 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:08:15,660 - ERROR - 
-1 Failed download:
-2025-11-13 22:08:15,661 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:08:15,669 - INFO - Data download complete. Processing data...
-2025-11-13 22:08:15,670 - ERROR - An error occurred during data analysis.
+2025-11-13 22:16:38,632 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-13 22:16:38,637 - INFO - Data download complete. Processing data...
+2025-11-13 22:16:38,638 - ERROR - An error occurred during data analysis.
 Traceback (most recent call last):
   File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 584, in worker
     raise ValueError("No data returned from Yahoo Finance. Check ticker symbol or internet connection.")

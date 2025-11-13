@@ -1,8 +1,8 @@
 # jse.py
-# Global Index Monthly Return Analyzer (Version 2.9.7)
+# Global Index Monthly Return Analyzer (Version 2.9.8)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
-# v2.9.7: Configuration panel is now collapsible to maximize graph space. Fixed toggle bug.
+# v2.9.8: Fixed NameError in exception handling when updating UI from worker threads.
 
 import yfinance as yf
 import pandas as pd
@@ -94,7 +94,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.7"
+    VERSION = "2.9.8"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -612,8 +612,9 @@ class JSEAnalyzer:
 
             except Exception as e:
                 self.logger.exception("An error occurred during data analysis.")
-                self.root.after(0, lambda: messagebox.showerror("Analysis Error", str(e)))
-                self.root.after(0, lambda: self.status_var.set(f"❌ Analysis failed: {str(e)}"))
+                # FIX: Capture exception message as default argument to avoid free variable error
+                self.root.after(0, lambda msg=str(e): messagebox.showerror("Analysis Error", msg))
+                self.root.after(0, lambda msg=str(e): self.status_var.set(f"❌ Analysis failed: {msg}"))
 
         thread = threading.Thread(target=worker)
         thread.daemon = True
@@ -646,7 +647,8 @@ class JSEAnalyzer:
                         self.logger.info(f"Successfully processed comparison data for {ticker}.")
                 except Exception as e:
                     self.logger.error(f"Error processing comparison ticker {ticker}: {str(e)}")
-                    self.status_var.set(f"❌ Error processing {ticker}: {str(e)}")
+                    # FIX: Capture exception message as default argument to avoid free variable error
+                    self.root.after(0, lambda msg=str(e): self.status_var.set(f"❌ Error processing {ticker}: {msg}"))
 
         self.update_comparison_chart()
 
