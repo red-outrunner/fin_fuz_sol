@@ -2,7 +2,7 @@
 # Global Index Monthly Return Analyzer (Version 2.9.7)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
-# v2.9.7: Configuration panel is now collapsible to maximize graph space.
+# v2.9.7: Configuration panel is now collapsible to maximize graph space. Fixed toggle bug.
 
 import yfinance as yf
 import pandas as pd
@@ -310,10 +310,10 @@ class JSEAnalyzer:
         Tooltip(stats_btn, "Run statistical significance tests on the data.")
 
         # Results notebook
-        notebook_frame = ttk.Frame(main_container)
-        notebook_frame.pack(fill=tk.BOTH, expand=True)
+        self.notebook_frame = ttk.Frame(main_container)
+        self.notebook_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.notebook = ttk.Notebook(notebook_frame, padding=5)
+        self.notebook = ttk.Notebook(self.notebook_frame, padding=5)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
         # Tabs
@@ -382,12 +382,15 @@ class JSEAnalyzer:
             self.logger.info("Configuration panel hidden.")
             self.status_var.set("✅ Configuration panel hidden")
         else:
-            # Currently hidden, so show it
-            self.config_content_frame.pack(fill=tk.X, pady=(0, 20))
+            # Currently hidden, so show it - pack it before notebook_frame to maintain order
+            self.config_content_frame.pack(before=self.notebook_frame, fill=tk.X, pady=(0, 20))
             self.toggle_config_btn.config(text="❌ Hide Configuration")
             self.config_visible.set(True)
             self.logger.info("Configuration panel shown.")
             self.status_var.set("✅ Configuration panel shown")
+        
+        # Force layout update to prevent visual glitches
+        self.root.update()
 
     def toggle_dark_mode(self):
         """Toggle between light and dark mode with improved color application."""
