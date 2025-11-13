@@ -1,8 +1,8 @@
 # jse.py
-# Global Index Monthly Return Analyzer (Version 2.9.9)
+# Global Index Monthly Return Analyzer (Version 2.9.10)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
-# v2.9.9: Fixed NameError in exception handling and implemented ML/Statistical analysis with threading.
+# v2.9.10: Fixed invalid colormap 'tab12' error in ML analysis.
 
 import yfinance as yf
 import pandas as pd
@@ -94,7 +94,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.9"
+    VERSION = "2.9.10"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -1078,10 +1078,12 @@ class JSEAnalyzer:
                 X_pca = pca.fit_transform(X)
                 
                 fig_pca, ax_pca = plt.subplots(figsize=(10, 6))
-                scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='tab12', alpha=0.6)
+                # FIX: Changed from invalid 'tab12' to valid 'Set3' colormap
+                scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='Set3', alpha=0.6)
                 ax_pca.set_xlabel(f'First Principal Component ({pca.explained_variance_ratio_[0]:.1%} variance)')
                 ax_pca.set_ylabel(f'Second Principal Component ({pca.explained_variance_ratio_[1]:.1%} variance)')
                 ax_pca.set_title(f'PCA: Returns Patterns Colored by Target Month\nTotal Explained Variance: {pca.explained_variance_ratio_.sum():.1%}')
+                # FIX: Update colorbar to use valid colormap
                 plt.colorbar(scatter, ax=ax_pca, ticks=range(1, 13)).set_ticklabels(self.months)
                 
                 canvas_pca = FigureCanvasTkAgg(fig_pca, pca_tab)

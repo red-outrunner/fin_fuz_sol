@@ -1,74 +1,25 @@
-2025-11-13 22:40:35,223 - INFO - --- Application Start: Global Index Analyzer v2.9.9 ---
-2025-11-13 22:40:35,474 - INFO - Cache directory set to: cache_v2_9_9
-2025-11-13 22:40:35,475 - INFO - UI styles configured.
-2025-11-13 22:40:35,547 - INFO - UI setup complete.
-2025-11-13 22:40:35,547 - INFO - Application initialized successfully.
-2025-11-13 22:40:35,547 - INFO - Starting Tkinter main loop.
-2025-11-13 22:40:40,160 - INFO - Configuration panel hidden.
-2025-11-13 22:40:40,882 - INFO - Configuration panel shown.
-2025-11-13 22:40:43,045 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:40:43,046 - INFO - Validating user inputs.
-2025-11-13 22:40:43,051 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-13
-2025-11-13 22:40:43,052 - INFO - Starting data download for ticker: ^J203.JO
-2025-11-13 22:40:44,933 - INFO - Data download complete. Processing data...
-2025-11-13 22:40:44,950 - INFO - Data processing complete. Updating UI.
-2025-11-13 22:40:44,950 - INFO - Updating all charts.
-2025-11-13 22:40:45,044 - INFO - Updating bar chart with metric: Average
-2025-11-13 22:40:45,217 - INFO - Updating heatmap.
-2025-11-13 22:40:45,766 - INFO - Updating risk vs return scatter plot.
-2025-11-13 22:40:45,970 - INFO - Updating comparison chart.
-2025-11-13 22:40:45,970 - INFO - No comparison data to display.
-2025-11-13 22:40:45,970 - INFO - Updating summary tab.
-2025-11-13 22:40:45,971 - INFO - Summary tab updated.
-2025-11-13 22:40:45,972 - INFO - Updating summary tab.
-2025-11-13 22:40:45,973 - INFO - Summary tab updated.
-2025-11-13 22:40:54,017 - INFO - 'ML Analysis' button clicked.
-2025-11-13 22:40:54,812 - ERROR - Error running ML analysis.
-Traceback (most recent call last):
-  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 1081, in worker
-    scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='tab12', alpha=0.6)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/deprecation.py", line 453, in wrapper
-    return func(*args, **kwargs)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/__init__.py", line 1524, in inner
-    return func(
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 5041, in scatter
-    collection.set_cmap(cmap)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 419, in set_cmap
-    self.cmap = cmap
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 405, in cmap
-    self._colorizer.cmap = cmap
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 247, in cmap
-    self._set_cmap(cmap)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 237, in _set_cmap
-    self._cmap = cm._ensure_cmap(cmap)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/cm.py", line 309, in _ensure_cmap
-    _api.check_in_list(sorted(_colormaps), cmap=cmap_name)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/__init__.py", line 130, in check_in_list
-    raise ValueError(msg)
-ValueError: 'tab12' is not a valid value for cmap; supported values are 'Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Grays', 'Grays_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'berlin', 'berlin_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'crest', 'crest_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'flare', 'flare_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_grey', 'gist_grey_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gist_yerg', 'gist_yerg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'grey', 'grey_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'icefire', 'icefire_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'mako', 'mako_r', 'managua', 'managua_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'rocket', 'rocket_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'vanimo', 'vanimo_r', 'viridis', 'viridis_r', 'vlag', 'vlag_r', 'winter', 'winter_r'
-2025-11-13 22:40:54,983 - INFO - 'Significance Test' button clicked.
-2025-11-13 22:40:57,619 - INFO - Statistical tests completed successfully.
-2025-11-13 22:41:00,791 - INFO - 'ML Analysis' button clicked.
-2025-11-13 22:41:01,159 - ERROR - Error running ML analysis.
-Traceback (most recent call last):
-  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 1081, in worker
-    scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='tab12', alpha=0.6)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/deprecation.py", line 453, in wrapper
-    return func(*args, **kwargs)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/__init__.py", line 1524, in inner
-    return func(
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 5041, in scatter
-    collection.set_cmap(cmap)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 419, in set_cmap
-    self.cmap = cmap
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 405, in cmap
-    self._colorizer.cmap = cmap
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 247, in cmap
-    self._set_cmap(cmap)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 237, in _set_cmap
-    self._cmap = cm._ensure_cmap(cmap)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/cm.py", line 309, in _ensure_cmap
-    _api.check_in_list(sorted(_colormaps), cmap=cmap_name)
-  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/__init__.py", line 130, in check_in_list
-    raise ValueError(msg)
-ValueError: 'tab12' is not a valid value for cmap; supported values are 'Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Grays', 'Grays_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'berlin', 'berlin_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'crest', 'crest_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'flare', 'flare_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_grey', 'gist_grey_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gist_yerg', 'gist_yerg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'grey', 'grey_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'icefire', 'icefire_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'mako', 'mako_r', 'managua', 'managua_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'rocket', 'rocket_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'vanimo', 'vanimo_r', 'viridis', 'viridis_r', 'vlag', 'vlag_r', 'winter', 'winter_r'
+2025-11-13 22:49:40,787 - INFO - --- Application Start: Global Index Analyzer v2.9.10 ---
+2025-11-13 22:49:40,990 - INFO - Cache directory set to: cache_v2_9_10
+2025-11-13 22:49:40,991 - INFO - UI styles configured.
+2025-11-13 22:49:41,072 - INFO - UI setup complete.
+2025-11-13 22:49:41,072 - INFO - Application initialized successfully.
+2025-11-13 22:49:41,072 - INFO - Starting Tkinter main loop.
+2025-11-13 22:49:44,107 - INFO - 'Analyze Data' button clicked.
+2025-11-13 22:49:44,108 - INFO - Validating user inputs.
+2025-11-13 22:49:44,112 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-13
+2025-11-13 22:49:44,113 - INFO - Starting data download for ticker: ^J203.JO
+2025-11-13 22:49:46,099 - INFO - Data download complete. Processing data...
+2025-11-13 22:49:46,110 - INFO - Data processing complete. Updating UI.
+2025-11-13 22:49:46,110 - INFO - Updating all charts.
+2025-11-13 22:49:46,170 - INFO - Updating bar chart with metric: Average
+2025-11-13 22:49:46,284 - INFO - Updating heatmap.
+2025-11-13 22:49:46,631 - INFO - Updating risk vs return scatter plot.
+2025-11-13 22:49:46,798 - INFO - Updating comparison chart.
+2025-11-13 22:49:46,798 - INFO - No comparison data to display.
+2025-11-13 22:49:46,798 - INFO - Updating summary tab.
+2025-11-13 22:49:46,798 - INFO - Summary tab updated.
+2025-11-13 22:49:46,800 - INFO - Updating summary tab.
+2025-11-13 22:49:46,801 - INFO - Summary tab updated.
+2025-11-13 22:49:47,695 - INFO - 'ML Analysis' button clicked.
+2025-11-13 22:49:49,384 - INFO - ML analysis completed successfully.
+2025-11-13 22:49:56,067 - INFO - Configuration panel hidden.
