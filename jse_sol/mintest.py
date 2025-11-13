@@ -1,8 +1,8 @@
 # jse.py
-# Global Index Monthly Return Analyzer (Version 2.9.8)
+# Global Index Monthly Return Analyzer (Version 2.9.9)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
-# v2.9.8: Fixed NameError in exception handling when updating UI from worker threads.
+# v2.9.9: Fixed NameError in exception handling and implemented ML/Statistical analysis with threading.
 
 import yfinance as yf
 import pandas as pd
@@ -94,7 +94,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.8"
+    VERSION = "2.9.9"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -185,7 +185,7 @@ class JSEAnalyzer:
         dark_mode_check.pack(side=tk.RIGHT, padx=10, pady=10)
         Tooltip(dark_mode_check, "Toggle dark mode for better visibility in low-light environments.")
 
-        # --- NEW: Collapsible Configuration Panel ---
+        # --- Collapsible Configuration Panel ---
         # Toggle button frame (always visible)
         self.config_toggle_frame = ttk.Frame(main_container)
         self.config_toggle_frame.pack(fill=tk.X, pady=(0, 5))
@@ -943,48 +943,232 @@ class JSEAnalyzer:
         self.status_var.set(f"📊 Benchmark line is now {status}")
 
     def run_statistical_tests(self):
-        """Run statistical significance tests with improved error handling."""
+        """Run statistical significance tests with threading and progress updates."""
         self.logger.info("'Significance Test' button clicked.")
         if self.pivot is None:
             self.logger.warning("Statistical test run attempted with no data.")
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
 
-        try:
-            for widget in self.stats_frame.winfo_children():
-                widget.destroy()
+        def worker():
+            try:
+                self.status_var.set("🧮 Running statistical tests...")
+                self.root.update()
+                
+                for widget in self.stats_frame.winfo_children():
+                    widget.destroy()
 
-            stats_text = tk.Text(self.stats_frame, wrap=tk.WORD, font=('Consolas', 10))
-            stats_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            
-            results = "Running statistical tests..."
-            # ... calculation logic ...
-            stats_text.insert(1.0, results)
-            self.status_var.set("🧮 Statistical tests completed")
-            self.logger.info("Statistical tests completed successfully.")
-        except Exception as e:
-            self.logger.exception("Error running statistical tests.")
-            messagebox.showerror("Error", f"Error running statistical tests: {e}")
-            self.status_var.set("❌ Statistical tests failed")
+                stats_text = tk.Text(self.stats_frame, wrap=tk.WORD, font=('Consolas', 10))
+                stats_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+                
+                results = "📊 STATISTICAL SIGNIFICANCE TESTS\n"
+                results += "="*50 + "\n\n"
+                
+                # Test 1: ANOVA - Are monthly returns significantly different?
+                self.status_var.set("🧮 Running ANOVA test...")
+                self.root.update()
+                month_returns = [self.pivot[col].dropna() for col in self.pivot.columns]
+                f_stat, p_value = stats.f_oneway(*month_returns)
+                results += f"1. ANOVA TEST (F-statistic: {f_stat:.4f})\n"
+                results += f"   H0: All months have same mean return\n"
+                results += f"   p-value: {p_value:.6f}\n"
+                results += f"   Result: {'REJECT H0' if p_value < 0.05 else 'FAIL TO REJECT H0'}\n"
+                results += f"   Interpretation: {'Months ARE significantly different' if p_value < 0.05 else 'NO significant difference between months'}\n\n"
+                
+                # Test 2: T-tests for each month vs overall mean
+                results += "2. ONE-SAMPLE T-TESTS (Each month vs Overall Mean)\n"
+                results += "-" * 50 + "\n"
+                overall_mean = self.monthly_ret.mean()
+                for month_num, month_name in enumerate(self.months, 1):
+                    if month_num in self.month_avg.index:
+                        month_data = self.pivot[month_num].dropna()
+                        if len(month_data) > 1:
+                            t_stat, p_val = stats.ttest_1samp(month_data, overall_mean)
+                            significance = "SIGNIFICANT" if p_val < 0.05 else "NOT SIGNIFICANT"
+                            results += f"   {month_name}: t={t_stat:.3f}, p={p_val:.4f} ({significance})\n"
+                
+                # Test 3: Normality test
+                results += f"\n3. NORMALITY TEST (Shapiro-Wilk)\n"
+                results += "-" * 50 + "\n"
+                sample_data = self.monthly_ret.sample(min(5000, len(self.monthly_ret)))  # Sample for speed
+                shapiro_stat, shapiro_p = stats.shapiro(sample_data)
+                results += f"   Statistic: {shapiro_stat:.4f}\n"
+                results += f"   p-value: {shapiro_p:.6f}\n"
+                results += f"   Result: {'Normal' if shapiro_p > 0.05 else 'NOT Normal'} distribution\n"
+                
+                # Test 4: Seasonality detection
+                results += f"\n4. SEASONALITY CHECK\n"
+                results += "-" * 50 + "\n"
+                best_month = self.months[self.month_avg.idxmax() - 1]
+                worst_month = self.months[self.month_avg.idxmin() - 1]
+                results += f"   Best month: {best_month} ({self.month_avg.max()*100:.2f}%)\n"
+                results += f"   Worst month: {worst_month} ({self.month_avg.min()*100:.2f}%)\n"
+                results += f"   Seasonality effect: {abs(self.month_avg.max() - self.month_avg.min())*100:.2f}% difference\n"
+                
+                stats_text.insert(1.0, results)
+                self.logger.info("Statistical tests completed successfully.")
+                self.status_var.set("✅ Statistical tests completed")
+                
+            except Exception as e:
+                self.logger.exception("Error running statistical tests.")
+                self.root.after(0, lambda msg=str(e): messagebox.showerror("Error", f"Statistical tests failed: {msg}"))
+                self.root.after(0, lambda msg=str(e): self.status_var.set(f"❌ Statistical tests failed: {msg}"))
+
+        # Run in separate thread
+        thread = threading.Thread(target=worker)
+        thread.daemon = True
+        thread.start()
 
     def run_ml_analysis(self):
-        """Run advanced machine learning analysis."""
+        """Run advanced machine learning analysis with threading and progress updates."""
         self.logger.info("'ML Analysis' button clicked.")
         if self.pivot is None:
             self.logger.warning("ML analysis run attempted with no data.")
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
 
-        try:
-            for widget in self.ml_frame.winfo_children():
-                widget.destroy()
-            # ... ML analysis logic ...
-            self.status_var.set("🤖 Advanced ML analysis completed")
-            self.logger.info("ML analysis completed successfully.")
-        except Exception as e:
-            self.logger.exception("Error running ML analysis.")
-            messagebox.showerror("Error", f"Error running ML analysis: {e}")
-            self.status_var.set("❌ ML analysis failed")
+        def worker():
+            try:
+                self.status_var.set("🤖 Preparing data for ML analysis...")
+                self.root.update()
+                
+                for widget in self.ml_frame.winfo_children():
+                    widget.destroy()
+
+                # Prepare data
+                returns = self.monthly_ret.dropna()
+                if len(returns) < 24:  # Need at least 2 years of data
+                    raise ValueError("Insufficient data for ML analysis (need at least 24 months)")
+
+                # Create feature matrix: use rolling window of 12 months to predict next month
+                self.status_var.set("🤖 Creating features...")
+                self.root.update()
+                
+                # Reshape data for ML models
+                X = []
+                y_months = []
+                y_returns = []
+                
+                # Use 12-month sequences
+                for i in range(12, len(returns)):
+                    X.append(returns.iloc[i-12:i].values)
+                    y_months.append(returns.index[i].month)
+                    y_returns.append(returns.iloc[i])
+                
+                X = np.array(X)
+                y_months = np.array(y_months)
+                y_returns = np.array(y_returns)
+                
+                if len(X) < 10:
+                    raise ValueError("Insufficient sequences for clustering")
+
+                # Tab container for ML results
+                ml_notebook = ttk.Notebook(self.ml_frame)
+                ml_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+                # --- 1. PCA Analysis Tab ---
+                pca_tab = ttk.Frame(ml_notebook)
+                ml_notebook.add(pca_tab, text="📉 PCA Clustering")
+                
+                self.status_var.set("🤖 Running PCA...")
+                self.root.update()
+                
+                # PCA for dimensionality reduction and visualization
+                pca = PCA(n_components=2)
+                X_pca = pca.fit_transform(X)
+                
+                fig_pca, ax_pca = plt.subplots(figsize=(10, 6))
+                scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='tab12', alpha=0.6)
+                ax_pca.set_xlabel(f'First Principal Component ({pca.explained_variance_ratio_[0]:.1%} variance)')
+                ax_pca.set_ylabel(f'Second Principal Component ({pca.explained_variance_ratio_[1]:.1%} variance)')
+                ax_pca.set_title(f'PCA: Returns Patterns Colored by Target Month\nTotal Explained Variance: {pca.explained_variance_ratio_.sum():.1%}')
+                plt.colorbar(scatter, ax=ax_pca, ticks=range(1, 13)).set_ticklabels(self.months)
+                
+                canvas_pca = FigureCanvasTkAgg(fig_pca, pca_tab)
+                canvas_pca.draw()
+                canvas_pca.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+                
+                # --- 2. GMM Clustering Tab ---
+                gmm_tab = ttk.Frame(ml_notebook)
+                ml_notebook.add(gmm_tab, text="🎲 Gaussian Mixture")
+                
+                self.status_var.set("🤖 Running Gaussian Mixture Model...")
+                self.root.update()
+                
+                # GMM clustering
+                n_clusters = min(4, len(X))
+                gmm = GaussianMixture(n_components=n_clusters, random_state=42)
+                cluster_labels = gmm.fit_predict(X_pca)
+                
+                fig_gmm, ax_gmm = plt.subplots(figsize=(10, 6))
+                scatter = ax_gmm.scatter(X_pca[:, 0], X_pca[:, 1], c=cluster_labels, cmap='Set3', alpha=0.7)
+                ax_gmm.set_xlabel(f'First Principal Component ({pca.explained_variance_ratio_[0]:.1%} variance)')
+                ax_gmm.set_ylabel(f'Second Principal Component ({pca.explained_variance_ratio_[1]:.1%} variance)')
+                ax_gmm.set_title(f'Gaussian Mixture Clustering (k={n_clusters})\nAIC: {gmm.aic(X_pca):.0f}, BIC: {gmm.bic(X_pca):.0f}')
+                plt.colorbar(scatter, ax=ax_gmm)
+                
+                canvas_gmm = FigureCanvasTkAgg(fig_gmm, gmm_tab)
+                canvas_gmm.draw()
+                canvas_gmm.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+                
+                # --- 3. Anomaly Detection Tab ---
+                anomaly_tab = ttk.Frame(ml_notebook)
+                ml_notebook.add(anomaly_tab, text="🔍 Anomaly Detection")
+                
+                self.status_var.set("🤖 Running Isolation Forest...")
+                self.root.update()
+                
+                # Isolation Forest for anomaly detection
+                iso_forest = IsolationForest(contamination=0.05, random_state=42)
+                anomaly_labels = iso_forest.fit_predict(X_pca)
+                
+                fig_anomaly, ax_anomaly = plt.subplots(figsize=(10, 6))
+                normal_mask = anomaly_labels == 1
+                anomaly_mask = anomaly_labels == -1
+                
+                ax_anomaly.scatter(X_pca[normal_mask, 0], X_pca[normal_mask, 1], c='blue', alpha=0.6, label='Normal')
+                ax_anomaly.scatter(X_pca[anomaly_mask, 0], X_pca[anomaly_mask, 1], c='red', alpha=0.9, label='Anomaly')
+                ax_anomaly.set_xlabel(f'First Principal Component ({pca.explained_variance_ratio_[0]:.1%} variance)')
+                ax_anomaly.set_ylabel(f'Second Principal Component ({pca.explained_variance_ratio_[1]:.1%} variance)')
+                ax_anomaly.set_title(f'Isolation Forest Anomaly Detection\n{anomaly_mask.sum()} outliers detected ({100*anomaly_mask.sum()/len(X_pca):.1f}%)')
+                ax_anomaly.legend()
+                
+                canvas_anomaly = FigureCanvasTkAgg(fig_anomaly, anomaly_tab)
+                canvas_anomaly.draw()
+                canvas_anomaly.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+                
+                # --- 4. Summary Statistics Tab ---
+                summary_tab = ttk.Frame(ml_notebook)
+                ml_notebook.add(summary_tab, text="📊 ML Summary")
+                
+                summary_text = tk.Text(summary_tab, wrap=tk.WORD, font=('Consolas', 10))
+                summary_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+                
+                ml_summary = "🤖 MACHINE LEARNING ANALYSIS SUMMARY\n"
+                ml_summary += "="*50 + "\n\n"
+                ml_summary += f"📈 Data Points: {len(X)} sequences of 12 months\n"
+                ml_summary += f"📊 PCA Explained Variance: {pca.explained_variance_ratio_[0]:.1%} + {pca.explained_variance_ratio_[1]:.1%}\n\n"
+                ml_summary += "🔍 FINDINGS:\n"
+                ml_summary += "-" * 30 + "\n"
+                ml_summary += f"• {n_clusters} distinct return patterns identified by GMM\n"
+                ml_summary += f"• {anomaly_mask.sum()} anomalous periods detected ({100*anomaly_mask.sum()/len(X_pca):.1f}%)\n"
+                ml_summary += f"• PCA shows {pca.explained_variance_ratio_.sum():.1%} variance in first 2 components\n"
+                ml_summary += f"• Suggests returns have {'strong' if pca.explained_variance_ratio_[0] > 0.5 else 'moderate'} seasonal structure\n"
+                
+                summary_text.insert(1.0, ml_summary)
+                
+                self.logger.info("ML analysis completed successfully.")
+                self.status_var.set("✅ ML analysis completed")
+                
+            except Exception as e:
+                self.logger.exception("Error running ML analysis.")
+                self.root.after(0, lambda msg=str(e): messagebox.showerror("Error", f"ML analysis failed: {msg}"))
+                self.root.after(0, lambda msg=str(e): self.status_var.set(f"❌ ML analysis failed: {msg}"))
+
+        # Run in separate thread
+        thread = threading.Thread(target=worker)
+        thread.daemon = True
+        thread.start()
 
     def run(self):
         """Start the application."""

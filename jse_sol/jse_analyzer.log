@@ -1,103 +1,74 @@
-2025-11-13 22:14:38,645 - INFO - --- Application Start: Global Index Analyzer v2.9.8 ---
-2025-11-13 22:14:38,892 - INFO - Cache directory set to: cache_v2_9_8
-2025-11-13 22:14:38,893 - INFO - UI styles configured.
-2025-11-13 22:14:38,966 - INFO - UI setup complete.
-2025-11-13 22:14:38,966 - INFO - Application initialized successfully.
-2025-11-13 22:14:38,966 - INFO - Starting Tkinter main loop.
-2025-11-13 22:14:47,774 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:14:47,775 - INFO - Validating user inputs.
-2025-11-13 22:14:47,779 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 1990, End: 2025-11-13
-2025-11-13 22:14:47,781 - INFO - Starting data download for ticker: ^J258.JO
-2025-11-13 22:14:50,196 - INFO - Data download complete. Processing data...
-2025-11-13 22:14:50,207 - INFO - Data processing complete. Updating UI.
-2025-11-13 22:14:50,207 - INFO - Updating all charts.
-2025-11-13 22:14:50,264 - INFO - Updating bar chart with metric: Average
-2025-11-13 22:14:50,372 - INFO - Updating heatmap.
-2025-11-13 22:14:50,865 - INFO - Updating risk vs return scatter plot.
-2025-11-13 22:14:51,056 - INFO - Updating comparison chart.
-2025-11-13 22:14:51,056 - INFO - No comparison data to display.
-2025-11-13 22:14:51,056 - INFO - Updating summary tab.
-2025-11-13 22:14:51,056 - INFO - Summary tab updated.
-2025-11-13 22:14:51,058 - INFO - Updating summary tab.
-2025-11-13 22:14:51,058 - INFO - Summary tab updated.
-2025-11-13 22:14:53,408 - INFO - Configuration panel hidden.
-2025-11-13 22:14:57,620 - INFO - Configuration panel shown.
-2025-11-13 22:15:01,089 - INFO - 'ML Analysis' button clicked.
-2025-11-13 22:15:01,090 - INFO - ML analysis completed successfully.
-2025-11-13 22:15:06,376 - INFO - 'Significance Test' button clicked.
-2025-11-13 22:15:06,390 - INFO - Statistical tests completed successfully.
-2025-11-13 22:15:18,493 - INFO - Configuration panel hidden.
-2025-11-13 22:15:21,706 - INFO - Configuration panel shown.
-2025-11-13 22:15:25,921 - INFO - Date range changed to: Last 10 Years
-2025-11-13 22:15:26,792 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:15:26,792 - INFO - Validating user inputs.
-2025-11-13 22:15:26,794 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 2015, End: 2025-11-13
-2025-11-13 22:15:26,795 - INFO - Starting data download for ticker: ^J258.JO
-2025-11-13 22:15:27,675 - INFO - Data download complete. Processing data...
-2025-11-13 22:15:27,684 - INFO - Data processing complete. Updating UI.
-2025-11-13 22:15:27,684 - INFO - Updating all charts.
-2025-11-13 22:15:27,725 - INFO - Updating bar chart with metric: Average
-2025-11-13 22:15:27,808 - INFO - Updating heatmap.
-2025-11-13 22:15:28,203 - INFO - Updating risk vs return scatter plot.
-2025-11-13 22:15:28,378 - INFO - Updating comparison chart.
-2025-11-13 22:15:28,378 - INFO - No comparison data to display.
-2025-11-13 22:15:28,378 - INFO - Updating summary tab.
-2025-11-13 22:15:28,378 - INFO - Summary tab updated.
-2025-11-13 22:15:28,379 - INFO - Updating summary tab.
-2025-11-13 22:15:28,380 - INFO - Summary tab updated.
-2025-11-13 22:15:32,215 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:15:32,216 - INFO - Validating user inputs.
-2025-11-13 22:15:32,217 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 2015, End: 2025-11-13
-2025-11-13 22:15:32,219 - INFO - Starting data download for ticker: ^J258.JO
-2025-11-13 22:15:32,275 - INFO - Data download complete. Processing data...
-2025-11-13 22:15:32,285 - INFO - Data processing complete. Updating UI.
-2025-11-13 22:15:32,285 - INFO - Updating all charts.
-2025-11-13 22:15:32,326 - INFO - Updating bar chart with metric: Average
-2025-11-13 22:15:32,410 - INFO - Updating heatmap.
-2025-11-13 22:15:32,715 - INFO - Updating risk vs return scatter plot.
-2025-11-13 22:15:32,897 - INFO - Updating comparison chart.
-2025-11-13 22:15:32,897 - INFO - No comparison data to display.
-2025-11-13 22:15:32,897 - INFO - Updating summary tab.
-2025-11-13 22:15:32,898 - INFO - Summary tab updated.
-2025-11-13 22:15:32,898 - INFO - Updating summary tab.
-2025-11-13 22:15:32,899 - INFO - Summary tab updated.
-2025-11-13 22:16:31,693 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:16:31,694 - INFO - Validating user inputs.
-2025-11-13 22:16:31,696 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 2015, End: 2025-11-13
-2025-11-13 22:16:31,697 - INFO - Starting data download for ticker: ^J252.JO
-2025-11-13 22:16:35,297 - ERROR - HTTP Error 404: 
-2025-11-13 22:16:36,045 - ERROR - 
-1 Failed download:
-2025-11-13 22:16:36,045 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:16:36,586 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:16:36,587 - INFO - Validating user inputs.
-2025-11-13 22:16:36,588 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 2015, End: 2025-11-13
-2025-11-13 22:16:36,590 - INFO - Starting data download for ticker: ^J252.JO
-2025-11-13 22:16:36,602 - ERROR - 
-1 Failed download:
-2025-11-13 22:16:36,603 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:16:36,608 - ERROR - 
-1 Failed download:
-2025-11-13 22:16:36,615 - WARNING - Network error on attempt 2/3 for ^J252.JO: No objects to concatenate
-2025-11-13 22:16:36,625 - ERROR - 
-1 Failed download:
-2025-11-13 22:16:36,625 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:16:36,646 - ERROR - 
-1 Failed download:
-2025-11-13 22:16:36,646 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:16:36,655 - INFO - Data download complete. Processing data...
-2025-11-13 22:16:36,655 - ERROR - An error occurred during data analysis.
+2025-11-13 22:40:35,223 - INFO - --- Application Start: Global Index Analyzer v2.9.9 ---
+2025-11-13 22:40:35,474 - INFO - Cache directory set to: cache_v2_9_9
+2025-11-13 22:40:35,475 - INFO - UI styles configured.
+2025-11-13 22:40:35,547 - INFO - UI setup complete.
+2025-11-13 22:40:35,547 - INFO - Application initialized successfully.
+2025-11-13 22:40:35,547 - INFO - Starting Tkinter main loop.
+2025-11-13 22:40:40,160 - INFO - Configuration panel hidden.
+2025-11-13 22:40:40,882 - INFO - Configuration panel shown.
+2025-11-13 22:40:43,045 - INFO - 'Analyze Data' button clicked.
+2025-11-13 22:40:43,046 - INFO - Validating user inputs.
+2025-11-13 22:40:43,051 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-13
+2025-11-13 22:40:43,052 - INFO - Starting data download for ticker: ^J203.JO
+2025-11-13 22:40:44,933 - INFO - Data download complete. Processing data...
+2025-11-13 22:40:44,950 - INFO - Data processing complete. Updating UI.
+2025-11-13 22:40:44,950 - INFO - Updating all charts.
+2025-11-13 22:40:45,044 - INFO - Updating bar chart with metric: Average
+2025-11-13 22:40:45,217 - INFO - Updating heatmap.
+2025-11-13 22:40:45,766 - INFO - Updating risk vs return scatter plot.
+2025-11-13 22:40:45,970 - INFO - Updating comparison chart.
+2025-11-13 22:40:45,970 - INFO - No comparison data to display.
+2025-11-13 22:40:45,970 - INFO - Updating summary tab.
+2025-11-13 22:40:45,971 - INFO - Summary tab updated.
+2025-11-13 22:40:45,972 - INFO - Updating summary tab.
+2025-11-13 22:40:45,973 - INFO - Summary tab updated.
+2025-11-13 22:40:54,017 - INFO - 'ML Analysis' button clicked.
+2025-11-13 22:40:54,812 - ERROR - Error running ML analysis.
 Traceback (most recent call last):
-  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 584, in worker
-    raise ValueError("No data returned from Yahoo Finance. Check ticker symbol or internet connection.")
-ValueError: No data returned from Yahoo Finance. Check ticker symbol or internet connection.
-2025-11-13 22:16:37,786 - ERROR - HTTP Error 401: 
-2025-11-13 22:16:38,632 - ERROR - 
-1 Failed download:
-2025-11-13 22:16:38,632 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-13 22:16:38,637 - INFO - Data download complete. Processing data...
-2025-11-13 22:16:38,638 - ERROR - An error occurred during data analysis.
+  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 1081, in worker
+    scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='tab12', alpha=0.6)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/deprecation.py", line 453, in wrapper
+    return func(*args, **kwargs)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/__init__.py", line 1524, in inner
+    return func(
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 5041, in scatter
+    collection.set_cmap(cmap)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 419, in set_cmap
+    self.cmap = cmap
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 405, in cmap
+    self._colorizer.cmap = cmap
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 247, in cmap
+    self._set_cmap(cmap)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 237, in _set_cmap
+    self._cmap = cm._ensure_cmap(cmap)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/cm.py", line 309, in _ensure_cmap
+    _api.check_in_list(sorted(_colormaps), cmap=cmap_name)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/__init__.py", line 130, in check_in_list
+    raise ValueError(msg)
+ValueError: 'tab12' is not a valid value for cmap; supported values are 'Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Grays', 'Grays_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'berlin', 'berlin_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'crest', 'crest_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'flare', 'flare_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_grey', 'gist_grey_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gist_yerg', 'gist_yerg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'grey', 'grey_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'icefire', 'icefire_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'mako', 'mako_r', 'managua', 'managua_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'rocket', 'rocket_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'vanimo', 'vanimo_r', 'viridis', 'viridis_r', 'vlag', 'vlag_r', 'winter', 'winter_r'
+2025-11-13 22:40:54,983 - INFO - 'Significance Test' button clicked.
+2025-11-13 22:40:57,619 - INFO - Statistical tests completed successfully.
+2025-11-13 22:41:00,791 - INFO - 'ML Analysis' button clicked.
+2025-11-13 22:41:01,159 - ERROR - Error running ML analysis.
 Traceback (most recent call last):
-  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 584, in worker
-    raise ValueError("No data returned from Yahoo Finance. Check ticker symbol or internet connection.")
-ValueError: No data returned from Yahoo Finance. Check ticker symbol or internet connection.
+  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 1081, in worker
+    scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='tab12', alpha=0.6)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/deprecation.py", line 453, in wrapper
+    return func(*args, **kwargs)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/__init__.py", line 1524, in inner
+    return func(
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/axes/_axes.py", line 5041, in scatter
+    collection.set_cmap(cmap)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 419, in set_cmap
+    self.cmap = cmap
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 405, in cmap
+    self._colorizer.cmap = cmap
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 247, in cmap
+    self._set_cmap(cmap)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/colorizer.py", line 237, in _set_cmap
+    self._cmap = cm._ensure_cmap(cmap)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/cm.py", line 309, in _ensure_cmap
+    _api.check_in_list(sorted(_colormaps), cmap=cmap_name)
+  File "/home/red/.local/lib/python3.10/site-packages/matplotlib/_api/__init__.py", line 130, in check_in_list
+    raise ValueError(msg)
+ValueError: 'tab12' is not a valid value for cmap; supported values are 'Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 'Grays', 'Grays_r', 'Greens', 'Greens_r', 'Greys', 'Greys_r', 'OrRd', 'OrRd_r', 'Oranges', 'Oranges_r', 'PRGn', 'PRGn_r', 'Paired', 'Paired_r', 'Pastel1', 'Pastel1_r', 'Pastel2', 'Pastel2_r', 'PiYG', 'PiYG_r', 'PuBu', 'PuBuGn', 'PuBuGn_r', 'PuBu_r', 'PuOr', 'PuOr_r', 'PuRd', 'PuRd_r', 'Purples', 'Purples_r', 'RdBu', 'RdBu_r', 'RdGy', 'RdGy_r', 'RdPu', 'RdPu_r', 'RdYlBu', 'RdYlBu_r', 'RdYlGn', 'RdYlGn_r', 'Reds', 'Reds_r', 'Set1', 'Set1_r', 'Set2', 'Set2_r', 'Set3', 'Set3_r', 'Spectral', 'Spectral_r', 'Wistia', 'Wistia_r', 'YlGn', 'YlGnBu', 'YlGnBu_r', 'YlGn_r', 'YlOrBr', 'YlOrBr_r', 'YlOrRd', 'YlOrRd_r', 'afmhot', 'afmhot_r', 'autumn', 'autumn_r', 'berlin', 'berlin_r', 'binary', 'binary_r', 'bone', 'bone_r', 'brg', 'brg_r', 'bwr', 'bwr_r', 'cividis', 'cividis_r', 'cool', 'cool_r', 'coolwarm', 'coolwarm_r', 'copper', 'copper_r', 'crest', 'crest_r', 'cubehelix', 'cubehelix_r', 'flag', 'flag_r', 'flare', 'flare_r', 'gist_earth', 'gist_earth_r', 'gist_gray', 'gist_gray_r', 'gist_grey', 'gist_grey_r', 'gist_heat', 'gist_heat_r', 'gist_ncar', 'gist_ncar_r', 'gist_rainbow', 'gist_rainbow_r', 'gist_stern', 'gist_stern_r', 'gist_yarg', 'gist_yarg_r', 'gist_yerg', 'gist_yerg_r', 'gnuplot', 'gnuplot2', 'gnuplot2_r', 'gnuplot_r', 'gray', 'gray_r', 'grey', 'grey_r', 'hot', 'hot_r', 'hsv', 'hsv_r', 'icefire', 'icefire_r', 'inferno', 'inferno_r', 'jet', 'jet_r', 'magma', 'magma_r', 'mako', 'mako_r', 'managua', 'managua_r', 'nipy_spectral', 'nipy_spectral_r', 'ocean', 'ocean_r', 'pink', 'pink_r', 'plasma', 'plasma_r', 'prism', 'prism_r', 'rainbow', 'rainbow_r', 'rocket', 'rocket_r', 'seismic', 'seismic_r', 'spring', 'spring_r', 'summer', 'summer_r', 'tab10', 'tab10_r', 'tab20', 'tab20_r', 'tab20b', 'tab20b_r', 'tab20c', 'tab20c_r', 'terrain', 'terrain_r', 'turbo', 'turbo_r', 'twilight', 'twilight_r', 'twilight_shifted', 'twilight_shifted_r', 'vanimo', 'vanimo_r', 'viridis', 'viridis_r', 'vlag', 'vlag_r', 'winter', 'winter_r'
