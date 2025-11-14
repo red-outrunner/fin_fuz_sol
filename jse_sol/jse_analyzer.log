@@ -1,25 +1,284 @@
-2025-11-13 22:49:40,787 - INFO - --- Application Start: Global Index Analyzer v2.9.10 ---
-2025-11-13 22:49:40,990 - INFO - Cache directory set to: cache_v2_9_10
-2025-11-13 22:49:40,991 - INFO - UI styles configured.
-2025-11-13 22:49:41,072 - INFO - UI setup complete.
-2025-11-13 22:49:41,072 - INFO - Application initialized successfully.
-2025-11-13 22:49:41,072 - INFO - Starting Tkinter main loop.
-2025-11-13 22:49:44,107 - INFO - 'Analyze Data' button clicked.
-2025-11-13 22:49:44,108 - INFO - Validating user inputs.
-2025-11-13 22:49:44,112 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-13
-2025-11-13 22:49:44,113 - INFO - Starting data download for ticker: ^J203.JO
-2025-11-13 22:49:46,099 - INFO - Data download complete. Processing data...
-2025-11-13 22:49:46,110 - INFO - Data processing complete. Updating UI.
-2025-11-13 22:49:46,110 - INFO - Updating all charts.
-2025-11-13 22:49:46,170 - INFO - Updating bar chart with metric: Average
-2025-11-13 22:49:46,284 - INFO - Updating heatmap.
-2025-11-13 22:49:46,631 - INFO - Updating risk vs return scatter plot.
-2025-11-13 22:49:46,798 - INFO - Updating comparison chart.
-2025-11-13 22:49:46,798 - INFO - No comparison data to display.
-2025-11-13 22:49:46,798 - INFO - Updating summary tab.
-2025-11-13 22:49:46,798 - INFO - Summary tab updated.
-2025-11-13 22:49:46,800 - INFO - Updating summary tab.
-2025-11-13 22:49:46,801 - INFO - Summary tab updated.
-2025-11-13 22:49:47,695 - INFO - 'ML Analysis' button clicked.
-2025-11-13 22:49:49,384 - INFO - ML analysis completed successfully.
-2025-11-13 22:49:56,067 - INFO - Configuration panel hidden.
+2025-11-14 16:38:35,987 - INFO - --- Application Start: Global Index Analyzer v2.9.10 ---
+2025-11-14 16:38:36,843 - INFO - Cache directory set to: cache_v2_9_10
+2025-11-14 16:38:36,843 - INFO - UI styles configured.
+2025-11-14 16:38:37,244 - INFO - UI setup complete.
+2025-11-14 16:38:37,244 - INFO - Application initialized successfully.
+2025-11-14 16:38:37,245 - INFO - Starting Tkinter main loop.
+2025-11-14 16:38:51,613 - INFO - Updating all charts.
+2025-11-14 16:38:52,075 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:38:59,243 - INFO - Date range changed to: Last 10 Years
+2025-11-14 16:39:02,259 - INFO - Date range changed to: Last 5 Years
+2025-11-14 16:39:15,277 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:39:15,279 - INFO - Validating user inputs.
+2025-11-14 16:39:15,285 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 2020, End: 2025-11-14
+2025-11-14 16:39:15,287 - INFO - Starting data download for ticker: ^J252.JO
+2025-11-14 16:39:19,221 - ERROR - HTTP Error 404: 
+2025-11-14 16:39:20,410 - ERROR - 
+1 Failed download:
+2025-11-14 16:39:20,411 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-14 16:39:23,317 - ERROR - HTTP Error 404: 
+2025-11-14 16:39:23,994 - ERROR - 
+1 Failed download:
+2025-11-14 16:39:23,995 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-14 16:39:24,024 - ERROR - 
+1 Failed download:
+2025-11-14 16:39:24,025 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
+2025-11-14 16:39:24,036 - INFO - Data download complete. Processing data...
+2025-11-14 16:39:24,036 - ERROR - An error occurred during data analysis.
+Traceback (most recent call last):
+  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 584, in worker
+    raise ValueError("No data returned from Yahoo Finance. Check ticker symbol or internet connection.")
+ValueError: No data returned from Yahoo Finance. Check ticker symbol or internet connection.
+2025-11-14 16:39:42,449 - INFO - Switched to custom ticker input.
+2025-11-14 16:39:44,802 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:39:44,803 - INFO - Validating user inputs.
+2025-11-14 16:39:44,806 - ERROR - Input validation failed: Custom ticker cannot be empty.
+2025-11-14 16:40:06,451 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:40:06,452 - INFO - Validating user inputs.
+2025-11-14 16:40:06,454 - INFO - Input validation successful. Ticker: stxind.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:40:06,456 - INFO - Starting data download for ticker: stxind.jo
+2025-11-14 16:40:11,065 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:40:11,066 - INFO - Validating user inputs.
+2025-11-14 16:40:11,067 - INFO - Input validation successful. Ticker: stxind.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:40:11,068 - INFO - Starting data download for ticker: stxind.jo
+2025-11-14 16:40:14,485 - INFO - Data download complete. Processing data...
+2025-11-14 16:40:14,488 - INFO - Data download complete. Processing data...
+2025-11-14 16:40:14,551 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:40:14,553 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:40:14,554 - INFO - Updating all charts.
+2025-11-14 16:40:14,648 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:40:14,919 - INFO - Updating heatmap.
+2025-11-14 16:40:15,562 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:40:15,882 - INFO - Updating comparison chart.
+2025-11-14 16:40:15,882 - INFO - No comparison data to display.
+2025-11-14 16:40:15,882 - INFO - Updating summary tab.
+2025-11-14 16:40:15,883 - INFO - Summary tab updated.
+2025-11-14 16:40:15,890 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:40:15,891 - INFO - Validating user inputs.
+2025-11-14 16:40:15,891 - INFO - Updating all charts.
+2025-11-14 16:40:15,973 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:40:16,148 - INFO - Updating heatmap.
+2025-11-14 16:40:16,863 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:40:17,283 - INFO - Updating comparison chart.
+2025-11-14 16:40:17,283 - INFO - No comparison data to display.
+2025-11-14 16:40:17,284 - INFO - Updating summary tab.
+2025-11-14 16:40:17,285 - INFO - Summary tab updated.
+2025-11-14 16:40:17,285 - INFO - Updating summary tab.
+2025-11-14 16:40:17,285 - INFO - Summary tab updated.
+2025-11-14 16:40:17,286 - INFO - Updating summary tab.
+2025-11-14 16:40:17,287 - INFO - Summary tab updated.
+2025-11-14 16:40:17,288 - INFO - Input validation successful. Ticker: stxind.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:40:17,289 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:40:17,289 - INFO - Validating user inputs.
+2025-11-14 16:40:17,424 - INFO - Input validation successful. Ticker: stxind.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:40:17,444 - INFO - Starting data download for ticker: stxind.jo
+2025-11-14 16:40:17,445 - INFO - Starting data download for ticker: stxind.jo
+2025-11-14 16:40:18,066 - INFO - Data download complete. Processing data...
+2025-11-14 16:40:18,074 - INFO - Data download complete. Processing data...
+2025-11-14 16:40:18,090 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:40:18,107 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:40:18,107 - INFO - Updating all charts.
+2025-11-14 16:40:18,184 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:40:18,330 - INFO - Updating heatmap.
+2025-11-14 16:40:18,768 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:40:19,077 - INFO - Updating comparison chart.
+2025-11-14 16:40:19,077 - INFO - No comparison data to display.
+2025-11-14 16:40:19,077 - INFO - Updating summary tab.
+2025-11-14 16:40:19,078 - INFO - Summary tab updated.
+2025-11-14 16:40:19,078 - INFO - Updating all charts.
+2025-11-14 16:40:19,150 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:40:19,304 - INFO - Updating heatmap.
+2025-11-14 16:40:19,760 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:40:20,077 - INFO - Updating comparison chart.
+2025-11-14 16:40:20,077 - INFO - No comparison data to display.
+2025-11-14 16:40:20,078 - INFO - Updating summary tab.
+2025-11-14 16:40:20,078 - INFO - Summary tab updated.
+2025-11-14 16:40:20,080 - INFO - Updating summary tab.
+2025-11-14 16:40:20,080 - INFO - Summary tab updated.
+2025-11-14 16:40:20,081 - INFO - Updating summary tab.
+2025-11-14 16:40:20,081 - INFO - Summary tab updated.
+2025-11-14 16:40:27,334 - INFO - Configuration panel hidden.
+2025-11-14 16:40:28,334 - INFO - Configuration panel shown.
+2025-11-14 16:40:30,962 - INFO - Configuration panel hidden.
+2025-11-14 16:40:44,682 - INFO - Configuration panel shown.
+2025-11-14 16:40:46,176 - INFO - 'Significance Test' button clicked.
+2025-11-14 16:40:46,271 - INFO - Statistical tests completed successfully.
+2025-11-14 16:40:47,708 - INFO - 'ML Analysis' button clicked.
+2025-11-14 16:40:50,411 - INFO - ML analysis completed successfully.
+2025-11-14 16:41:21,287 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:41:21,288 - INFO - Validating user inputs.
+2025-11-14 16:41:21,291 - INFO - Input validation successful. Ticker: inp.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:41:21,293 - INFO - Starting data download for ticker: inp.jo
+2025-11-14 16:41:23,254 - INFO - Data download complete. Processing data...
+2025-11-14 16:41:23,310 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:41:23,312 - INFO - Updating all charts.
+2025-11-14 16:41:23,403 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:41:23,571 - INFO - Updating heatmap.
+2025-11-14 16:41:24,036 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:41:24,366 - INFO - Updating comparison chart.
+2025-11-14 16:41:24,366 - INFO - No comparison data to display.
+2025-11-14 16:41:24,367 - INFO - Updating summary tab.
+2025-11-14 16:41:24,367 - INFO - Summary tab updated.
+2025-11-14 16:41:24,369 - INFO - Updating summary tab.
+2025-11-14 16:41:24,369 - INFO - Summary tab updated.
+2025-11-14 16:41:30,827 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:41:30,828 - INFO - Validating user inputs.
+2025-11-14 16:41:30,830 - INFO - Input validation successful. Ticker: inp.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:41:30,832 - INFO - Starting data download for ticker: inp.jo
+2025-11-14 16:41:30,940 - INFO - Data download complete. Processing data...
+2025-11-14 16:41:30,960 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:41:30,960 - INFO - Updating all charts.
+2025-11-14 16:41:31,042 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:41:31,211 - INFO - Updating heatmap.
+2025-11-14 16:41:31,671 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:41:31,992 - INFO - Updating comparison chart.
+2025-11-14 16:41:31,993 - INFO - No comparison data to display.
+2025-11-14 16:41:31,993 - INFO - Updating summary tab.
+2025-11-14 16:41:31,993 - INFO - Summary tab updated.
+2025-11-14 16:41:31,998 - INFO - Updating summary tab.
+2025-11-14 16:41:32,000 - INFO - Summary tab updated.
+2025-11-14 16:41:38,282 - INFO - Benchmark line toggled to OFF.
+2025-11-14 16:41:38,282 - INFO - Updating all charts.
+2025-11-14 16:41:38,385 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:41:38,538 - INFO - Updating heatmap.
+2025-11-14 16:41:38,999 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:41:39,708 - INFO - Updating comparison chart.
+2025-11-14 16:41:39,709 - INFO - No comparison data to display.
+2025-11-14 16:41:39,710 - INFO - Updating summary tab.
+2025-11-14 16:41:39,711 - INFO - Summary tab updated.
+2025-11-14 16:41:40,049 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:41:40,050 - INFO - Validating user inputs.
+2025-11-14 16:41:40,051 - INFO - Input validation successful. Ticker: inp.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:41:40,053 - INFO - Starting data download for ticker: inp.jo
+2025-11-14 16:41:40,137 - INFO - Data download complete. Processing data...
+2025-11-14 16:41:40,153 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:41:40,153 - INFO - Updating all charts.
+2025-11-14 16:41:40,222 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:41:40,381 - INFO - Updating heatmap.
+2025-11-14 16:41:40,876 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:41:41,235 - INFO - Updating comparison chart.
+2025-11-14 16:41:41,235 - INFO - No comparison data to display.
+2025-11-14 16:41:41,235 - INFO - Updating summary tab.
+2025-11-14 16:41:41,236 - INFO - Summary tab updated.
+2025-11-14 16:41:41,253 - INFO - Updating summary tab.
+2025-11-14 16:41:41,253 - INFO - Summary tab updated.
+2025-11-14 16:41:44,754 - INFO - 'ML Analysis' button clicked.
+2025-11-14 16:41:46,381 - INFO - ML analysis completed successfully.
+2025-11-14 16:41:47,453 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:41:47,454 - INFO - Validating user inputs.
+2025-11-14 16:41:47,459 - INFO - Input validation successful. Ticker: inp.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:41:47,460 - INFO - Starting data download for ticker: inp.jo
+2025-11-14 16:41:47,585 - INFO - Data download complete. Processing data...
+2025-11-14 16:41:47,629 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:41:47,629 - INFO - Updating all charts.
+2025-11-14 16:41:47,735 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:41:47,891 - INFO - Updating heatmap.
+2025-11-14 16:41:48,404 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:41:48,772 - INFO - Updating comparison chart.
+2025-11-14 16:41:48,773 - INFO - No comparison data to display.
+2025-11-14 16:41:48,773 - INFO - Updating summary tab.
+2025-11-14 16:41:48,773 - INFO - Summary tab updated.
+2025-11-14 16:41:48,774 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:41:48,774 - INFO - Validating user inputs.
+2025-11-14 16:41:48,774 - INFO - Updating summary tab.
+2025-11-14 16:41:48,775 - INFO - Summary tab updated.
+2025-11-14 16:41:48,782 - INFO - Input validation successful. Ticker: inp.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:41:48,793 - INFO - Starting data download for ticker: inp.jo
+2025-11-14 16:41:48,839 - INFO - Data download complete. Processing data...
+2025-11-14 16:41:48,856 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:41:48,856 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:41:48,856 - INFO - Validating user inputs.
+2025-11-14 16:41:48,856 - INFO - Updating all charts.
+2025-11-14 16:41:48,926 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:41:49,078 - INFO - Updating heatmap.
+2025-11-14 16:41:49,776 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:41:50,113 - INFO - Updating comparison chart.
+2025-11-14 16:41:50,114 - INFO - No comparison data to display.
+2025-11-14 16:41:50,114 - INFO - Updating summary tab.
+2025-11-14 16:41:50,115 - INFO - Summary tab updated.
+2025-11-14 16:41:50,116 - INFO - Input validation successful. Ticker: inp.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:41:50,116 - INFO - Updating summary tab.
+2025-11-14 16:41:50,117 - INFO - Summary tab updated.
+2025-11-14 16:41:50,133 - INFO - Starting data download for ticker: inp.jo
+2025-11-14 16:41:50,194 - INFO - Data download complete. Processing data...
+2025-11-14 16:41:50,219 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:41:50,220 - INFO - Updating all charts.
+2025-11-14 16:41:50,294 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:41:50,445 - INFO - Updating heatmap.
+2025-11-14 16:41:50,927 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:41:51,298 - INFO - Updating comparison chart.
+2025-11-14 16:41:51,299 - INFO - No comparison data to display.
+2025-11-14 16:41:51,299 - INFO - Updating summary tab.
+2025-11-14 16:41:51,300 - INFO - Summary tab updated.
+2025-11-14 16:41:51,306 - INFO - Updating summary tab.
+2025-11-14 16:41:51,307 - INFO - Summary tab updated.
+2025-11-14 16:41:52,119 - INFO - Toggling dark mode to ON.
+2025-11-14 16:41:56,478 - INFO - Configuration panel hidden.
+2025-11-14 16:42:03,763 - INFO - Configuration panel shown.
+2025-11-14 16:42:06,897 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:42:06,898 - INFO - Validating user inputs.
+2025-11-14 16:42:06,901 - INFO - Input validation successful. Ticker: inp.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:42:06,903 - INFO - Starting data download for ticker: inp.jo
+2025-11-14 16:42:06,992 - INFO - Data download complete. Processing data...
+2025-11-14 16:42:07,008 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:42:07,008 - INFO - Updating all charts.
+2025-11-14 16:42:07,080 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:42:07,228 - INFO - Updating heatmap.
+2025-11-14 16:42:07,708 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:42:08,024 - INFO - Updating comparison chart.
+2025-11-14 16:42:08,024 - INFO - No comparison data to display.
+2025-11-14 16:42:08,024 - INFO - Updating summary tab.
+2025-11-14 16:42:08,025 - INFO - Summary tab updated.
+2025-11-14 16:42:08,029 - INFO - Updating summary tab.
+2025-11-14 16:42:08,030 - INFO - Summary tab updated.
+2025-11-14 16:42:15,245 - INFO - Configuration panel hidden.
+2025-11-14 16:43:18,767 - INFO - Configuration panel shown.
+2025-11-14 16:43:36,381 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:43:36,382 - INFO - Validating user inputs.
+2025-11-14 16:43:36,386 - INFO - Input validation successful. Ticker: npn.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:43:36,387 - INFO - Starting data download for ticker: npn.jo
+2025-11-14 16:43:43,436 - INFO - Data download complete. Processing data...
+2025-11-14 16:43:43,454 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:43:43,454 - INFO - Updating all charts.
+2025-11-14 16:43:43,532 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:43:43,668 - INFO - Updating heatmap.
+2025-11-14 16:43:44,111 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:43:44,401 - INFO - Updating comparison chart.
+2025-11-14 16:43:44,401 - INFO - No comparison data to display.
+2025-11-14 16:43:44,401 - INFO - Updating summary tab.
+2025-11-14 16:43:44,402 - INFO - Summary tab updated.
+2025-11-14 16:43:44,403 - INFO - Updating summary tab.
+2025-11-14 16:43:44,403 - INFO - Summary tab updated.
+2025-11-14 16:43:50,006 - INFO - Configuration panel hidden.
+2025-11-14 16:44:59,303 - INFO - Configuration panel shown.
+2025-11-14 16:45:01,915 - INFO - 'ML Analysis' button clicked.
+2025-11-14 16:45:03,540 - INFO - ML analysis completed successfully.
+2025-11-14 16:45:08,697 - INFO - 'Significance Test' button clicked.
+2025-11-14 16:45:08,783 - INFO - Statistical tests completed successfully.
+2025-11-14 16:45:34,285 - INFO - 'Export PDF' button clicked.
+2025-11-14 16:45:37,411 - INFO - PDF export cancelled by user.
+2025-11-14 16:45:39,386 - INFO - 'Export to Excel' button clicked.
+2025-11-14 16:45:52,772 - INFO - Data successfully exported to /home/red/Public/Projects/fin_fuz_sol/jse_sol/npn.jo_monthly_analysis_2020_2025.xlsx
+2025-11-14 16:45:55,028 - INFO - Configuration panel hidden.
+2025-11-14 16:47:39,519 - INFO - Configuration panel shown.
+2025-11-14 16:47:53,962 - INFO - 'Analyze Data' button clicked.
+2025-11-14 16:47:53,964 - INFO - Validating user inputs.
+2025-11-14 16:47:53,966 - INFO - Input validation successful. Ticker: stxcap.jo, Start: 2020, End: 2025-11-14
+2025-11-14 16:47:53,967 - INFO - Starting data download for ticker: stxcap.jo
+2025-11-14 16:47:55,034 - INFO - Data download complete. Processing data...
+2025-11-14 16:47:55,298 - INFO - Data processing complete. Updating UI.
+2025-11-14 16:47:55,298 - INFO - Updating all charts.
+2025-11-14 16:47:55,384 - INFO - Updating bar chart with metric: Median
+2025-11-14 16:47:55,532 - INFO - Updating heatmap.
+2025-11-14 16:47:55,962 - INFO - Updating risk vs return scatter plot.
+2025-11-14 16:47:56,301 - INFO - Updating comparison chart.
+2025-11-14 16:47:56,301 - INFO - No comparison data to display.
+2025-11-14 16:47:56,301 - INFO - Updating summary tab.
+2025-11-14 16:47:56,302 - INFO - Summary tab updated.
+2025-11-14 16:47:56,302 - INFO - Updating summary tab.
+2025-11-14 16:47:56,303 - INFO - Summary tab updated.
+2025-11-14 16:48:06,272 - INFO - 'ML Analysis' button clicked.
+2025-11-14 16:48:07,423 - INFO - 'Significance Test' button clicked.
+2025-11-14 16:48:07,631 - INFO - Statistical tests completed successfully.
+2025-11-14 16:48:07,993 - INFO - ML analysis completed successfully.
+2025-11-14 16:48:38,566 - INFO - Configuration panel hidden.
