@@ -1,8 +1,8 @@
 # jse.py
-# Global Index Monthly Return Analyzer (Version 2.9.10)
+# Global Index Monthly Return Analyzer (Version 2.9.11)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
-# v2.9.10: Fixed invalid colormap 'tab12' error in ML analysis.
+# v2.9.11: Fixed NoneType error in chart updates and threading issues.
 
 import yfinance as yf
 import pandas as pd
@@ -94,7 +94,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.10"
+    VERSION = "2.9.11"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -129,6 +129,8 @@ class JSEAnalyzer:
         self.ticker = "^J203.JO"
         self.start_year = 1990
         self.end_date = datetime.today().strftime("%Y-%m-%d")
+        
+        # Initialize data attributes
         self.data = None
         self.monthly = None
         self.monthly_ret = None
@@ -142,6 +144,9 @@ class JSEAnalyzer:
         self.comparison_tickers = []
         self.comparison_data = {}
         self.bar_metric = tk.StringVar(value="Mean")
+        
+        # Data ready flag to prevent premature chart updates
+        self.data_ready = False
 
         # Style configuration
         self.style = ttk.Style()
@@ -288,12 +293,6 @@ class JSEAnalyzer:
         self.export_btn.pack(side=tk.LEFT, padx=(0, 10))
         Tooltip(self.export_btn, "Export the analysis results to an Excel file.")
 
-        self.toggle_benchmark_btn = ttk.Button(button_row, text="📊 Toggle Benchmark",
-                                              command=self.toggle_benchmark_line,
-                                              style='Secondary.TButton')
-        self.toggle_benchmark_btn.pack(side=tk.LEFT, padx=(0, 10))
-        Tooltip(self.toggle_benchmark_btn, "Toggle the overall average benchmark line on charts.")
-
         pdf_btn = ttk.Button(button_row, text="📄 Export PDF",
                             command=self.generate_pdf_report, style='Warning.TButton')
         pdf_btn.pack(side=tk.LEFT, padx=(0, 10))
@@ -324,16 +323,15 @@ class JSEAnalyzer:
         bar_metric_label = ttk.Label(bar_control_frame, text="Metric:")
         bar_metric_label.pack(side=tk.LEFT, padx=(5, 5))
         Tooltip(bar_metric_label, "Choose between mean or median for the bar chart.")
-        metric_combo = ttk.Combobox(bar_control_frame, textvariable=self.bar_metric,
-                                   values=["Mean", "Median"], state="readonly", width=10, font=('Arial', 9))
-        metric_combo.pack(side=tk.LEFT, padx=(0, 5))
-        metric_combo.bind('<<ComboboxSelected>>', lambda event: self.update_charts())
+        
+        # Disable metric combo initially until data is ready
+        self.metric_combo = ttk.Combobox(bar_control_frame, textvariable=self.bar_metric,
+                                        values=["Mean", "Median"], state="disabled", width=10, font=('Arial', 9))
+        self.metric_combo.pack(side=tk.LEFT, padx=(0, 5))
+        self.metric_combo.bind('<<ComboboxSelected>>', lambda event: self.update_charts())
 
-        self.toggle_benchmark_btn = ttk.Button(bar_control_frame, text="📊 Toggle Benchmark",
-                                             command=self.toggle_benchmark_line,
-                                             style='Secondary.TButton')
-        self.toggle_benchmark_btn.pack(side=tk.LEFT, padx=(5, 0))
-        Tooltip(self.toggle_benchmark_btn, "Toggle the benchmark line in the bar chart.")
+        # Removed duplicate toggle_benchmark_btn from here to avoid confusion
+        # The main toggle is in the button row above
 
         self.heatmap_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.heatmap_frame, text="🌡️ Year-Month Heatmap")
@@ -463,7 +461,8 @@ class JSEAnalyzer:
             self.comparison_tickers.append(ticker)
             self.logger.info(f"Added '{ticker_name}' ({ticker}) to comparison list.")
             self.status_var.set(f"✅ Added {ticker_name} to comparison")
-            self.analyze_comparison_data()
+            if self.data_ready:
+                self.analyze_comparison_data()
         elif ticker == self.ticker:
             self.logger.warning(f"Attempted to add primary ticker '{ticker}' for comparison.")
             messagebox.showwarning("Warning", "Cannot compare the same ticker.")
@@ -603,8 +602,15 @@ class JSEAnalyzer:
                 self.month_avg = self.pivot.mean().sort_index()
                 self.month_median = self.pivot.median().sort_index()
                 self.overall_avg = self.monthly_ret.mean()
+                
+                # Set data ready flag and enable controls
+                self.data_ready = True
                 self.logger.info("Data processing complete. Updating UI.")
 
+                # Enable metric combo
+                self.root.after(0, lambda: self.metric_combo.config(state="readonly"))
+                
+                # Update UI on main thread
                 self.root.after(0, self.update_charts)
                 self.root.after(0, self.update_summary)
                 self.root.after(0, lambda: self.export_btn.config(state=tk.NORMAL))
@@ -623,6 +629,9 @@ class JSEAnalyzer:
     def analyze_data(self):
         """Wrapper for async analysis."""
         self.logger.info("'Analyze Data' button clicked.")
+        # Reset data ready flag
+        self.data_ready = False
+        self.metric_combo.config(state="disabled")
         self.analyze_data_async()
 
     def analyze_comparison_data(self):
@@ -650,7 +659,8 @@ class JSEAnalyzer:
                     # FIX: Capture exception message as default argument to avoid free variable error
                     self.root.after(0, lambda msg=str(e): self.status_var.set(f"❌ Error processing {ticker}: {msg}"))
 
-        self.update_comparison_chart()
+        if self.data_ready:
+            self.update_comparison_chart()
 
     def download_and_process_ticker(self, ticker, start_year, end_date):
         """Download and process data for a single ticker."""
@@ -695,7 +705,11 @@ class JSEAnalyzer:
 
     # --- Visualization Methods ---
     def update_charts(self):
-        """Update all visualization tabs."""
+        """Update all visualization tabs only if data is ready."""
+        if not self.data_ready or self.pivot is None:
+            self.logger.warning("update_charts() called before data is ready. Skipping.")
+            return
+        
         self.logger.info("Updating all charts.")
         self.update_bar_chart()
         self.update_heatmap()
@@ -705,8 +719,12 @@ class JSEAnalyzer:
 
     def update_bar_chart(self):
         """Update the bar chart with proper metrics and benchmark."""
+        if not self.data_ready or self.month_avg is None or self.month_median is None:
+            return
+            
+        # Clear existing chart frame
         for widget in self.bar_frame.winfo_children():
-            if isinstance(widget, ttk.Frame) and len(widget.winfo_children()) > 2: # Avoid destroying controls
+            if isinstance(widget, ttk.Frame) and len(widget.winfo_children()) > 2:
                  widget.destroy()
         
         chart_frame = ttk.Frame(self.bar_frame)
@@ -751,6 +769,9 @@ class JSEAnalyzer:
 
     def update_heatmap(self):
         """Update the year-month heatmap visualization."""
+        if not self.data_ready or self.pivot is None:
+            return
+            
         self.logger.info("Updating heatmap.")
         for widget in self.heatmap_frame.winfo_children():
             widget.destroy()
@@ -775,6 +796,9 @@ class JSEAnalyzer:
 
     def update_scatter_plot(self):
         """Update the risk vs return scatter plot."""
+        if not self.data_ready or self.pivot is None:
+            return
+            
         self.logger.info("Updating risk vs return scatter plot.")
         for widget in self.scatter_frame.winfo_children():
             widget.destroy()
@@ -812,6 +836,9 @@ class JSEAnalyzer:
 
     def update_comparison_chart(self):
         """Update the comparison tab with multi-ticker data."""
+        if not self.data_ready or self.pivot is None:
+            return
+            
         self.logger.info("Updating comparison chart.")
         for widget in self.comparison_frame.winfo_children():
             widget.destroy()
@@ -842,9 +869,11 @@ class JSEAnalyzer:
     # --- Output Methods ---
     def update_summary(self):
         """Update the summary tab with analysis results."""
+        if not self.data_ready or self.pivot is None:
+            return
+            
         self.logger.info("Updating summary tab.")
         self.summary_text.delete(1.0, tk.END)
-        if self.pivot is None: return
         
         summary = f"📊 MONTHLY RETURN ANALYSIS SUMMARY\n"
         summary += f"{'='*50}\n"
@@ -873,7 +902,7 @@ class JSEAnalyzer:
     def export_to_excel(self):
         """Export analysis data to Excel with improved error handling."""
         self.logger.info("'Export to Excel' button clicked.")
-        if self.pivot is None:
+        if not self.data_ready or self.pivot is None:
             self.logger.warning("Export to Excel attempted with no data.")
             messagebox.showwarning("Warning", "No data to export. Please analyze data first.")
             return
@@ -906,7 +935,7 @@ class JSEAnalyzer:
     def generate_pdf_report(self):
         """Generate professional PDF report with improved error handling."""
         self.logger.info("'Export PDF' button clicked.")
-        if self.pivot is None:
+        if not self.data_ready or self.pivot is None:
             self.logger.warning("PDF export attempted with no data.")
             messagebox.showwarning("Warning", "No data to export. Please analyze data first.")
             return
@@ -922,7 +951,23 @@ class JSEAnalyzer:
             styles = getSampleStyleSheet()
             title = Paragraph(f"Monthly Return Analysis: {self.ticker}", styles['h1'])
             story.append(title)
-            # Add content to story...
+            story.append(Paragraph(f"Analysis Period: {self.start_year_var.get()} to {self.end_date_var.get()[:4]}", styles['Normal']))
+            story.append(Paragraph(f"Overall Average Return: {self.overall_avg*100:.2f}%", styles['Normal']))
+            # Add summary table
+            summary_data = [['Month', 'Average Return (%)']]
+            for i, month in enumerate(self.months):
+                if i+1 in self.month_avg.index:
+                    summary_data.append([month, f"{self.month_avg[i+1]*100:.2f}"])
+            summary_table = Table(summary_data)
+            summary_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.grey),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+            ]))
+            story.append(summary_table)
             
             doc.build(story)
             messagebox.showinfo("Success", f"✅ PDF report generated: {filename}")
@@ -939,13 +984,14 @@ class JSEAnalyzer:
         self.show_benchmark.set(not self.show_benchmark.get())
         status = "ON" if self.show_benchmark.get() else "OFF"
         self.logger.info(f"Benchmark line toggled to {status}.")
-        self.update_charts()
+        if self.data_ready:
+            self.update_charts()
         self.status_var.set(f"📊 Benchmark line is now {status}")
 
     def run_statistical_tests(self):
         """Run statistical significance tests with threading and progress updates."""
         self.logger.info("'Significance Test' button clicked.")
-        if self.pivot is None:
+        if not self.data_ready or self.pivot is None:
             self.logger.warning("Statistical test run attempted with no data.")
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
@@ -1022,7 +1068,7 @@ class JSEAnalyzer:
     def run_ml_analysis(self):
         """Run advanced machine learning analysis with threading and progress updates."""
         self.logger.info("'ML Analysis' button clicked.")
-        if self.pivot is None:
+        if not self.data_ready or self.pivot is None:
             self.logger.warning("ML analysis run attempted with no data.")
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
