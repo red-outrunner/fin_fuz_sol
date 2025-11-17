@@ -1,8 +1,8 @@
 # jse.py
-# Global Index Monthly Return Analyzer (Version 2.9.11)
+# Global Index Monthly Return Analyzer (Version 2.9.12)
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
-# v2.9.11: Fixed NoneType error in chart updates and threading issues.
+# v2.9.12: Fixed custom ticker UI placement and chart refresh issues.
 
 import yfinance as yf
 import pandas as pd
@@ -94,7 +94,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.11"
+    VERSION = "2.9.12"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -232,8 +232,9 @@ class JSEAnalyzer:
         self.custom_ticker_var = tk.StringVar()
         self.custom_ticker_entry = ttk.Entry(ticker_row, textvariable=self.custom_ticker_var,
                                             width=15, font=('Arial', 9))
-        self.custom_ticker_entry.pack(side=tk.LEFT)
-        self.custom_ticker_entry.grid_remove()
+        # FIX: Pack and then hide using pack_forget for consistency
+        self.custom_ticker_entry.pack(side=tk.LEFT, padx=(0, 15))
+        self.custom_ticker_entry.pack_forget()
 
         # Comparison ticker selection
         compare_label = ttk.Label(ticker_row, text="Compare With:")
@@ -318,20 +319,27 @@ class JSEAnalyzer:
         # Tabs
         self.bar_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.bar_frame, text="📊 Average Returns")
-        bar_control_frame = ttk.Frame(self.bar_frame)
-        bar_control_frame.pack(fill=tk.X, pady=(5, 0))
-        bar_metric_label = ttk.Label(bar_control_frame, text="Metric:")
+        
+        # FIX: Store reference to control frame to avoid destroying it
+        self.bar_control_frame = ttk.Frame(self.bar_frame)
+        self.bar_control_frame.pack(fill=tk.X, pady=(5, 0))
+        
+        bar_metric_label = ttk.Label(self.bar_control_frame, text="Metric:")
         bar_metric_label.pack(side=tk.LEFT, padx=(5, 5))
         Tooltip(bar_metric_label, "Choose between mean or median for the bar chart.")
         
         # Disable metric combo initially until data is ready
-        self.metric_combo = ttk.Combobox(bar_control_frame, textvariable=self.bar_metric,
+        self.metric_combo = ttk.Combobox(self.bar_control_frame, textvariable=self.bar_metric,
                                         values=["Mean", "Median"], state="disabled", width=10, font=('Arial', 9))
         self.metric_combo.pack(side=tk.LEFT, padx=(0, 5))
         self.metric_combo.bind('<<ComboboxSelected>>', lambda event: self.update_charts())
 
-        # Removed duplicate toggle_benchmark_btn from here to avoid confusion
-        # The main toggle is in the button row above
+        # Toggle benchmark button in control frame
+        self.benchmark_toggle_btn = ttk.Button(self.bar_control_frame, text="📊 Toggle Benchmark",
+                                             command=self.toggle_benchmark_line,
+                                             style='Secondary.TButton')
+        self.benchmark_toggle_btn.pack(side=tk.LEFT, padx=(5, 0))
+        Tooltip(self.benchmark_toggle_btn, "Toggle the benchmark line in the bar chart.")
 
         self.heatmap_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.heatmap_frame, text="🌡️ Year-Month Heatmap")
@@ -413,10 +421,12 @@ class JSEAnalyzer:
         """Toggle between predefined ticker dropdown and custom ticker entry."""
         if self.use_custom_var.get():
             self.logger.info("Switched to custom ticker input.")
+            # FIX: Show entry next to checkbox using pack
             self.custom_ticker_entry.pack(side=tk.LEFT, padx=(0, 15))
             self.custom_ticker_entry.delete(0, tk.END)
         else:
             self.logger.info("Switched to predefined ticker dropdown.")
+            # FIX: Hide entry using pack_forget
             self.custom_ticker_entry.pack_forget()
 
     def on_date_range_change(self, event=None):
@@ -722,11 +732,12 @@ class JSEAnalyzer:
         if not self.data_ready or self.month_avg is None or self.month_median is None:
             return
             
-        # Clear existing chart frame
+        # FIX: Clear existing chart frames but keep control frame
         for widget in self.bar_frame.winfo_children():
-            if isinstance(widget, ttk.Frame) and len(widget.winfo_children()) > 2:
-                 widget.destroy()
+            if widget != self.bar_control_frame:  # Don't destroy the control frame
+                widget.destroy()
         
+        # Create new chart frame
         chart_frame = ttk.Frame(self.bar_frame)
         chart_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
