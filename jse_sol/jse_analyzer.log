@@ -1,68 +1,15 @@
-2025-11-14 17:04:33,253 - INFO - --- Application Start: Global Index Analyzer v2.9.11 ---
-2025-11-14 17:04:33,643 - INFO - Cache directory set to: cache_v2_9_11
-2025-11-14 17:04:33,643 - INFO - UI styles configured.
-2025-11-14 17:04:34,280 - INFO - UI setup complete.
-2025-11-14 17:04:34,281 - INFO - Application initialized successfully.
-2025-11-14 17:04:34,281 - INFO - Starting Tkinter main loop.
-2025-11-14 17:04:39,764 - INFO - Configuration panel hidden.
-2025-11-14 17:04:42,103 - INFO - Configuration panel shown.
-2025-11-14 17:04:44,656 - INFO - Date range changed to: Last 5 Years
-2025-11-14 17:04:45,910 - INFO - 'Analyze Data' button clicked.
-2025-11-14 17:04:45,912 - INFO - Validating user inputs.
-2025-11-14 17:04:45,918 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 2020, End: 2025-11-14
-2025-11-14 17:04:45,920 - INFO - Starting data download for ticker: ^J203.JO
-2025-11-14 17:04:48,554 - INFO - Data download complete. Processing data...
-2025-11-14 17:04:48,675 - INFO - Data processing complete. Updating UI.
-2025-11-14 17:04:48,677 - INFO - Updating all charts.
-2025-11-14 17:04:48,903 - INFO - Updating bar chart with metric: Average
-2025-11-14 17:04:49,212 - INFO - Updating heatmap.
-2025-11-14 17:04:49,671 - INFO - Updating risk vs return scatter plot.
-2025-11-14 17:04:49,940 - INFO - Updating comparison chart.
-2025-11-14 17:04:49,940 - INFO - No comparison data to display.
-2025-11-14 17:04:49,940 - INFO - Updating summary tab.
-2025-11-14 17:04:49,941 - INFO - Summary tab updated.
-2025-11-14 17:04:49,945 - INFO - Updating summary tab.
-2025-11-14 17:04:49,946 - INFO - Summary tab updated.
-2025-11-14 17:04:50,288 - INFO - 'Analyze Data' button clicked.
-2025-11-14 17:04:50,289 - INFO - Validating user inputs.
-2025-11-14 17:04:50,292 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 2020, End: 2025-11-14
-2025-11-14 17:04:50,293 - INFO - Starting data download for ticker: ^J203.JO
-2025-11-14 17:04:50,344 - INFO - Data download complete. Processing data...
-2025-11-14 17:04:50,357 - INFO - Data processing complete. Updating UI.
-2025-11-14 17:04:50,358 - INFO - Updating all charts.
-2025-11-14 17:04:50,421 - INFO - Updating bar chart with metric: Average
-2025-11-14 17:04:50,557 - INFO - Updating heatmap.
-2025-11-14 17:04:50,930 - INFO - Updating risk vs return scatter plot.
-2025-11-14 17:04:51,279 - INFO - Updating comparison chart.
-2025-11-14 17:04:51,279 - INFO - No comparison data to display.
-2025-11-14 17:04:51,279 - INFO - Updating summary tab.
-2025-11-14 17:04:51,280 - INFO - Summary tab updated.
-2025-11-14 17:04:51,283 - INFO - Updating summary tab.
-2025-11-14 17:04:51,284 - INFO - Summary tab updated.
-2025-11-14 17:04:57,274 - INFO - Configuration panel hidden.
-2025-11-14 17:26:19,171 - INFO - Configuration panel shown.
-2025-11-14 17:26:20,928 - INFO - 'Significance Test' button clicked.
-2025-11-14 17:26:21,004 - INFO - Statistical tests completed successfully.
-2025-11-14 17:26:21,753 - INFO - 'ML Analysis' button clicked.
-2025-11-14 17:26:23,433 - INFO - ML analysis completed successfully.
-2025-11-14 17:26:29,063 - INFO - 'Analyze Data' button clicked.
-2025-11-14 17:26:29,064 - INFO - Validating user inputs.
-2025-11-14 17:26:29,065 - INFO - Input validation successful. Ticker: ^J252.JO, Start: 2020, End: 2025-11-14
-2025-11-14 17:26:29,067 - INFO - Starting data download for ticker: ^J252.JO
-2025-11-14 17:26:32,218 - ERROR - HTTP Error 404: 
-2025-11-14 17:26:33,031 - ERROR - 
-1 Failed download:
-2025-11-14 17:26:33,032 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-14 17:26:34,889 - ERROR - HTTP Error 404: 
-2025-11-14 17:26:35,795 - ERROR - 
-1 Failed download:
-2025-11-14 17:26:35,796 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-14 17:26:35,826 - ERROR - 
-1 Failed download:
-2025-11-14 17:26:35,826 - ERROR - ['^J252.JO']: YFTzMissingError('possibly delisted; no timezone found')
-2025-11-14 17:26:35,838 - INFO - Data download complete. Processing data...
-2025-11-14 17:26:35,838 - ERROR - An error occurred during data analysis.
-Traceback (most recent call last):
-  File "/home/red/Public/Projects/fin_fuz_sol/jse_sol/mintest.py", line 583, in worker
-    raise ValueError("No data returned from Yahoo Finance. Check ticker symbol or internet connection.")
-ValueError: No data returned from Yahoo Finance. Check ticker symbol or internet connection.
+2025-11-17 20:01:38,486 - INFO - --- Application Start: Global Index Analyzer v2.9.11 ---
+2025-11-17 20:01:38,662 - INFO - Cache directory set to: cache_v2_9_11
+2025-11-17 20:01:38,662 - INFO - UI styles configured.
+2025-11-17 20:01:38,722 - INFO - UI setup complete.
+2025-11-17 20:01:38,722 - INFO - Application initialized successfully.
+2025-11-17 20:01:38,722 - INFO - Starting Tkinter main loop.
+2025-11-17 20:01:45,882 - INFO - Switched to custom ticker input.
+2025-11-17 20:01:46,438 - INFO - Switched to predefined ticker dropdown.
+2025-11-17 20:01:47,115 - INFO - Switched to custom ticker input.
+2025-11-17 20:01:47,766 - INFO - Switched to predefined ticker dropdown.
+2025-11-17 20:01:49,676 - INFO - Switched to custom ticker input.
+2025-11-17 20:01:50,421 - INFO - Switched to predefined ticker dropdown.
+2025-11-17 20:01:52,128 - INFO - Switched to custom ticker input.
+2025-11-17 20:01:56,959 - INFO - Switched to predefined ticker dropdown.
+2025-11-17 20:02:07,424 - INFO - --- Application Shutdown ---
