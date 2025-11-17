@@ -3,6 +3,7 @@
 # Enhanced ML analysis with PCA, GMM, Isolation Forest, cluster visualization,
 # plain-English summary, upcoming month forecast, and comprehensive logging.
 # v2.9.12: Fixed custom ticker UI placement and chart refresh issues.
+# v2.9.13 (Gemini): Refactored ML and Stats functions to fix threading violations.
 
 import yfinance as yf
 import pandas as pd
@@ -94,7 +95,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "2.9.12"
+    VERSION = "2.9.13" # Updated version
 
     def __init__(self):
         self.logger = setup_logging()
@@ -1007,23 +1008,20 @@ class JSEAnalyzer:
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
 
+        # Clear tab immediately
+        for widget in self.stats_frame.winfo_children():
+            widget.destroy()
+        self.status_var.set("🧮 Running statistical tests...")
+        self.root.update()
+
         def worker():
             try:
-                self.status_var.set("🧮 Running statistical tests...")
-                self.root.update()
-                
-                for widget in self.stats_frame.winfo_children():
-                    widget.destroy()
-
-                stats_text = tk.Text(self.stats_frame, wrap=tk.WORD, font=('Consolas', 10))
-                stats_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-                
+                # --- This runs in the background thread ---
                 results = "📊 STATISTICAL SIGNIFICANCE TESTS\n"
                 results += "="*50 + "\n\n"
                 
                 # Test 1: ANOVA - Are monthly returns significantly different?
-                self.status_var.set("🧮 Running ANOVA test...")
-                self.root.update()
+                self.root.after(0, lambda: self.status_var.set("🧮 Running ANOVA test..."))
                 month_returns = [self.pivot[col].dropna() for col in self.pivot.columns]
                 f_stat, p_value = stats.f_oneway(*month_returns)
                 results += f"1. ANOVA TEST (F-statistic: {f_stat:.4f})\n"
@@ -1062,9 +1060,8 @@ class JSEAnalyzer:
                 results += f"   Worst month: {worst_month} ({self.month_avg.min()*100:.2f}%)\n"
                 results += f"   Seasonality effect: {abs(self.month_avg.max() - self.month_avg.min())*100:.2f}% difference\n"
                 
-                stats_text.insert(1.0, results)
-                self.logger.info("Statistical tests completed successfully.")
-                self.status_var.set("✅ Statistical tests completed")
+                # --- Pass results to main thread for UI update ---
+                self.root.after(0, self._display_statistical_results, results)
                 
             except Exception as e:
                 self.logger.exception("Error running statistical tests.")
@@ -1076,6 +1073,17 @@ class JSEAnalyzer:
         thread.daemon = True
         thread.start()
 
+    def _display_statistical_results(self, results):
+        """Handles UI updates for statistical tests on the main thread."""
+        self.logger.info("Displaying statistical tests results.")
+        # This function runs on the main thread
+        stats_text = tk.Text(self.stats_frame, wrap=tk.WORD, font=('Consolas', 10))
+        stats_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        stats_text.insert(1.0, results)
+        
+        self.logger.info("Statistical tests completed successfully.")
+        self.status_var.set("✅ Statistical tests completed")
+
     def run_ml_analysis(self):
         """Run advanced machine learning analysis with threading and progress updates."""
         self.logger.info("'ML Analysis' button clicked.")
@@ -1084,29 +1092,27 @@ class JSEAnalyzer:
             messagebox.showwarning("Warning", "No data available. Please analyze data first.")
             return
 
+        # Clear tab immediately
+        for widget in self.ml_frame.winfo_children():
+            widget.destroy()
+        self.status_var.set("🤖 Preparing data for ML analysis...")
+        self.root.update()
+
         def worker():
             try:
+                # --- This runs in the background thread ---
                 self.status_var.set("🤖 Preparing data for ML analysis...")
-                self.root.update()
                 
-                for widget in self.ml_frame.winfo_children():
-                    widget.destroy()
-
-                # Prepare data
                 returns = self.monthly_ret.dropna()
                 if len(returns) < 24:  # Need at least 2 years of data
                     raise ValueError("Insufficient data for ML analysis (need at least 24 months)")
 
-                # Create feature matrix: use rolling window of 12 months to predict next month
                 self.status_var.set("🤖 Creating features...")
-                self.root.update()
                 
-                # Reshape data for ML models
                 X = []
                 y_months = []
                 y_returns = []
                 
-                # Use 12-month sequences
                 for i in range(12, len(returns)):
                     X.append(returns.iloc[i-12:i].values)
                     y_months.append(returns.index[i].month)
@@ -1119,105 +1125,55 @@ class JSEAnalyzer:
                 if len(X) < 10:
                     raise ValueError("Insufficient sequences for clustering")
 
-                # Tab container for ML results
-                ml_notebook = ttk.Notebook(self.ml_frame)
-                ml_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-                # --- 1. PCA Analysis Tab ---
-                pca_tab = ttk.Frame(ml_notebook)
-                ml_notebook.add(pca_tab, text="📉 PCA Clustering")
-                
+                # --- 1. PCA Analysis ---
                 self.status_var.set("🤖 Running PCA...")
-                self.root.update()
-                
-                # PCA for dimensionality reduction and visualization
                 pca = PCA(n_components=2)
                 X_pca = pca.fit_transform(X)
+                pca_variance = pca.explained_variance_ratio_
                 
-                fig_pca, ax_pca = plt.subplots(figsize=(10, 6))
-                # FIX: Changed from invalid 'tab12' to valid 'Set3' colormap
-                scatter = ax_pca.scatter(X_pca[:, 0], X_pca[:, 1], c=y_months, cmap='Set3', alpha=0.6)
-                ax_pca.set_xlabel(f'First Principal Component ({pca.explained_variance_ratio_[0]:.1%} variance)')
-                ax_pca.set_ylabel(f'Second Principal Component ({pca.explained_variance_ratio_[1]:.1%} variance)')
-                ax_pca.set_title(f'PCA: Returns Patterns Colored by Target Month\nTotal Explained Variance: {pca.explained_variance_ratio_.sum():.1%}')
-                # FIX: Update colorbar to use valid colormap
-                plt.colorbar(scatter, ax=ax_pca, ticks=range(1, 13)).set_ticklabels(self.months)
-                
-                canvas_pca = FigureCanvasTkAgg(fig_pca, pca_tab)
-                canvas_pca.draw()
-                canvas_pca.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-                
-                # --- 2. GMM Clustering Tab ---
-                gmm_tab = ttk.Frame(ml_notebook)
-                ml_notebook.add(gmm_tab, text="🎲 Gaussian Mixture")
-                
+                # --- 2. GMM Clustering ---
                 self.status_var.set("🤖 Running Gaussian Mixture Model...")
-                self.root.update()
-                
-                # GMM clustering
                 n_clusters = min(4, len(X))
                 gmm = GaussianMixture(n_components=n_clusters, random_state=42)
                 cluster_labels = gmm.fit_predict(X_pca)
+                gmm_aic = gmm.aic(X_pca)
+                gmm_bic = gmm.bic(X_pca)
                 
-                fig_gmm, ax_gmm = plt.subplots(figsize=(10, 6))
-                scatter = ax_gmm.scatter(X_pca[:, 0], X_pca[:, 1], c=cluster_labels, cmap='Set3', alpha=0.7)
-                ax_gmm.set_xlabel(f'First Principal Component ({pca.explained_variance_ratio_[0]:.1%} variance)')
-                ax_gmm.set_ylabel(f'Second Principal Component ({pca.explained_variance_ratio_[1]:.1%} variance)')
-                ax_gmm.set_title(f'Gaussian Mixture Clustering (k={n_clusters})\nAIC: {gmm.aic(X_pca):.0f}, BIC: {gmm.bic(X_pca):.0f}')
-                plt.colorbar(scatter, ax=ax_gmm)
-                
-                canvas_gmm = FigureCanvasTkAgg(fig_gmm, gmm_tab)
-                canvas_gmm.draw()
-                canvas_gmm.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-                
-                # --- 3. Anomaly Detection Tab ---
-                anomaly_tab = ttk.Frame(ml_notebook)
-                ml_notebook.add(anomaly_tab, text="🔍 Anomaly Detection")
-                
+                # --- 3. Anomaly Detection ---
                 self.status_var.set("🤖 Running Isolation Forest...")
-                self.root.update()
-                
-                # Isolation Forest for anomaly detection
                 iso_forest = IsolationForest(contamination=0.05, random_state=42)
                 anomaly_labels = iso_forest.fit_predict(X_pca)
-                
-                fig_anomaly, ax_anomaly = plt.subplots(figsize=(10, 6))
                 normal_mask = anomaly_labels == 1
                 anomaly_mask = anomaly_labels == -1
                 
-                ax_anomaly.scatter(X_pca[normal_mask, 0], X_pca[normal_mask, 1], c='blue', alpha=0.6, label='Normal')
-                ax_anomaly.scatter(X_pca[anomaly_mask, 0], X_pca[anomaly_mask, 1], c='red', alpha=0.9, label='Anomaly')
-                ax_anomaly.set_xlabel(f'First Principal Component ({pca.explained_variance_ratio_[0]:.1%} variance)')
-                ax_anomaly.set_ylabel(f'Second Principal Component ({pca.explained_variance_ratio_[1]:.1%} variance)')
-                ax_anomaly.set_title(f'Isolation Forest Anomaly Detection\n{anomaly_mask.sum()} outliers detected ({100*anomaly_mask.sum()/len(X_pca):.1f}%)')
-                ax_anomaly.legend()
-                
-                canvas_anomaly = FigureCanvasTkAgg(fig_anomaly, anomaly_tab)
-                canvas_anomaly.draw()
-                canvas_anomaly.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-                
-                # --- 4. Summary Statistics Tab ---
-                summary_tab = ttk.Frame(ml_notebook)
-                ml_notebook.add(summary_tab, text="📊 ML Summary")
-                
-                summary_text = tk.Text(summary_tab, wrap=tk.WORD, font=('Consolas', 10))
-                summary_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-                
+                # --- 4. Summary Statistics ---
                 ml_summary = "🤖 MACHINE LEARNING ANALYSIS SUMMARY\n"
                 ml_summary += "="*50 + "\n\n"
                 ml_summary += f"📈 Data Points: {len(X)} sequences of 12 months\n"
-                ml_summary += f"📊 PCA Explained Variance: {pca.explained_variance_ratio_[0]:.1%} + {pca.explained_variance_ratio_[1]:.1%}\n\n"
+                ml_summary += f"📊 PCA Explained Variance: {pca_variance[0]:.1%} + {pca_variance[1]:.1%}\n\n"
                 ml_summary += "🔍 FINDINGS:\n"
                 ml_summary += "-" * 30 + "\n"
                 ml_summary += f"• {n_clusters} distinct return patterns identified by GMM\n"
                 ml_summary += f"• {anomaly_mask.sum()} anomalous periods detected ({100*anomaly_mask.sum()/len(X_pca):.1f}%)\n"
-                ml_summary += f"• PCA shows {pca.explained_variance_ratio_.sum():.1%} variance in first 2 components\n"
-                ml_summary += f"• Suggests returns have {'strong' if pca.explained_variance_ratio_[0] > 0.5 else 'moderate'} seasonal structure\n"
+                ml_summary += f"• PCA shows {pca_variance.sum():.1%} variance in first 2 components\n"
+                ml_summary += f"• Suggests returns have {'strong' if pca_variance[0] > 0.5 else 'moderate'} seasonal structure\n"
                 
-                summary_text.insert(1.0, ml_summary)
+                # Bundle results for the main thread
+                results_data = {
+                    'X_pca': X_pca,
+                    'y_months': y_months,
+                    'pca_variance': pca_variance,
+                    'n_clusters': n_clusters,
+                    'cluster_labels': cluster_labels,
+                    'gmm_aic': gmm_aic,
+                    'gmm_bic': gmm_bic,
+                    'normal_mask': normal_mask,
+                    'anomaly_mask': anomaly_mask,
+                    'ml_summary': ml_summary
+                }
                 
-                self.logger.info("ML analysis completed successfully.")
-                self.status_var.set("✅ ML analysis completed")
+                # --- Pass results to main thread for UI update ---
+                self.root.after(0, self._display_ml_results, results_data)
                 
             except Exception as e:
                 self.logger.exception("Error running ML analysis.")
@@ -1228,6 +1184,81 @@ class JSEAnalyzer:
         thread = threading.Thread(target=worker)
         thread.daemon = True
         thread.start()
+
+    def _display_ml_results(self, data):
+        """Handles UI updates for ML analysis on the main thread."""
+        self.logger.info("Displaying ML analysis results.")
+        # --- This function runs on the main thread ---
+        try:
+            # Tab container for ML results
+            ml_notebook = ttk.Notebook(self.ml_frame)
+            ml_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+            # --- 1. PCA Analysis Tab ---
+            pca_tab = ttk.Frame(ml_notebook)
+            ml_notebook.add(pca_tab, text="📉 PCA Clustering")
+            
+            fig_pca, ax_pca = plt.subplots(figsize=(10, 6))
+            scatter = ax_pca.scatter(data['X_pca'][:, 0], data['X_pca'][:, 1], c=data['y_months'], cmap='Set3', alpha=0.6)
+            ax_pca.set_xlabel(f"First Principal Component ({data['pca_variance'][0]:.1%} variance)")
+            ax_pca.set_ylabel(f"Second Principal Component ({data['pca_variance'][1]:.1%} variance)")
+            ax_pca.set_title(f"PCA: Returns Patterns Colored by Target Month\nTotal Explained Variance: {data['pca_variance'].sum():.1%}")
+            plt.colorbar(scatter, ax=ax_pca, ticks=range(1, 13)).set_ticklabels(self.months)
+            
+            canvas_pca = FigureCanvasTkAgg(fig_pca, pca_tab)
+            canvas_pca.draw()
+            canvas_pca.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            
+            # --- 2. GMM Clustering Tab ---
+            gmm_tab = ttk.Frame(ml_notebook)
+            ml_notebook.add(gmm_tab, text="🎲 Gaussian Mixture")
+            
+            fig_gmm, ax_gmm = plt.subplots(figsize=(10, 6))
+            scatter = ax_gmm.scatter(data['X_pca'][:, 0], data['X_pca'][:, 1], c=data['cluster_labels'], cmap='Set3', alpha=0.7)
+            ax_gmm.set_xlabel(f"First Principal Component ({data['pca_variance'][0]:.1%} variance)")
+            ax_gmm.set_ylabel(f"Second Principal Component ({data['pca_variance'][1]:.1%} variance)")
+            ax_gmm.set_title(f"Gaussian Mixture Clustering (k={data['n_clusters']})\nAIC: {data['gmm_aic']:.0f}, BIC: {data['gmm_bic']:.0f}")
+            plt.colorbar(scatter, ax=ax_gmm)
+            
+            canvas_gmm = FigureCanvasTkAgg(fig_gmm, gmm_tab)
+            canvas_gmm.draw()
+            canvas_gmm.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            
+            # --- 3. Anomaly Detection Tab ---
+            anomaly_tab = ttk.Frame(ml_notebook)
+            ml_notebook.add(anomaly_tab, text="🔍 Anomaly Detection")
+            
+            fig_anomaly, ax_anomaly = plt.subplots(figsize=(10, 6))
+            normal_mask = data['normal_mask']
+            anomaly_mask = data['anomaly_mask']
+            X_pca = data['X_pca']
+            
+            ax_anomaly.scatter(X_pca[normal_mask, 0], X_pca[normal_mask, 1], c='blue', alpha=0.6, label='Normal')
+            ax_anomaly.scatter(X_pca[anomaly_mask, 0], X_pca[anomaly_mask, 1], c='red', alpha=0.9, label='Anomaly')
+            ax_anomaly.set_xlabel(f"First Principal Component ({data['pca_variance'][0]:.1%} variance)")
+            ax_anomaly.set_ylabel(f"Second Principal Component ({data['pca_variance'][1]:.1%} variance)")
+            ax_anomaly.set_title(f"Isolation Forest Anomaly Detection\n{anomaly_mask.sum()} outliers detected ({100*anomaly_mask.sum()/len(X_pca):.1f}%)")
+            ax_anomaly.legend()
+            
+            canvas_anomaly = FigureCanvasTkAgg(fig_anomaly, anomaly_tab)
+            canvas_anomaly.draw()
+            canvas_anomaly.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+            
+            # --- 4. Summary Statistics Tab ---
+            summary_tab = ttk.Frame(ml_notebook)
+            ml_notebook.add(summary_tab, text="📊 ML Summary")
+            
+            summary_text = tk.Text(summary_tab, wrap=tk.WORD, font=('Consolas', 10))
+            summary_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            summary_text.insert(1.0, data['ml_summary'])
+            
+            self.logger.info("ML analysis completed successfully.")
+            self.status_var.set("✅ ML analysis completed")
+
+        except Exception as e:
+            self.logger.exception("Error displaying ML analysis results.")
+            messagebox.showerror("Error", f"Failed to display ML results: {e}")
+            self.status_var.set(f"❌ ML display failed: {e}")
 
     def run(self):
         """Start the application."""

@@ -1,148 +1,37 @@
-2025-11-17 20:20:20,279 - INFO - --- Application Start: Global Index Analyzer v2.9.12 ---
-2025-11-17 20:20:20,855 - INFO - Cache directory set to: cache_v2_9_12
-2025-11-17 20:20:20,855 - INFO - UI styles configured.
-2025-11-17 20:20:22,941 - INFO - UI setup complete.
-2025-11-17 20:20:22,941 - INFO - Application initialized successfully.
-2025-11-17 20:20:22,942 - INFO - Starting Tkinter main loop.
-2025-11-17 20:20:26,664 - INFO - Switched to custom ticker input.
-2025-11-17 20:20:27,524 - INFO - Switched to predefined ticker dropdown.
-2025-11-17 20:20:28,471 - INFO - Switched to custom ticker input.
-2025-11-17 20:20:29,067 - INFO - Switched to predefined ticker dropdown.
-2025-11-17 20:20:30,557 - INFO - 'Analyze Data' button clicked.
-2025-11-17 20:20:30,558 - INFO - Validating user inputs.
-2025-11-17 20:20:30,563 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-17
-2025-11-17 20:20:30,565 - INFO - Starting data download for ticker: ^J203.JO
-2025-11-17 20:20:32,515 - INFO - Data download complete. Processing data...
-2025-11-17 20:20:32,540 - INFO - Data processing complete. Updating UI.
-2025-11-17 20:20:32,540 - INFO - Updating all charts.
-2025-11-17 20:20:32,757 - INFO - Updating bar chart with metric: Average
-2025-11-17 20:20:32,927 - INFO - Updating heatmap.
-2025-11-17 20:20:33,330 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:20:33,491 - INFO - Updating comparison chart.
-2025-11-17 20:20:33,491 - INFO - No comparison data to display.
-2025-11-17 20:20:33,491 - INFO - Updating summary tab.
-2025-11-17 20:20:33,491 - INFO - Summary tab updated.
-2025-11-17 20:20:33,493 - INFO - Updating summary tab.
-2025-11-17 20:20:33,494 - INFO - Summary tab updated.
-2025-11-17 20:20:33,800 - INFO - 'Analyze Data' button clicked.
-2025-11-17 20:20:33,801 - INFO - Validating user inputs.
-2025-11-17 20:20:33,804 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-17
-2025-11-17 20:20:33,805 - INFO - Starting data download for ticker: ^J203.JO
-2025-11-17 20:20:33,867 - INFO - Data download complete. Processing data...
-2025-11-17 20:20:33,877 - INFO - Data processing complete. Updating UI.
-2025-11-17 20:20:33,877 - INFO - Updating all charts.
-2025-11-17 20:20:33,920 - INFO - Updating bar chart with metric: Average
-2025-11-17 20:20:34,004 - INFO - Updating heatmap.
-2025-11-17 20:20:34,414 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:20:34,571 - INFO - Updating comparison chart.
-2025-11-17 20:20:34,572 - INFO - No comparison data to display.
-2025-11-17 20:20:34,572 - INFO - Updating summary tab.
-2025-11-17 20:20:34,572 - INFO - Summary tab updated.
-2025-11-17 20:20:34,572 - INFO - Updating summary tab.
-2025-11-17 20:20:34,573 - INFO - Summary tab updated.
-2025-11-17 20:20:37,804 - INFO - Updating all charts.
-2025-11-17 20:20:37,879 - INFO - Updating bar chart with metric: Median
-2025-11-17 20:20:37,954 - INFO - Updating heatmap.
-2025-11-17 20:20:38,270 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:20:38,433 - INFO - Updating comparison chart.
-2025-11-17 20:20:38,433 - INFO - No comparison data to display.
-2025-11-17 20:20:38,433 - INFO - Updating summary tab.
-2025-11-17 20:20:38,434 - INFO - Summary tab updated.
-2025-11-17 20:20:43,785 - INFO - 'Analyze Data' button clicked.
-2025-11-17 20:20:43,786 - INFO - Validating user inputs.
-2025-11-17 20:20:43,789 - INFO - Input validation successful. Ticker: ^AXJO, Start: 1990, End: 2025-11-17
-2025-11-17 20:20:43,790 - INFO - Starting data download for ticker: ^AXJO
-2025-11-17 20:20:44,896 - INFO - Data download complete. Processing data...
-2025-11-17 20:20:44,914 - INFO - Data processing complete. Updating UI.
-2025-11-17 20:20:44,914 - INFO - Updating all charts.
-2025-11-17 20:20:44,983 - INFO - Updating bar chart with metric: Median
-2025-11-17 20:20:45,110 - INFO - Updating heatmap.
-2025-11-17 20:20:45,816 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:20:45,977 - INFO - Updating comparison chart.
-2025-11-17 20:20:45,977 - INFO - No comparison data to display.
-2025-11-17 20:20:45,977 - INFO - Updating summary tab.
-2025-11-17 20:20:45,978 - INFO - Summary tab updated.
-2025-11-17 20:20:45,978 - INFO - Updating summary tab.
-2025-11-17 20:20:45,978 - INFO - Summary tab updated.
-2025-11-17 20:20:49,519 - INFO - Configuration panel hidden.
-2025-11-17 20:20:51,969 - INFO - Configuration panel shown.
-2025-11-17 20:20:53,033 - INFO - Configuration panel hidden.
-2025-11-17 20:20:55,909 - INFO - Configuration panel shown.
-2025-11-17 20:20:58,755 - INFO - Date range changed to: Last 10 Years
-2025-11-17 20:20:59,897 - INFO - 'Analyze Data' button clicked.
-2025-11-17 20:20:59,898 - INFO - Validating user inputs.
-2025-11-17 20:20:59,900 - INFO - Input validation successful. Ticker: ^AXJO, Start: 2015, End: 2025-11-17
-2025-11-17 20:20:59,901 - INFO - Starting data download for ticker: ^AXJO
-2025-11-17 20:21:00,904 - INFO - Data download complete. Processing data...
-2025-11-17 20:21:00,918 - INFO - Data processing complete. Updating UI.
-2025-11-17 20:21:00,919 - INFO - Updating all charts.
-2025-11-17 20:21:00,985 - INFO - Updating bar chart with metric: Median
-2025-11-17 20:21:01,107 - INFO - Updating heatmap.
-2025-11-17 20:21:01,568 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:21:01,770 - INFO - Updating comparison chart.
-2025-11-17 20:21:01,770 - INFO - No comparison data to display.
-2025-11-17 20:21:01,770 - INFO - Updating summary tab.
-2025-11-17 20:21:01,770 - INFO - Summary tab updated.
-2025-11-17 20:21:01,771 - INFO - Updating summary tab.
-2025-11-17 20:21:01,771 - INFO - Summary tab updated.
-2025-11-17 20:21:09,388 - INFO - Configuration panel hidden.
-2025-11-17 20:21:11,479 - INFO - Configuration panel shown.
-2025-11-17 20:21:15,242 - INFO - Switched to custom ticker input.
-2025-11-17 20:21:16,116 - INFO - Switched to predefined ticker dropdown.
-2025-11-17 20:21:32,412 - INFO - 'Analyze Data' button clicked.
-2025-11-17 20:21:32,413 - INFO - Validating user inputs.
-2025-11-17 20:21:32,415 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 2015, End: 2025-11-17
-2025-11-17 20:21:32,416 - INFO - Starting data download for ticker: ^J258.JO
-2025-11-17 20:21:33,757 - INFO - Data download complete. Processing data...
-2025-11-17 20:21:33,771 - INFO - Data processing complete. Updating UI.
-2025-11-17 20:21:33,771 - INFO - Updating all charts.
-2025-11-17 20:21:33,838 - INFO - Updating bar chart with metric: Median
-2025-11-17 20:21:33,961 - INFO - Updating heatmap.
-2025-11-17 20:21:34,495 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:21:34,660 - INFO - Updating comparison chart.
-2025-11-17 20:21:34,660 - INFO - No comparison data to display.
-2025-11-17 20:21:34,660 - INFO - Updating summary tab.
-2025-11-17 20:21:34,661 - INFO - Summary tab updated.
-2025-11-17 20:21:34,661 - INFO - Updating summary tab.
-2025-11-17 20:21:34,662 - INFO - Summary tab updated.
-2025-11-17 20:21:41,329 - INFO - Configuration panel hidden.
-2025-11-17 20:21:46,785 - INFO - Configuration panel shown.
-2025-11-17 20:21:55,595 - INFO - Date range changed to: Last 5 Years
-2025-11-17 20:21:56,662 - INFO - 'Analyze Data' button clicked.
-2025-11-17 20:21:56,663 - INFO - Validating user inputs.
-2025-11-17 20:21:56,665 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 2020, End: 2025-11-17
-2025-11-17 20:21:56,666 - INFO - Starting data download for ticker: ^J258.JO
-2025-11-17 20:21:57,541 - INFO - Data download complete. Processing data...
-2025-11-17 20:21:57,555 - INFO - Data processing complete. Updating UI.
-2025-11-17 20:21:57,555 - INFO - Updating all charts.
-2025-11-17 20:21:57,625 - INFO - Updating bar chart with metric: Median
-2025-11-17 20:21:57,762 - INFO - Updating heatmap.
-2025-11-17 20:21:58,188 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:21:58,458 - INFO - Updating comparison chart.
-2025-11-17 20:21:58,458 - INFO - No comparison data to display.
-2025-11-17 20:21:58,458 - INFO - Updating summary tab.
-2025-11-17 20:21:58,458 - INFO - Summary tab updated.
-2025-11-17 20:21:58,461 - INFO - Updating summary tab.
-2025-11-17 20:21:58,462 - INFO - Summary tab updated.
-2025-11-17 20:22:03,616 - INFO - 'Analyze Data' button clicked.
-2025-11-17 20:22:03,616 - INFO - Validating user inputs.
-2025-11-17 20:22:03,618 - INFO - Input validation successful. Ticker: ^J258.JO, Start: 2020, End: 2025-11-17
-2025-11-17 20:22:03,620 - INFO - Starting data download for ticker: ^J258.JO
-2025-11-17 20:22:03,669 - INFO - Data download complete. Processing data...
-2025-11-17 20:22:03,683 - INFO - Data processing complete. Updating UI.
-2025-11-17 20:22:03,683 - INFO - Updating all charts.
-2025-11-17 20:22:03,755 - INFO - Updating bar chart with metric: Median
-2025-11-17 20:22:03,883 - INFO - Updating heatmap.
-2025-11-17 20:22:04,276 - INFO - Updating risk vs return scatter plot.
-2025-11-17 20:22:04,524 - INFO - Updating comparison chart.
-2025-11-17 20:22:04,524 - INFO - No comparison data to display.
-2025-11-17 20:22:04,524 - INFO - Updating summary tab.
-2025-11-17 20:22:04,525 - INFO - Summary tab updated.
-2025-11-17 20:22:04,525 - INFO - Updating summary tab.
-2025-11-17 20:22:04,526 - INFO - Summary tab updated.
-2025-11-17 20:22:06,987 - INFO - 'ML Analysis' button clicked.
-2025-11-17 20:22:11,984 - INFO - ML analysis completed successfully.
-2025-11-17 20:22:29,882 - INFO - Configuration panel hidden.
-2025-11-17 20:22:37,179 - INFO - Toggling dark mode to ON.
-2025-11-17 20:22:38,546 - INFO - Toggling dark mode to OFF.
-2025-11-17 20:22:40,828 - INFO - Configuration panel shown.
+2025-11-17 21:25:53,884 - INFO - --- Application Start: Global Index Analyzer v2.9.13 ---
+2025-11-17 21:25:54,482 - INFO - Cache directory set to: cache_v2_9_13
+2025-11-17 21:25:54,483 - INFO - UI styles configured.
+2025-11-17 21:25:55,175 - INFO - UI setup complete.
+2025-11-17 21:25:55,175 - INFO - Application initialized successfully.
+2025-11-17 21:25:55,175 - INFO - Starting Tkinter main loop.
+2025-11-17 21:26:07,145 - INFO - 'Analyze Data' button clicked.
+2025-11-17 21:26:07,146 - INFO - Validating user inputs.
+2025-11-17 21:26:07,152 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-17
+2025-11-17 21:26:07,153 - INFO - Starting data download for ticker: ^J203.JO
+2025-11-17 21:26:09,751 - INFO - 'ML Analysis' button clicked.
+2025-11-17 21:26:09,751 - WARNING - ML analysis run attempted with no data.
+2025-11-17 21:26:10,060 - INFO - Data download complete. Processing data...
+2025-11-17 21:26:10,097 - INFO - Data processing complete. Updating UI.
+2025-11-17 21:26:10,097 - INFO - Updating all charts.
+2025-11-17 21:26:10,340 - INFO - Updating bar chart with metric: Average
+2025-11-17 21:26:10,596 - INFO - Updating heatmap.
+2025-11-17 21:26:11,283 - INFO - Updating risk vs return scatter plot.
+2025-11-17 21:26:11,540 - INFO - Updating comparison chart.
+2025-11-17 21:26:11,540 - INFO - No comparison data to display.
+2025-11-17 21:26:11,540 - INFO - Updating summary tab.
+2025-11-17 21:26:11,541 - INFO - Summary tab updated.
+2025-11-17 21:26:11,544 - INFO - Updating summary tab.
+2025-11-17 21:26:11,544 - INFO - Summary tab updated.
+2025-11-17 21:26:13,589 - INFO - 'ML Analysis' button clicked.
+2025-11-17 21:26:14,437 - INFO - Displaying ML analysis results.
+2025-11-17 21:26:15,115 - INFO - ML analysis completed successfully.
+2025-11-17 21:26:32,379 - INFO - Configuration panel hidden.
+2025-11-17 21:26:33,348 - INFO - Configuration panel shown.
+2025-11-17 21:26:36,632 - INFO - Updating all charts.
+2025-11-17 21:26:36,719 - INFO - Updating bar chart with metric: Median
+2025-11-17 21:26:36,839 - INFO - Updating heatmap.
+2025-11-17 21:26:37,357 - INFO - Updating risk vs return scatter plot.
+2025-11-17 21:26:37,523 - INFO - Updating comparison chart.
+2025-11-17 21:26:37,523 - INFO - No comparison data to display.
+2025-11-17 21:26:37,523 - INFO - Updating summary tab.
+2025-11-17 21:26:37,523 - INFO - Summary tab updated.
