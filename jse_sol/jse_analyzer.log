@@ -1,15 +1,44 @@
-2025-11-17 20:01:38,486 - INFO - --- Application Start: Global Index Analyzer v2.9.11 ---
-2025-11-17 20:01:38,662 - INFO - Cache directory set to: cache_v2_9_11
-2025-11-17 20:01:38,662 - INFO - UI styles configured.
-2025-11-17 20:01:38,722 - INFO - UI setup complete.
-2025-11-17 20:01:38,722 - INFO - Application initialized successfully.
-2025-11-17 20:01:38,722 - INFO - Starting Tkinter main loop.
-2025-11-17 20:01:45,882 - INFO - Switched to custom ticker input.
-2025-11-17 20:01:46,438 - INFO - Switched to predefined ticker dropdown.
-2025-11-17 20:01:47,115 - INFO - Switched to custom ticker input.
-2025-11-17 20:01:47,766 - INFO - Switched to predefined ticker dropdown.
-2025-11-17 20:01:49,676 - INFO - Switched to custom ticker input.
-2025-11-17 20:01:50,421 - INFO - Switched to predefined ticker dropdown.
-2025-11-17 20:01:52,128 - INFO - Switched to custom ticker input.
-2025-11-17 20:01:56,959 - INFO - Switched to predefined ticker dropdown.
-2025-11-17 20:02:07,424 - INFO - --- Application Shutdown ---
+2025-11-17 20:07:53,162 - INFO - --- Application Start: Global Index Analyzer v2.9.11 ---
+2025-11-17 20:07:53,857 - INFO - Cache directory set to: cache_v2_9_11
+2025-11-17 20:07:53,857 - INFO - UI styles configured.
+2025-11-17 20:07:54,109 - INFO - UI setup complete.
+2025-11-17 20:07:54,109 - INFO - Application initialized successfully.
+2025-11-17 20:07:54,109 - INFO - Starting Tkinter main loop.
+2025-11-17 20:08:00,922 - INFO - Switched to custom ticker input.
+2025-11-17 20:08:06,951 - INFO - Switched to predefined ticker dropdown.
+2025-11-17 20:08:08,373 - INFO - Switched to custom ticker input.
+2025-11-17 20:08:09,301 - INFO - Switched to predefined ticker dropdown.
+2025-11-17 20:11:13,641 - INFO - 'Analyze Data' button clicked.
+2025-11-17 20:11:13,744 - INFO - Validating user inputs.
+2025-11-17 20:11:13,749 - INFO - Input validation successful. Ticker: ^J203.JO, Start: 1990, End: 2025-11-17
+2025-11-17 20:11:13,751 - INFO - Starting data download for ticker: ^J203.JO
+2025-11-17 20:11:16,176 - INFO - Data download complete. Processing data...
+2025-11-17 20:11:16,283 - INFO - Data processing complete. Updating UI.
+2025-11-17 20:11:16,285 - INFO - Updating all charts.
+2025-11-17 20:11:17,050 - INFO - Updating bar chart with metric: Average
+2025-11-17 20:11:17,319 - INFO - Updating heatmap.
+2025-11-17 20:11:17,711 - INFO - Updating risk vs return scatter plot.
+2025-11-17 20:11:17,874 - INFO - Updating comparison chart.
+2025-11-17 20:11:17,875 - INFO - No comparison data to display.
+2025-11-17 20:11:17,875 - INFO - Updating summary tab.
+2025-11-17 20:11:17,875 - INFO - Summary tab updated.
+2025-11-17 20:11:17,877 - INFO - Updating summary tab.
+2025-11-17 20:11:17,877 - INFO - Summary tab updated.
+2025-11-17 20:11:24,779 - INFO - 'Analyze Data' button clicked.
+2025-11-17 20:11:24,780 - INFO - Validating user inputs.
+2025-11-17 20:11:24,783 - INFO - Input validation successful. Ticker: ^J250.JO, Start: 1990, End: 2025-11-17
+2025-11-17 20:11:24,784 - INFO - Starting data download for ticker: ^J250.JO
+2025-11-17 20:11:25,827 - INFO - Data download complete. Processing data...
+2025-11-17 20:11:25,841 - INFO - Data processing complete. Updating UI.
+2025-11-17 20:11:25,842 - INFO - Updating all charts.
+2025-11-17 20:11:25,905 - INFO - Updating bar chart with metric: Average
+2025-11-17 20:11:26,040 - INFO - Updating heatmap.
+2025-11-17 20:11:26,571 - INFO - Updating risk vs return scatter plot.
+2025-11-17 20:11:26,736 - INFO - Updating comparison chart.
+2025-11-17 20:11:26,736 - INFO - No comparison data to display.
+2025-11-17 20:11:26,736 - INFO - Updating summary tab.
+2025-11-17 20:11:26,736 - INFO - Summary tab updated.
+2025-11-17 20:11:26,741 - INFO - Updating summary tab.
+2025-11-17 20:11:26,741 - INFO - Summary tab updated.
+2025-11-17 20:11:31,925 - INFO - Configuration panel hidden.
+2025-11-17 20:11:33,658 - INFO - Configuration panel shown.
