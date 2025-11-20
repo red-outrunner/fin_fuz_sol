@@ -78,7 +78,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A modern GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "3.0.1"
+    VERSION = "3.0.2"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -211,8 +211,10 @@ class JSEAnalyzer:
         # Date Range
         ttk.Label(self.sidebar_frame, text="Time Period:", style='Sidebar.TLabel').pack(anchor='w', padx=pad_x)
         self.date_range_var = tk.StringVar(value="Custom")
+        
+        # Updated values to include 1 Year and 3 Years
         date_combo = ttk.Combobox(self.sidebar_frame, textvariable=self.date_range_var,
-                                 values=["Custom", "Last 5 Years", "Last 10 Years", "Last 20 Years", "All Data"], 
+                                 values=["Custom", "Last 1 Year", "Last 3 Years", "Last 5 Years", "Last 10 Years", "Last 20 Years", "All Data"], 
                                  state="readonly")
         date_combo.pack(fill=tk.X, padx=pad_x, pady=(0, 5))
         date_combo.bind('<<ComboboxSelected>>', self.on_date_range_change)
@@ -287,6 +289,10 @@ class JSEAnalyzer:
         # Notebook (Tabs)
         self.notebook = ttk.Notebook(self.content_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True)
+
+        # Tab 0: Price History (New)
+        self.history_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.history_frame, text="📈 Price History")
 
         # Tab 1: Average Returns (Bar Chart)
         self.bar_frame = ttk.Frame(self.notebook)
@@ -383,7 +389,11 @@ class JSEAnalyzer:
             self.end_date_entry.config(state=tk.DISABLED)
             
             self.end_date_var.set(datetime.today().strftime("%Y-%m-%d"))
-            if selection == "Last 5 Years":
+            if selection == "Last 1 Year":
+                self.start_year_var.set(current_year - 1)
+            elif selection == "Last 3 Years":
+                self.start_year_var.set(current_year - 3)
+            elif selection == "Last 5 Years":
                 self.start_year_var.set(current_year - 5)
             elif selection == "Last 10 Years":
                 self.start_year_var.set(current_year - 10)
@@ -476,6 +486,7 @@ class JSEAnalyzer:
     def update_charts(self):
         if not self.data_ready: return
         
+        self.update_price_chart()
         self.update_bar_chart()
         self.update_heatmap()
         self.update_scatter()
@@ -485,6 +496,34 @@ class JSEAnalyzer:
         for w in frame.winfo_children():
             if w != self.bar_control_frame: # Preserve controls
                 w.destroy()
+
+    def update_price_chart(self):
+        """Updates the price history line chart."""
+        self._clear_frame(self.history_frame)
+        
+        fig, ax = plt.subplots(figsize=(10, 5), dpi=100)
+        if self.dark_mode.get():
+            fig.patch.set_facecolor('#2c3e50')
+            ax.set_facecolor('#34495e')
+            ax.tick_params(colors='white')
+            ax.xaxis.label.set_color('white')
+            ax.yaxis.label.set_color('white')
+            ax.title.set_color('white')
+            ax.spines['bottom'].set_color('white')
+            ax.spines['left'].set_color('white')
+            
+        # Plotting raw price data
+        price_col = 'Adj Close' if 'Adj Close' in self.data.columns else 'Close'
+        self.data[price_col].plot(ax=ax, color='#2980b9', linewidth=2)
+        
+        ax.set_title(f"Price History: {self.ticker}")
+        ax.set_ylabel(f"Price ({price_col})")
+        ax.set_xlabel("Date")
+        ax.grid(True, alpha=0.3)
+        
+        canvas = FigureCanvasTkAgg(fig, self.history_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
     def update_bar_chart(self):
         self._clear_frame(self.bar_frame)
