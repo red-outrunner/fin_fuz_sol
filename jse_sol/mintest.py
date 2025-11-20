@@ -78,7 +78,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A modern GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "3.0.0"
+    VERSION = "3.0.1"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -342,6 +342,14 @@ class JSEAnalyzer:
         else:
             self.custom_ticker_entry.pack_forget()
             self.ticker_combo.pack(fill=tk.X)
+
+    def toggle_benchmark_line(self):
+        """Toggles the benchmark line on charts."""
+        current = self.show_benchmark.get()
+        self.show_benchmark.set(not current)
+        # status = "ON" if not current else "OFF" # Optional log message
+        if self.data_ready:
+            self.update_charts()
 
     def toggle_dark_mode(self):
         """Toggles UI colors."""
