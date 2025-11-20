@@ -9,6 +9,7 @@ from tkinter import ttk, messagebox, filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
 import os
+import sys
 import pickle
 import threading
 import logging
@@ -36,6 +37,7 @@ MAIN_BG = '#f5f6fa'         # Very Light Grey
 ACCENT_COLOR = '#3498db'    # Blue
 SUCCESS_COLOR = '#27ae60'   # Green
 WARNING_COLOR = '#f39c12'   # Orange
+DANGER_COLOR = '#e74c3c'    # Red
 
 # --- Setup Logging ---
 def setup_logging():
@@ -78,7 +80,7 @@ class Tooltip:
 
 class JSEAnalyzer:
     """A modern GUI application for analyzing monthly returns of global financial indices."""
-    VERSION = "3.0.2"
+    VERSION = "3.0.3"
 
     def __init__(self):
         self.logger = setup_logging()
@@ -88,6 +90,9 @@ class JSEAnalyzer:
         self.root.title(f"Global Index Monthly Return Analyzer (v{self.VERSION})")
         self.root.geometry("1400x900")
         self.root.configure(bg=MAIN_BG)
+        
+        # Ensure complete closure on window 'X' button
+        self.root.protocol("WM_DELETE_WINDOW", self.quit_app)
         
         # Cache setup
         self.cache_dir = f"cache_v{self.VERSION.replace('.', '_')}"
@@ -158,6 +163,10 @@ class JSEAnalyzer:
         
         self.style.configure('Success.TButton', font=('Segoe UI', 9), background=SUCCESS_COLOR, foreground='white', borderwidth=0)
         self.style.map('Success.TButton', background=[('active', '#2ecc71')])
+
+        # Danger/Exit Button
+        self.style.configure('Danger.TButton', font=('Segoe UI', 10, 'bold'), background=DANGER_COLOR, foreground='white', borderwidth=0)
+        self.style.map('Danger.TButton', background=[('active', '#c0392b')])
 
     def setup_ui(self):
         """Constructs the Dashboard Layout: Left Sidebar + Main Content Area."""
@@ -275,7 +284,10 @@ class JSEAnalyzer:
         footer_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=pad_x, pady=20)
         
         ttk.Checkbutton(footer_frame, text="Dark Mode", variable=self.dark_mode, 
-                       command=self.toggle_dark_mode, style='Sidebar.TCheckbutton').pack(anchor='w')
+                       command=self.toggle_dark_mode, style='Sidebar.TCheckbutton').pack(anchor='w', pady=(0, 10))
+        
+        # Exit Button
+        ttk.Button(footer_frame, text="EXIT APP", command=self.quit_app, style='Danger.TButton').pack(fill=tk.X)
 
     def build_content_area(self):
         """Populates the main content area with tabs and status."""
@@ -290,7 +302,7 @@ class JSEAnalyzer:
         self.notebook = ttk.Notebook(self.content_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
-        # Tab 0: Price History (New)
+        # Tab 0: Price History
         self.history_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.history_frame, text="📈 Price History")
 
@@ -376,6 +388,12 @@ class JSEAnalyzer:
         # Update plots if they exist
         if self.data_ready:
             self.update_charts()
+
+    def quit_app(self):
+        """Safely exits the application and kills the process."""
+        if messagebox.askokcancel("Exit", "Are you sure you want to exit?"):
+            self.root.destroy()
+            os._exit(0) # Force kill process to return prompt immediately
 
     def on_date_range_change(self, event=None):
         selection = self.date_range_var.get()
