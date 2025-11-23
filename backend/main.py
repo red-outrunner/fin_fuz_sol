@@ -5,7 +5,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -57,12 +57,14 @@ def analyze_ticker(request: AnalysisRequest):
     pivot_reset = processed['pivot'].reset_index()
     pivot_data = pivot_reset.to_dict(orient='records')
     
-    return {
+    response_data = {
         "ticker": request.ticker,
         "stats": stats,
         "pivot_data": pivot_data,
         "monthly_returns": processed['monthly_ret'].to_dict() # Date -> Return
     }
+    
+    return clean_data(response_data)
 
 @app.post("/api/ml")
 def ml_analysis(request: AnalysisRequest):
@@ -82,7 +84,7 @@ def ml_analysis(request: AnalysisRequest):
     if ml_results is None:
         raise HTTPException(status_code=400, detail="Not enough data for ML analysis (need > 2 years)")
         
-    return ml_results
+    return clean_data(ml_results)
 
 @app.post("/api/stats")
 def statistical_tests(request: AnalysisRequest):
@@ -98,7 +100,7 @@ def statistical_tests(request: AnalysisRequest):
         raise HTTPException(status_code=500, detail="Error processing data")
         
     anova_results = run_anova_test(processed['pivot'])
-    return anova_results
+    return clean_data(anova_results)
 
 @app.post("/api/compare")
 def compare_tickers(request: ComparisonRequest):
@@ -119,7 +121,7 @@ def compare_tickers(request: ComparisonRequest):
     if not results:
         raise HTTPException(status_code=404, detail="No data found for any requested tickers")
         
-    return results
+    return clean_data(results)
 @app.post("/api/export/excel")
 def export_excel(request: AnalysisRequest):
     logger.info(f"Exporting Excel for {request.ticker}")

@@ -13,6 +13,24 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def clean_data(data):
+    """Recursively replace NaN and Infinity with None for JSON serialization."""
+    if isinstance(data, dict):
+        return {k: clean_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_data(v) for v in data]
+    elif isinstance(data, (float, np.float64, np.float32)):
+        if np.isnan(data) or np.isinf(data):
+            return None
+        return float(data)
+    elif isinstance(data, (int, np.int64, np.int32)):
+        return int(data)
+    elif isinstance(data, pd.Series):
+        return clean_data(data.to_dict())
+    elif isinstance(data, pd.DataFrame):
+        return clean_data(data.to_dict(orient='records'))
+    return data
+
 def download_data(ticker: str, start_date: str, end_date: str):
     """Downloads data from yfinance."""
     try:
@@ -57,8 +75,8 @@ def process_data(data: pd.DataFrame):
             if i not in pivot.columns:
                 pivot[i] = np.nan
         
-        # Replace NaN with None for JSON serialization
-        pivot = pivot.where(pd.notnull(pivot), None)
+        # Do NOT replace NaN with None here, as it converts to object dtype and breaks stats calculation
+        # pivot = pivot.where(pd.notnull(pivot), None)
         
         return {
             "monthly_ret": monthly_ret,
@@ -82,15 +100,16 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
         months_map = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 
                       7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
-        return {
-            "overall_avg": float(overall_avg) if pd.notnull(overall_avg) else None,
-            "month_avg": month_avg.replace({np.nan: None}).to_dict(),
-            "month_median": month_median.replace({np.nan: None}).to_dict(),
-            "best_month": {"index": int(best_month), "name": months_map.get(best_month), "value": float(month_avg[best_month])},
-            "worst_month": {"index": int(worst_month), "name": months_map.get(worst_month), "value": float(month_avg[worst_month])},
-            "std_dev": pivot.std().replace({np.nan: None}).to_dict(),
-            "positive_rate": ((pivot > 0).sum() / pivot.count()).replace({np.nan: None}).to_dict()
+        stats_dict = {
+            "overall_avg": overall_avg,
+            "month_avg": month_avg.to_dict(),
+            "month_median": month_median.to_dict(),
+            "best_month": {"index": int(best_month), "name": months_map.get(best_month), "value": month_avg[best_month]},
+            "worst_month": {"index": int(worst_month), "name": months_map.get(worst_month), "value": month_avg[worst_month]},
+            "std_dev": pivot.std().to_dict(),
+            "positive_rate": ((pivot > 0).sum() / pivot.count()).to_dict()
         }
+        return clean_data(stats_dict)
     except Exception as e:
         logger.error(f"Error calculating stats: {e}")
         return None
