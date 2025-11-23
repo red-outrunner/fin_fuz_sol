@@ -100,6 +100,30 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
         months_map = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 
                       7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
+        # Advanced Metrics Calculation
+        # 1. CAGR
+        total_return = (1 + monthly_ret).prod() - 1
+        n_years = len(monthly_ret) / 12
+        cagr = (1 + total_return) ** (1 / n_years) - 1 if n_years > 0 else 0
+
+        # 2. Volatility (Annualized)
+        volatility = monthly_ret.std() * np.sqrt(12)
+
+        # 3. Sharpe Ratio (Assume Rf=0 for simplicity)
+        sharpe_ratio = (cagr - 0.02) / volatility if volatility != 0 else 0 # Using 2% as rough Rf approximation
+
+        # 4. Max Drawdown
+        cumulative_returns = (1 + monthly_ret).cumprod()
+        peak = cumulative_returns.expanding(min_periods=1).max()
+        drawdown = (cumulative_returns / peak) - 1
+        max_drawdown = drawdown.min()
+
+        # 5. Wealth Index (Growth of $10,000)
+        wealth_index = 10000 * (1 + monthly_ret).cumprod()
+        # Prepend starting value
+        wealth_data = [{"date": str(monthly_ret.index[0] - pd.DateOffset(months=1)).split(" ")[0], "value": 10000}]
+        wealth_data.extend([{"date": str(d).split(" ")[0], "value": v} for d, v in wealth_index.items()])
+
         stats_dict = {
             "overall_avg": overall_avg,
             "month_avg": month_avg.to_dict(),
@@ -107,7 +131,12 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
             "best_month": {"index": int(best_month), "name": months_map.get(best_month), "value": month_avg[best_month]},
             "worst_month": {"index": int(worst_month), "name": months_map.get(worst_month), "value": month_avg[worst_month]},
             "std_dev": pivot.std().to_dict(),
-            "positive_rate": ((pivot > 0).sum() / pivot.count()).to_dict()
+            "positive_rate": ((pivot > 0).sum() / pivot.count()).to_dict(),
+            "cagr": cagr,
+            "volatility": volatility,
+            "sharpe_ratio": sharpe_ratio,
+            "max_drawdown": max_drawdown,
+            "wealth_index": wealth_data
         }
         return clean_data(stats_dict)
     except Exception as e:
