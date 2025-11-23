@@ -11,22 +11,26 @@ const BarChart = ({ data, metric = 'Mean' }) => {
     const overallAvg = stats.overall_avg * 100;
 
     return (
-        <div className="h-96 w-full">
+        <div className="h-96 w-full bg-white p-6 rounded-sm border border-beige shadow-sm">
             <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart
                     data={chartData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" />
-                    <YAxis label={{ value: 'Return (%)', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip formatter={(value) => [`${value.toFixed(2)}%`, metric]} />
-                    <Legend />
-                    <ReferenceLine y={0} stroke="#000" />
-                    <ReferenceLine y={overallAvg} stroke="red" strokeDasharray="3 3" label="Avg" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0EBE0" />
+                    <XAxis dataKey="name" stroke="#8C735A" tick={{ fill: '#2C3E50', fontSize: 12, fontFamily: 'Inter' }} />
+                    <YAxis label={{ value: 'Return (%)', angle: -90, position: 'insideLeft', fill: '#8C735A' }} stroke="#8C735A" tick={{ fill: '#2C3E50', fontSize: 12, fontFamily: 'Inter' }} />
+                    <Tooltip
+                        formatter={(value) => [`${value.toFixed(2)}%`, metric]}
+                        contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059', fontFamily: 'Inter' }}
+                        itemStyle={{ color: '#1A2433' }}
+                    />
+                    <Legend wrapperStyle={{ fontFamily: 'Inter', color: '#2C3E50' }} />
+                    <ReferenceLine y={0} stroke="#2C3E50" />
+                    <ReferenceLine y={overallAvg} stroke="#C5A059" strokeDasharray="3 3" label={{ value: 'Avg', fill: '#C5A059', fontSize: 12 }} />
                     <Bar dataKey="value" name={`${metric} Monthly Return`}>
                         {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#3b82f6' : '#ef4444'} />
+                            <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#4A7C59' : '#8C4A4A'} />
                         ))}
                     </Bar>
                 </RechartsBarChart>

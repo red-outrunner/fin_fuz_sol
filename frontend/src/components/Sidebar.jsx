@@ -21,15 +21,17 @@ const Sidebar = ({
     };
 
     return (
-        <div className="w-64 bg-slate-800 text-white h-screen p-4 flex flex-col fixed left-0 top-0 overflow-y-auto">
-            <h1 className="text-xl font-bold mb-8 text-blue-400">Market Analyzer</h1>
+        <div className="w-72 bg-navy text-cream h-screen p-8 flex flex-col fixed left-0 top-0 overflow-y-auto border-r border-slate-700 shadow-2xl z-50">
+            <h1 className="text-2xl font-serif font-bold mb-10 text-gold tracking-wide border-b border-slate-700 pb-4">
+                Market Analyzer
+            </h1>
 
-            <div className="mb-6">
-                <label className="block text-sm font-medium mb-2 text-gray-300">Select Asset</label>
+            <div className="mb-8">
+                <label className="block text-xs font-bold uppercase tracking-widest mb-3 text-gold opacity-80">Select Asset</label>
                 <select
                     value={Object.keys(tickerOptions).find(key => tickerOptions[key] === ticker) || ticker}
                     onChange={(e) => setTicker(tickerOptions[e.target.value] || e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
                 >
                     {Object.keys(tickerOptions).map(name => (
                         <option key={name} value={name}>{name}</option>
@@ -38,37 +40,37 @@ const Sidebar = ({
                 <input
                     type="text"
                     placeholder="Or type custom ticker..."
-                    className="w-full mt-2 bg-slate-700 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full mt-3 bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
                     onChange={(e) => setTicker(e.target.value)}
                 />
             </div>
 
-            <div className="mb-6">
-                <label className="block text-sm font-medium mb-2 text-gray-300">Start Year</label>
+            <div className="mb-8">
+                <label className="block text-xs font-bold uppercase tracking-widest mb-3 text-gold opacity-80">Start Year</label>
                 <input
                     type="number"
                     value={startYear}
                     onChange={(e) => setStartYear(parseInt(e.target.value))}
-                    className="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
                 />
             </div>
 
-            <div className="mb-8">
-                <label className="block text-sm font-medium mb-2 text-gray-300">End Date</label>
+            <div className="mb-12">
+                <label className="block text-xs font-bold uppercase tracking-widest mb-3 text-gold opacity-80">End Date</label>
                 <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
                 />
             </div>
 
             <button
                 onClick={onAnalyze}
                 disabled={loading}
-                className={`w-full py-2 px-4 rounded font-bold transition-colors ${loading
-                        ? 'bg-blue-800 text-blue-300 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-500 text-white'
+                className={`w-full py-3 px-4 rounded-sm font-bold tracking-wider uppercase text-sm transition-all duration-300 ${loading
+                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                    : 'bg-gold hover:bg-yellow-600 text-navy shadow-lg hover:shadow-xl'
                     }`}
             >
                 {loading ? 'Analyzing...' : 'Run Analysis'}

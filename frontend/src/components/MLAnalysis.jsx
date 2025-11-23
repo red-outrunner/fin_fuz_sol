@@ -41,22 +41,22 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
         isAnomaly: mlData.anomalies[idx] === -1
     }));
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+    const COLORS = ['#1A2433', '#C5A059', '#4A7C59', '#8C735A']; // Navy, Gold, Green, Bronze
 
     return (
-        <div className="space-y-8">
-            <h2 className="text-xl font-bold text-slate-800">Machine Learning Insights</h2>
+        <div className="space-y-10">
+            <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4">Machine Learning Insights</h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-4 rounded border border-slate-200">
-                    <h3 className="text-lg font-semibold mb-4">Market Regimes (GMM Clustering)</h3>
+                <div className="bg-white p-6 rounded-sm border border-beige shadow-sm">
+                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Market Regimes (GMM Clustering)</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                <CartesianGrid />
-                                <XAxis type="number" dataKey="x" name="PCA 1" />
-                                <YAxis type="number" dataKey="y" name="PCA 2" />
-                                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
+                                <XAxis type="number" dataKey="x" name="PCA 1" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
+                                <YAxis type="number" dataKey="y" name="PCA 2" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059' }} />
                                 <Scatter name="Clusters" data={clusterData} fill="#8884d8">
                                     {clusterData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[entry.cluster % COLORS.length]} />
@@ -65,29 +65,29 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
                             </ScatterChart>
                         </ResponsiveContainer>
                     </div>
-                    <p className="text-sm text-slate-500 mt-2">
+                    <p className="text-sm text-slate-500 mt-4 leading-relaxed">
                         Clusters represent different market regimes identified by Gaussian Mixture Models on PCA-reduced monthly return sequences.
                     </p>
                 </div>
 
-                <div className="bg-white p-4 rounded border border-slate-200">
-                    <h3 className="text-lg font-semibold mb-4">Anomaly Detection (Isolation Forest)</h3>
+                <div className="bg-white p-6 rounded-sm border border-beige shadow-sm">
+                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Anomaly Detection (Isolation Forest)</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                <CartesianGrid />
-                                <XAxis type="number" dataKey="x" name="PCA 1" />
-                                <YAxis type="number" dataKey="y" name="PCA 2" />
-                                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
+                                <XAxis type="number" dataKey="x" name="PCA 1" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
+                                <YAxis type="number" dataKey="y" name="PCA 2" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059' }} />
                                 <Scatter name="Anomalies" data={clusterData} fill="#8884d8">
                                     {clusterData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.isAnomaly ? '#FF0000' : '#cccccc'} />
+                                        <Cell key={`cell-${index}`} fill={entry.isAnomaly ? '#8C4A4A' : '#E2E8F0'} />
                                     ))}
                                 </Scatter>
                             </ScatterChart>
                         </ResponsiveContainer>
                     </div>
-                    <p className="text-sm text-slate-500 mt-2">
+                    <p className="text-sm text-slate-500 mt-4 leading-relaxed">
                         Red points indicate anomalies (unusual market behavior) detected by Isolation Forest.
                     </p>
                 </div>

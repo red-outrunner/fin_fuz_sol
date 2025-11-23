@@ -26,22 +26,37 @@ const Heatmap = ({ data }) => {
         return `rgba(255, 0, 0, ${Math.min(Math.abs(value) / 5, 1)})`;
     };
 
+    const renderShape = (props) => {
+        const { cx, cy, payload } = props;
+        const value = payload.value;
+        const textColor = Math.abs(value) > 5 ? '#F9F7F2' : '#1A2433'; // Cream text for dark blocks, Navy for light
+
+        return (
+            <g>
+                <rect x={cx - 22} y={cy - 12} width={44} height={24} fill={props.fill} fillOpacity={props.fillOpacity} rx={2} stroke="#F0EBE0" strokeWidth={0.5} />
+                <text x={cx} y={cy} dy={4} textAnchor="middle" fill={textColor} fontSize={10} fontFamily="Inter" fontWeight="500">
+                    {value.toFixed(1)}
+                </text>
+            </g>
+        );
+    };
+
     return (
-        <div className="h-96 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+        <div className="h-[600px] w-full overflow-y-auto bg-white p-6 rounded-sm border border-beige shadow-sm">
+            <ResponsiveContainer width="100%" height={Math.max(400, heatmapData.length / 12 * 30)}>
                 <ScatterChart
                     margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                 >
-                    <CartesianGrid />
-                    <XAxis type="category" dataKey="monthName" allowDuplicatedCategory={false} />
-                    <YAxis type="number" dataKey="year" domain={['auto', 'auto']} reversed />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
+                    <XAxis type="category" dataKey="monthName" allowDuplicatedCategory={false} stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
+                    <YAxis type="number" dataKey="year" domain={['dataMin', 'dataMax']} reversed tickCount={heatmapData.length / 12} stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
                     <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                             const data = payload[0].payload;
                             return (
-                                <div className="bg-white p-2 border border-slate-200 shadow rounded">
-                                    <p className="font-bold">{data.monthName} {data.year}</p>
-                                    <p className={data.value >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                <div className="bg-cream p-3 border border-gold shadow-md rounded-sm z-50">
+                                    <p className="font-serif font-bold text-navy">{data.monthName} {data.year}</p>
+                                    <p className={data.value >= 0 ? 'text-success font-bold' : 'text-error font-bold'}>
                                         {data.value.toFixed(2)}%
                                     </p>
                                 </div>
@@ -49,9 +64,9 @@ const Heatmap = ({ data }) => {
                         }
                         return null;
                     }} />
-                    <Scatter data={heatmapData} shape="square">
+                    <Scatter data={heatmapData} shape={renderShape}>
                         {heatmapData.map((entry, index) => (
-                            <Cell key={`cell - ${index} `} fill={entry.value >= 0 ? '#22c55e' : '#ef4444'} fillOpacity={Math.min(Math.abs(entry.value) / 10 + 0.3, 1)} />
+                            <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#4A7C59' : '#8C4A4A'} fillOpacity={Math.min(Math.abs(entry.value) / 10 + 0.3, 1)} />
                         ))}
                     </Scatter>
                 </ScatterChart>
