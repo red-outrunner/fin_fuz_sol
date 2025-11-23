@@ -5,7 +5,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from .analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
