@@ -57,8 +57,9 @@ def process_data(data: pd.DataFrame):
             if i not in pivot.columns:
                 pivot[i] = np.nan
         
-        pivot = pivot.reindex(sorted(pivot.columns), axis=1)
-
+        # Replace NaN with None for JSON serialization
+        pivot = pivot.where(pd.notnull(pivot), None)
+        
         return {
             "monthly_ret": monthly_ret,
             "pivot": pivot,
@@ -82,13 +83,13 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
                       7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
         return {
-            "overall_avg": overall_avg,
-            "month_avg": month_avg.to_dict(),
-            "month_median": month_median.to_dict(),
-            "best_month": {"index": int(best_month), "name": months_map.get(best_month), "value": month_avg[best_month]},
-            "worst_month": {"index": int(worst_month), "name": months_map.get(worst_month), "value": month_avg[worst_month]},
-            "std_dev": pivot.std().to_dict(),
-            "positive_rate": ((pivot > 0).sum() / pivot.count()).to_dict()
+            "overall_avg": float(overall_avg) if pd.notnull(overall_avg) else None,
+            "month_avg": month_avg.replace({np.nan: None}).to_dict(),
+            "month_median": month_median.replace({np.nan: None}).to_dict(),
+            "best_month": {"index": int(best_month), "name": months_map.get(best_month), "value": float(month_avg[best_month])},
+            "worst_month": {"index": int(worst_month), "name": months_map.get(worst_month), "value": float(month_avg[worst_month])},
+            "std_dev": pivot.std().replace({np.nan: None}).to_dict(),
+            "positive_rate": ((pivot > 0).sum() / pivot.count()).replace({np.nan: None}).to_dict()
         }
     except Exception as e:
         logger.error(f"Error calculating stats: {e}")
@@ -141,9 +142,9 @@ def run_anova_test(pivot: pd.DataFrame):
         f_stat, p_val = stats.f_oneway(*month_groups)
         
         return {
-            "f_stat": f_stat,
-            "p_value": p_val,
-            "significant": p_val < 0.05
+            "f_stat": float(f_stat) if not np.isnan(f_stat) else None,
+            "p_value": float(p_val) if not np.isnan(p_val) else None,
+            "significant": bool(p_val < 0.05) if not np.isnan(p_val) else False
         }
     except Exception as e:
         logger.error(f"Error in ANOVA test: {e}")

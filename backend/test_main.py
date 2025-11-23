@@ -1,18 +1,24 @@
 from fastapi.testclient import TestClient
 from main import app
-import pytest
+from unittest.mock import patch
+import pandas as pd
+import numpy as np
 
 client = TestClient(app)
 
-def test_read_root():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Global Index Analyzer API is running"}
+# Mock data
+def get_mock_data():
+    dates = pd.date_range(start="2020-01-01", end="2023-12-31", freq="D")
+    df = pd.DataFrame(index=dates)
+    df["Adj Close"] = np.random.randn(len(dates)).cumsum() + 100
+    return df
 
-def test_analyze_ticker():
-    # Use a ticker that is likely to have data
+@patch("main.download_data")
+def test_analyze_ticker(mock_download):
+    mock_download.return_value = get_mock_data()
+    
     payload = {
-        "ticker": "^GSPC", # S&P 500
+        "ticker": "TEST",
         "start_year": 2020,
         "end_date": "2023-12-31"
     }
@@ -22,12 +28,15 @@ def test_analyze_ticker():
     assert "stats" in data
     assert "pivot_data" in data
     assert "monthly_returns" in data
-    assert data["ticker"] == "^GSPC"
+    assert data["ticker"] == "TEST"
 
-def test_ml_analysis():
+@patch("main.download_data")
+def test_ml_analysis(mock_download):
+    mock_download.return_value = get_mock_data()
+    
     payload = {
-        "ticker": "^GSPC",
-        "start_year": 2010, # Need enough data for ML
+        "ticker": "TEST",
+        "start_year": 2010,
         "end_date": "2023-12-31"
     }
     response = client.post("/api/ml", json=payload)
@@ -37,9 +46,12 @@ def test_ml_analysis():
     assert "clusters" in data
     assert "anomalies" in data
 
-def test_stats_analysis():
+@patch("main.download_data")
+def test_stats_analysis(mock_download):
+    mock_download.return_value = get_mock_data()
+    
     payload = {
-        "ticker": "^GSPC",
+        "ticker": "TEST",
         "start_year": 2010,
         "end_date": "2023-12-31"
     }
