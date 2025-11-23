@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Summary from './Summary';
 import MLAnalysis from './MLAnalysis';
+import Comparison from './Comparison';
 import BarChart from './charts/BarChart';
 import Heatmap from './charts/Heatmap';
 import ScatterPlot from './charts/ScatterPlot';
@@ -34,6 +35,19 @@ const Dashboard = () => {
         }
     };
 
+    const handleExport = async (type) => {
+        try {
+            await axios.post(`http://localhost:8000/api/export/${type}`, {
+                ticker,
+                start_year: startYear,
+                end_date: endDate
+            });
+            alert(`${type.toUpperCase()} export started (simulated).`);
+        } catch (err) {
+            alert('Export failed.');
+        }
+    };
+
     return (
         <div className="flex min-h-screen bg-slate-100">
             <Sidebar
@@ -62,14 +76,14 @@ const Dashboard = () => {
 
                 {data && (
                     <div>
-                        <div className="mb-6 border-b border-slate-200">
+                        <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-2">
                             <nav className="-mb-px flex space-x-8">
-                                {['summary', 'charts', 'ml'].map((tab) => (
+                                {['summary', 'charts', 'comparison', 'ml'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
                                         className={`
-                      whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                      whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm
                       ${activeTab === tab
                                                 ? 'border-blue-500 text-blue-600'
                                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}
@@ -79,6 +93,10 @@ const Dashboard = () => {
                                     </button>
                                 ))}
                             </nav>
+                            <div className="space-x-2">
+                                <button onClick={() => handleExport('excel')} className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Export Excel</button>
+                                <button onClick={() => handleExport('pdf')} className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Export PDF</button>
+                            </div>
                         </div>
 
                         <div className="bg-white rounded-lg shadow p-6">
@@ -99,6 +117,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                             )}
+                            {activeTab === 'comparison' && <Comparison ticker={ticker} startYear={startYear} endDate={endDate} />}
                             {activeTab === 'ml' && <MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} />}
                         </div>
                     </div>
