@@ -43,12 +43,20 @@ const Heatmap = ({ data }) => {
 
     return (
         <div className="h-[600px] w-full overflow-y-auto bg-white p-6 rounded-sm border border-beige shadow-sm">
-            <ResponsiveContainer width="100%" height={Math.max(400, heatmapData.length / 12 * 30)}>
+            <ResponsiveContainer width="100%" height={Math.max(400, heatmapData.length / 12 * 40)}>
                 <ScatterChart
-                    margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+                    margin={{ top: 20, right: 20, bottom: 60, left: 20 }}
                 >
                     <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
-                    <XAxis type="category" dataKey="monthName" allowDuplicatedCategory={false} stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
+                    <XAxis
+                        type="category"
+                        dataKey="monthName"
+                        allowDuplicatedCategory={false}
+                        stroke="#8C735A"
+                        tick={{ fill: '#2C3E50', dy: 20 }}
+                        ticks={months}
+                        interval={0}
+                    />
                     <YAxis type="number" dataKey="year" domain={['dataMin', 'dataMax']} reversed tickCount={heatmapData.length / 12} stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
                     <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }) => {
                         if (active && payload && payload.length) {
