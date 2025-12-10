@@ -5,7 +5,8 @@ const KPICards = ({ stats }) => {
     { label: 'CAGR', value: `${(stats.cagr * 100).toFixed(2)}%`, desc: 'Compound Annual Growth Rate' },
     { label: 'Volatility', value: `${(stats.volatility * 100).toFixed(2)}%`, desc: 'Annualized Standard Deviation' },
     { label: 'Sharpe Ratio', value: stats.sharpe_ratio.toFixed(2), desc: 'Risk-Adjusted Return (Rf=2%)' },
-    { label: 'Max Drawdown', value: `${(stats.max_drawdown * 100).toFixed(2)}%`, desc: 'Maximum Peak-to-Trough Decline', isNegative: true },
+    { label: 'Sortino Ratio', value: stats.sortino_ratio ? stats.sortino_ratio.toFixed(2) : 'N/A', desc: 'Downside Risk-Adjusted Return', isPositive: true },
+    { label: 'Max Drawdown', value: `${(stats.max_drawdown * 100).toFixed(2)}%`, desc: 'Max Peak-to-Trough Loss', isNegative: true },
   ];
 
   return (

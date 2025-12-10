@@ -6,6 +6,7 @@ const Comparison = ({ ticker, startYear, endDate }) => {
     const [comparisonTicker, setComparisonTicker] = useState('');
     const [activeComparisons, setActiveComparisons] = useState([ticker]);
     const [comparisonData, setComparisonData] = useState({});
+    const [correlationData, setCorrelationData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -29,13 +30,35 @@ const Comparison = ({ ticker, startYear, endDate }) => {
     useEffect(() => {
         // Initial fetch for the main ticker
         fetchComparisonData(activeComparisons);
+        if (activeComparisons.length > 1) {
+            fetchCorrelation(activeComparisons);
+        }
     }, [ticker, startYear, endDate]);
+
+    const fetchCorrelation = async (tickersToFetch) => {
+        if (tickersToFetch.length < 2) {
+            setCorrelationData(null);
+            return;
+        }
+        try {
+            const response = await axios.post('http://localhost:8000/api/correlation', {
+                tickers: tickersToFetch,
+                start_year: startYear,
+                end_date: endDate
+            });
+            setCorrelationData(response.data);
+        } catch (err) {
+            console.error("Correlation fetch error:", err);
+            // Don't set main error, just log it, as this is secondary data
+        }
+    };
 
     const handleAddComparison = () => {
         if (comparisonTicker && !activeComparisons.includes(comparisonTicker)) {
             const newComparisons = [...activeComparisons, comparisonTicker];
             setActiveComparisons(newComparisons);
             fetchComparisonData(newComparisons);
+            fetchCorrelation(newComparisons);
             setComparisonTicker('');
         }
     };
@@ -100,6 +123,63 @@ const Comparison = ({ ticker, startYear, endDate }) => {
                     </LineChart>
                 </ResponsiveContainer>
             </div>
+
+            {/* Correlation Matrix Section */}
+            {correlationData && (
+                <div className="mt-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <h3 className="text-xl font-serif font-bold text-navy mb-6 flex items-center gap-2">
+                        Correlation Matrix
+                        <span className="text-xs font-sans font-normal text-slate-400 bg-slate-100 px-2 py-1 rounded-full">1.0 = Identical, 0.0 = Uncorrelated, -1.0 = Inverse</span>
+                    </h3>
+                    <div className="bg-white p-8 rounded-sm border border-beige shadow-sm overflow-x-auto">
+                        <div className="inline-block min-w-full">
+                            <div className="grid" style={{
+                                gridTemplateColumns: `auto repeat(${correlationData.tickers.length}, minmax(80px, 1fr))`
+                            }}>
+                                {/* Header Row */}
+                                <div className="p-3"></div>
+                                {correlationData.tickers.map(t => (
+                                    <div key={t} className="p-3 font-bold text-center text-navy border-b border-beige">
+                                        {t}
+                                    </div>
+                                ))}
+
+                                {/* Rows */}
+                                {correlationData.tickers.map(rowTicker => (
+                                    <React.Fragment key={rowTicker}>
+                                        <div className="p-3 font-bold text-left text-navy border-r border-beige flex items-center">
+                                            {rowTicker}
+                                        </div>
+                                        {correlationData.tickers.map(colTicker => {
+                                            // Find value
+                                            const cell = correlationData.matrix.find(
+                                                item => item.x === colTicker && item.y === rowTicker
+                                            );
+                                            const val = cell ? cell.value : 0;
+
+                                            // Color Logic
+                                            let bg = 'bg-slate-50';
+                                            let text = 'text-slate-400';
+
+                                            if (val > 0.99) { bg = 'bg-navy'; text = 'text-cream'; } // Self
+                                            else if (val > 0.7) { bg = 'bg-[#4A7C59]'; text = 'text-white'; } // High Correlation
+                                            else if (val > 0.3) { bg = 'bg-[#4A7C59]/50'; text = 'text-navy'; } // Moderate
+                                            else if (val > -0.3) { bg = 'bg-slate-100'; text = 'text-slate-500'; } // Low/Uncorrelated
+                                            else { bg = 'bg-[#8C4A4A]'; text = 'text-white'; } // Negative Correlation
+
+                                            return (
+                                                <div key={`${rowTicker}-${colTicker}`} className={`p-3 text-center ${bg} ${text} m-1 rounded-sm border border-transparent hover:border-gold transition-colors`}>
+                                                    {val.toFixed(2)}
+                                                </div>
+                                            );
+                                        })}
+                                    </React.Fragment>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

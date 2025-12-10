@@ -109,8 +109,15 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
         # 2. Volatility (Annualized)
         volatility = monthly_ret.std() * np.sqrt(12)
 
-        # 3. Sharpe Ratio (Assume Rf=0 for simplicity)
-        sharpe_ratio = (cagr - 0.02) / volatility if volatility != 0 else 0 # Using 2% as rough Rf approximation
+        # 3. Sharpe Ratio (Assume Rf=0.02 for simplicity)
+        risk_free_rate = 0.02
+        sharpe_ratio = (cagr - risk_free_rate) / volatility if volatility != 0 else 0
+        
+        # 3.5 Sortino Ratio
+        # Downside deviation: std dev of negative returns only
+        negative_returns = monthly_ret[monthly_ret < 0]
+        downside_deviation = negative_returns.std() * np.sqrt(12)
+        sortino_ratio = (cagr - risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
 
         # 4. Max Drawdown
         cumulative_returns = (1 + monthly_ret).cumprod()
@@ -135,6 +142,7 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
             "cagr": cagr,
             "volatility": volatility,
             "sharpe_ratio": sharpe_ratio,
+            "sortino_ratio": sortino_ratio,
             "max_drawdown": max_drawdown,
             "wealth_index": wealth_data
         }
@@ -195,5 +203,68 @@ def run_anova_test(pivot: pd.DataFrame):
             "significant": bool(p_val < 0.05) if not np.isnan(p_val) else False
         }
     except Exception as e:
-        logger.error(f"Error in ANOVA test: {e}")
         return {"error": str(e)}
+
+def calculate_dca(monthly_ret: pd.Series, monthly_contribution: float):
+    """
+    Simulates Dollar Cost Averaging.
+    Returns:
+        dca_data: List of dicts with date, total_invested, portfolio_value
+        summary: Dict with final stats
+    """
+    try:
+        if monthly_ret.empty:
+            return None
+            
+        dates = monthly_ret.index
+        values = []
+        
+        total_invested = 0
+        current_holdings = 0 # In dollars initially? No, we need to track value.
+        # Simpler approach: 
+        # Month 0: Invest $X. 
+        # Month 1: (Old Value * (1+Ret)) + $X
+        
+        current_value = 0
+        
+        # We need a starting point before the first return?
+        # Typically DCA implies buying at the *start* or *end* of the period.
+        # Let's assume we contribute at the start of each month (before that month's return).
+        
+        data_points = []
+        
+        for date, ret in monthly_ret.items():
+            # Contribute
+            total_invested += monthly_contribution
+            current_value += monthly_contribution
+            
+            # Grow
+            current_value *= (1 + ret)
+            
+            # Store
+            data_points.append({
+                "date": str(date).split(" ")[0],
+                "invested": total_invested,
+                "value": current_value
+            })
+            
+        total_profit = current_value - total_invested
+        roi = (total_profit / total_invested) if total_invested > 0 else 0
+        
+        return {
+            "dca_series": data_points,
+            "summary": {
+                "total_invested": total_invested,
+                "final_value": current_value,
+                "total_profit": total_profit,
+                "roi": roi
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error calculating DCA: {e}")
+        return None
+
+def calculate_correlation(pivot: pd.DataFrame):
+     # Placeholder if needed, but we can do it in main logic using pandas corr() directly on cleaned data
+     pass
+

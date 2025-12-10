@@ -5,7 +5,8 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -122,6 +123,50 @@ def compare_tickers(request: ComparisonRequest):
         raise HTTPException(status_code=404, detail="No data found for any requested tickers")
         
     return clean_data(results)
+
+@app.post("/api/correlation")
+def get_correlation(request: ComparisonRequest):
+    logger.info(f"Calculating Correlation for: {request.tickers}")
+    start_date = f"{request.start_year}-01-01"
+    
+    # We need a common index to calculate correlation correctly
+    # Strategy: Download all, merge on Date (monthly)
+    
+    all_series = {}
+    
+    for ticker in request.tickers:
+        data = download_data(ticker, start_date, request.end_date)
+        if data is not None:
+            processed = process_data(data)
+            if processed:
+                all_series[ticker] = processed['monthly_ret']
+    
+    if len(all_series) < 2:
+        raise HTTPException(status_code=400, detail="Need at least 2 valid tickers for correlation")
+        
+    # Combine into DataFrame
+    df_corr = pd.DataFrame(all_series)
+    
+    # Calculate Correlation Matrix
+    corr_matrix = df_corr.corr()
+    
+    # Format for Frontend (heatmap friendy)
+    # List of { x: ticker1, y: ticker2, value: 0.9 }
+    
+    matrix_data = []
+    for x in corr_matrix.columns:
+        for y in corr_matrix.index:
+            matrix_data.append({
+                "x": x,
+                "y": y,
+                "value": corr_matrix.loc[y, x]
+            })
+            
+    return clean_data({
+        "matrix": matrix_data,
+        "tickers": list(corr_matrix.columns)
+    })
+
 @app.post("/api/export/excel")
 def export_excel(request: AnalysisRequest):
     logger.info(f"Exporting Excel for {request.ticker}")
@@ -147,3 +192,28 @@ def export_pdf(request: AnalysisRequest):
     logger.info(f"Exporting PDF for {request.ticker}")
     # Similar to Excel, return success message
     return {"message": "PDF export functionality is ready (backend implementation pending file streaming setup)"}
+
+class DcaRequest(BaseModel):
+    ticker: str
+    start_year: int
+    end_date: str
+    monthly_contribution: float
+
+@app.post("/api/dca")
+def run_dca_simulation(request: DcaRequest):
+    logger.info(f"Running DCA Simulation for {request.ticker}")
+    start_date = f"{request.start_year}-01-01"
+    data = download_data(request.ticker, start_date, request.end_date)
+    
+    if data is None:
+        raise HTTPException(status_code=404, detail="Data not found")
+        
+    processed = process_data(data)
+    if processed is None:
+         raise HTTPException(status_code=500, detail="Error processing data")
+         
+    from analysis import calculate_dca # Import here or at top
+    dca_results = calculate_dca(processed['monthly_ret'], request.monthly_contribution)
+    
+    return clean_data(dca_results)
+

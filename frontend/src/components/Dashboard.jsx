@@ -6,6 +6,7 @@ import Comparison from './Comparison';
 import BarChart from './charts/BarChart';
 import Heatmap from './charts/Heatmap';
 import ScatterPlot from './charts/ScatterPlot';
+import DCASimulator from './DCASimulator';
 import axios from 'axios';
 
 const Dashboard = () => {
@@ -80,7 +81,7 @@ const Dashboard = () => {
                     <div>
                         <div className="flex justify-between items-center mb-10 border-b border-beige pb-4">
                             <nav className="-mb-px flex space-x-12">
-                                {['summary', 'charts', 'comparison', 'ml'].map((tab) => (
+                                {['summary', 'charts', 'comparison', 'ml', 'dca'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -121,6 +122,7 @@ const Dashboard = () => {
                             )}
                             {activeTab === 'comparison' && <Comparison ticker={ticker} startYear={startYear} endDate={endDate} />}
                             {activeTab === 'ml' && <MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} />}
+                            {activeTab === 'dca' && <DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} />}
                         </div>
                     </div>
                 )}
