@@ -1,4 +1,6 @@
 import React from 'react';
+import KPICards from './KPICards';
+import WealthChart from './charts/WealthChart';
 
 const Summary = ({ data }) => {
     const { stats, ticker } = data;
@@ -7,37 +9,11 @@ const Summary = ({ data }) => {
         <div className="space-y-10">
             <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4">Analysis Summary: {ticker}</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-cream p-6 rounded-sm border border-beige shadow-sm hover:shadow-md transition-shadow">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Overall Average</h3>
-                    <p className="text-4xl font-serif font-bold text-navy">
-                        {(stats.overall_avg * 100).toFixed(2)}%
-                    </p>
-                </div>
+            <KPICards stats={stats} />
 
-                <div className="bg-cream p-6 rounded-sm border border-beige shadow-sm hover:shadow-md transition-shadow">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Best Month</h3>
-                    <div className="flex justify-between items-end">
-                        <p className="text-2xl font-serif font-bold text-navy">
-                            {stats.best_month.name}
-                        </p>
-                        <p className="text-lg font-bold text-success">
-                            +{(stats.best_month.value * 100).toFixed(2)}%
-                        </p>
-                    </div>
-                </div>
-
-                <div className="bg-cream p-6 rounded-sm border border-beige shadow-sm hover:shadow-md transition-shadow">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Worst Month</h3>
-                    <div className="flex justify-between items-end">
-                        <p className="text-2xl font-serif font-bold text-navy">
-                            {stats.worst_month.name}
-                        </p>
-                        <p className="text-lg font-bold text-error">
-                            {(stats.worst_month.value * 100).toFixed(2)}%
-                        </p>
-                    </div>
-                </div>
+            <div className="mb-12">
+                <h3 className="text-xl font-serif font-bold mb-6 text-navy">Growth of $10,000</h3>
+                <WealthChart data={data} />
             </div>
 
             <div className="mt-12">

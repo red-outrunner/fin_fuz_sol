@@ -21,60 +21,90 @@ const Sidebar = ({
     };
 
     return (
-        <div className="w-72 bg-navy text-cream h-screen p-8 flex flex-col fixed left-0 top-0 overflow-y-auto border-r border-slate-700 shadow-2xl z-50">
-            <h1 className="text-2xl font-serif font-bold mb-10 text-gold tracking-wide border-b border-slate-700 pb-4">
-                Market Analyzer
-            </h1>
+        <div className="w-80 bg-navy text-cream h-screen p-6 flex flex-col fixed left-0 top-0 overflow-y-auto border-r border-slate-800 shadow-2xl z-50 font-sans">
+            <div className="mb-10 pt-2">
+                <h1 className="text-xl font-serif font-bold text-gold tracking-widest uppercase border-b border-gold/20 pb-4">
+                    FinFuzion <span className="text-xs text-slate-400 normal-case tracking-normal block mt-1">Global Market Intelligence</span>
+                </h1>
+            </div>
 
-            <div className="mb-8">
-                <label className="block text-xs font-bold uppercase tracking-widest mb-3 text-gold opacity-80">Select Asset</label>
-                <select
-                    value={Object.keys(tickerOptions).find(key => tickerOptions[key] === ticker) || ticker}
-                    onChange={(e) => setTicker(tickerOptions[e.target.value] || e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
+            <div className="space-y-8 flex-1">
+                {/* Section: Asset Selection */}
+                <div className="group">
+                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 group-hover:text-gold transition-colors duration-300">
+                        Select Asset
+                    </h2>
+                    <div className="space-y-3">
+                        <select
+                            value={Object.keys(tickerOptions).find(key => tickerOptions[key] === ticker) || ticker}
+                            onChange={(e) => setTicker(tickerOptions[e.target.value] || e.target.value)}
+                            className="w-full bg-slate-800/50 border border-slate-700 rounded-sm p-3 text-sm text-cream focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all hover:border-slate-600"
+                        >
+                            {Object.keys(tickerOptions).map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </select>
+                        <input
+                            type="text"
+                            placeholder="Or type custom ticker..."
+                            className="w-full bg-slate-800/50 border border-slate-700 rounded-sm p-3 text-sm text-cream focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all hover:border-slate-600 placeholder-slate-500"
+                            onChange={(e) => setTicker(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* Section: Time Horizon */}
+                <div className="group">
+                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 group-hover:text-gold transition-colors duration-300">
+                        Time Horizon
+                    </h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase">Start Year</label>
+                            <input
+                                type="number"
+                                value={startYear}
+                                onChange={(e) => setStartYear(parseInt(e.target.value))}
+                                className="w-full bg-slate-800/50 border border-slate-700 rounded-sm p-3 text-sm text-cream focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-center hover:border-slate-600"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-medium text-slate-400 mb-1 uppercase">End Date</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full bg-slate-800/50 border border-slate-700 rounded-sm p-3 text-sm text-cream focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-center hover:border-slate-600"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Section: Actions */}
+            <div className="mt-auto pt-8 border-t border-slate-800">
+                <button
+                    onClick={onAnalyze}
+                    disabled={loading}
+                    className={`w-full py-4 px-6 rounded-sm font-bold tracking-widest uppercase text-xs transition-all duration-300 transform hover:-translate-y-1 ${loading
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-gold to-yellow-600 text-navy shadow-lg hover:shadow-gold/20'
+                        }`}
                 >
-                    {Object.keys(tickerOptions).map(name => (
-                        <option key={name} value={name}>{name}</option>
-                    ))}
-                </select>
-                <input
-                    type="text"
-                    placeholder="Or type custom ticker..."
-                    className="w-full mt-3 bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
-                    onChange={(e) => setTicker(e.target.value)}
-                />
+                    {loading ? (
+                        <span className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-navy" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Processing...
+                        </span>
+                    ) : 'Run Analysis'}
+                </button>
+                <p className="text-[10px] text-slate-600 text-center mt-4">
+                    v3.0.0 • Powered by FinFuzion Engine
+                </p>
             </div>
-
-            <div className="mb-8">
-                <label className="block text-xs font-bold uppercase tracking-widest mb-3 text-gold opacity-80">Start Year</label>
-                <input
-                    type="number"
-                    value={startYear}
-                    onChange={(e) => setStartYear(parseInt(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
-                />
-            </div>
-
-            <div className="mb-12">
-                <label className="block text-xs font-bold uppercase tracking-widest mb-3 text-gold opacity-80">End Date</label>
-                <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-sm p-3 text-sm focus:outline-none focus:border-gold text-cream transition-colors"
-                />
-            </div>
-
-            <button
-                onClick={onAnalyze}
-                disabled={loading}
-                className={`w-full py-3 px-4 rounded-sm font-bold tracking-wider uppercase text-sm transition-all duration-300 ${loading
-                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                    : 'bg-gold hover:bg-yellow-600 text-navy shadow-lg hover:shadow-xl'
-                    }`}
-            >
-                {loading ? 'Analyzing...' : 'Run Analysis'}
-            </button>
         </div>
     );
 };
