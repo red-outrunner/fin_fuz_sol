@@ -1,4 +1,11 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
+import io
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -181,17 +188,104 @@ def export_excel(request: AnalysisRequest):
         raise HTTPException(status_code=500, detail="Error processing data")
         
     # Create Excel file in memory
-    # For simplicity in this demo, we'll just return a success message or file path
-    # In a real app, we'd stream the file response
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        processed['df'].to_excel(writer, sheet_name='Monthly Data')
+        processed['pivot'].to_excel(writer, sheet_name='Yearly Pivot')
+        
+        # Add summary stats if desired
+        stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'])
+        if stats:
+            # Flatten stats for dataframe
+            flat_stats = {k: v for k, v in stats.items() if isinstance(v, (int, float, str))}
+            pd.DataFrame([flat_stats]).to_excel(writer, sheet_name='Summary Stats', index=False)
+            
+    output.seek(0)
     
-    # Since we can't easily stream files without more setup, we'll just simulate it
-    return {"message": "Excel export functionality is ready (backend implementation pending file streaming setup)"}
+    headers = {
+        'Content-Disposition': f'attachment; filename="{request.ticker}_analysis.xlsx"'
+    }
+    return StreamingResponse(output, headers=headers, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@app.post("/api/export/csv")
+def export_csv(request: AnalysisRequest):
+    logger.info(f"Exporting CSV for {request.ticker}")
+    start_date = f"{request.start_year}-01-01"
+    data = download_data(request.ticker, start_date, request.end_date)
+    
+    if data is None:
+        raise HTTPException(status_code=404, detail="Data not found")
+        
+    processed = process_data(data)
+    if processed is None:
+        raise HTTPException(status_code=500, detail="Error processing data")
+        
+    output = io.StringIO()
+    processed['df'].to_csv(output)
+    
+    # Convert string to bytes for StreamingResponse
+    mem = io.BytesIO()
+    mem.write(output.getvalue().encode())
+    mem.seek(0)
+    
+    headers = {
+        'Content-Disposition': f'attachment; filename="{request.ticker}_data.csv"'
+    }
+    return StreamingResponse(mem, headers=headers, media_type='text/csv')
 
 @app.post("/api/export/pdf")
 def export_pdf(request: AnalysisRequest):
     logger.info(f"Exporting PDF for {request.ticker}")
-    # Similar to Excel, return success message
-    return {"message": "PDF export functionality is ready (backend implementation pending file streaming setup)"}
+    start_date = f"{request.start_year}-01-01"
+    data = download_data(request.ticker, start_date, request.end_date)
+    
+    if data is None:
+        raise HTTPException(status_code=404, detail="Data not found")
+        
+    processed = process_data(data)
+    if processed is None:
+        raise HTTPException(status_code=500, detail="Error processing data")
+        
+    stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'])
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph(f"Analysis Report for {request.ticker}", styles['Title']))
+    elements.append(Paragraph(f"Period: {request.start_year} to {request.end_date}", styles['Normal']))
+    elements.append(Spacer(1, 12))
+    
+    # Summary Metrics Table
+    if stats:
+        data_table = [
+            ["Metric", "Value"],
+            ["CAGR", f"{stats['cagr']:.2%}" if stats['cagr'] else "N/A"],
+            ["Volatility", f"{stats['volatility']:.2%}" if stats['volatility'] else "N/A"],
+            ["Sharpe Ratio", f"{stats['sharpe_ratio']:.2f}" if stats['sharpe_ratio'] else "N/A"],
+            ["Max Drawdown", f"{stats['max_drawdown']:.2%}" if stats['max_drawdown'] else "N/A"],
+        ]
+        
+        t = Table(data_table)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        elements.append(t)
+        
+    doc.build(elements)
+    buffer.seek(0)
+    
+    headers = {
+        'Content-Disposition': f'attachment; filename="{request.ticker}_report.pdf"'
+    }
+    return StreamingResponse(buffer, headers=headers, media_type='application/pdf')
 
 class DcaRequest(BaseModel):
     ticker: str

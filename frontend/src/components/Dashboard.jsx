@@ -17,6 +17,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('summary');
+    const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
     const handleAnalyze = async () => {
         setLoading(true);
@@ -38,15 +39,31 @@ const Dashboard = () => {
     };
 
     const handleExport = async (type) => {
+        setIsExportMenuOpen(false);
         try {
-            await axios.post(`http://localhost:8000/api/export/${type}`, {
+            const response = await axios.post(`http://localhost:8000/api/export/${type}`, {
                 ticker,
                 start_year: startYear,
                 end_date: endDate
+            }, {
+                responseType: 'blob' // Important for file download
             });
-            alert(`${type.toUpperCase()} export started (simulated).`);
+
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Set filename based on type
+            const extension = type === 'excel' ? 'xlsx' : type;
+            link.setAttribute('download', `${ticker}_report.${extension}`);
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
         } catch (err) {
-            alert('Export failed.');
+            console.error("Export failed:", err);
+            alert(`Export failed for ${type}`);
         }
     };
 
@@ -96,9 +113,28 @@ const Dashboard = () => {
                                     </button>
                                 ))}
                             </nav>
-                            <div className="space-x-4">
-                                <button onClick={() => handleExport('excel')} className="text-xs font-bold uppercase tracking-widest bg-success text-white px-4 py-2 rounded-sm hover:bg-green-800 transition-colors shadow-sm">Export Excel</button>
-                                <button onClick={() => handleExport('pdf')} className="text-xs font-bold uppercase tracking-widest bg-error text-white px-4 py-2 rounded-sm hover:bg-red-800 transition-colors shadow-sm">Export PDF</button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                                    className="text-xs font-bold uppercase tracking-widest bg-navy text-cream px-6 py-2 rounded-sm hover:bg-slate-800 transition-colors shadow-sm flex items-center gap-2"
+                                >
+                                    Download Data
+                                    <svg className={`w-4 h-4 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+
+                                {isExportMenuOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-sm shadow-xl border border-beige z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <button onClick={() => handleExport('excel')} className="block w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-cream hover:text-navy transition-colors border-b border-beige">
+                                            Export Excel (.xlsx)
+                                        </button>
+                                        <button onClick={() => handleExport('csv')} className="block w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-cream hover:text-navy transition-colors border-b border-beige">
+                                            Export CSV (.csv)
+                                        </button>
+                                        <button onClick={() => handleExport('pdf')} className="block w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-cream hover:text-navy transition-colors">
+                                            Export PDF (.pdf)
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
