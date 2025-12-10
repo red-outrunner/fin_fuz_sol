@@ -29,12 +29,12 @@ const WealthChart = ({ data }) => {
           <YAxis
             stroke="#8C735A"
             tick={{ fill: '#2C3E50', fontSize: 12, fontFamily: 'Inter' }}
-            tickFormatter={(value) => `$${value.toLocaleString()}`}
+            tickFormatter={(value) => `R${value.toLocaleString()}`}
           />
           <Tooltip
             contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059', fontFamily: 'Inter' }}
             itemStyle={{ color: '#1A2433' }}
-            formatter={(value) => [`$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
+            formatter={(value) => [`R${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
             labelFormatter={(label) => new Date(label).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
           />
           <Area

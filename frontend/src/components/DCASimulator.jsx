@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, DollarSign, Calendar } from 'lucide-react';
+import { TrendingUp, Calendar } from 'lucide-react';
 import axios from 'axios';
 
 const DCASimulator = ({ ticker, startYear, endDate }) => {
@@ -41,7 +41,7 @@ const DCASimulator = ({ ticker, startYear, endDate }) => {
 
                 <div className="flex items-center gap-2">
                     <div className="relative">
-                        <DollarSign className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <span className="text-gray-400 font-bold absolute left-3 top-1/2 -translate-y-1/2">R</span>
                         <input
                             type="number"
                             value={contribution}
@@ -66,13 +66,13 @@ const DCASimulator = ({ ticker, startYear, endDate }) => {
                         <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                             <span className="text-gray-400 text-xs uppercase tracking-wider">Total Invested</span>
                             <div className="text-2xl font-bold text-white mt-1">
-                                ${simulationData.summary.total_invested.toLocaleString()}
+                                R{simulationData.summary.total_invested.toLocaleString()}
                             </div>
                         </div>
                         <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                             <span className="text-gray-400 text-xs uppercase tracking-wider">Final Value</span>
                             <div className="text-2xl font-bold text-emerald-400 mt-1">
-                                ${simulationData.summary.final_value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                R{simulationData.summary.final_value.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </div>
                         </div>
                         <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
@@ -100,13 +100,13 @@ const DCASimulator = ({ ticker, startYear, endDate }) => {
                                     fontSize={12}
                                     tickLine={false}
                                     axisLine={false}
-                                    tickFormatter={(value) => `$${value / 1000}k`}
+                                    tickFormatter={(value) => `R${value / 1000}k`}
                                 />
                                 <Tooltip
                                     contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '0.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}
                                     itemStyle={{ color: '#e5e7eb' }}
                                     labelStyle={{ color: '#9ca3af', marginBottom: '0.5rem' }}
-                                    formatter={(value) => [`$${value.toLocaleString()}`, ""]}
+                                    formatter={(value) => [`R${value.toLocaleString()}`, ""]}
                                 />
                                 <Legend />
                                 <Line

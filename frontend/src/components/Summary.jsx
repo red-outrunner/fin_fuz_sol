@@ -12,7 +12,7 @@ const Summary = ({ data }) => {
             <KPICards stats={stats} />
 
             <div className="mb-12">
-                <h3 className="text-xl font-serif font-bold mb-6 text-navy">Growth of $10,000</h3>
+                <h3 className="text-xl font-serif font-bold mb-6 text-navy">Growth of R10,000</h3>
                 <WealthChart data={data} />
             </div>
 
