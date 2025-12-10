@@ -1,6 +1,8 @@
-import React from 'react';
 import KPICards from './KPICards';
 import WealthChart from './charts/WealthChart';
+import DrawdownChart from './charts/DrawdownChart';
+import AnnualReturns from './charts/AnnualReturns';
+import WealthProjection from './charts/WealthProjection';
 
 const Summary = ({ data }) => {
     const { stats, ticker } = data;
@@ -14,6 +16,15 @@ const Summary = ({ data }) => {
             <div className="mb-12">
                 <h3 className="text-xl font-serif font-bold mb-6 text-navy">Growth of R10,000</h3>
                 <WealthChart data={data} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <DrawdownChart data={stats.drawdown_series} />
+                <AnnualReturns data={stats.annual_returns} />
+            </div>
+
+            <div className="mb-12">
+                <WealthProjection ticker={ticker} startYear={data.pivot_data[0]?.year} endDate={new Date().toISOString().split('T')[0]} />
             </div>
 
             <div className="mt-12">

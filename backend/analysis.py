@@ -78,18 +78,38 @@ def process_data(data: pd.DataFrame):
         # Do NOT replace NaN with None here, as it converts to object dtype and breaks stats calculation
         # pivot = pivot.where(pd.notnull(pivot), None)
         
+        # Calculate Moving Averages (on monthly close prices)
+        # We use the monthly series which is already resampled
+        ma_12 = monthly.rolling(window=12).mean()
+        ma_60 = monthly.rolling(window=60).mean()
+
         return {
             "monthly_ret": monthly_ret,
             "pivot": pivot,
-            "df": df
+            "df": df,
+            "prices": monthly,
+            "ma_12": ma_12,
+            "ma_60": ma_60
         }
     except Exception as e:
         logger.error(f"Error processing data: {e}")
         return None
 
-def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
+def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, inflation_rate: float = 0.0):
     """Calculates summary statistics."""
     try:
+        # Adjust for inflation if needed
+        # inflation_rate is annual percentage (e.g. 0.05 for 5%)
+        # Convert to monthly inflation
+        if inflation_rate > 0:
+            monthly_inflation = (1 + inflation_rate)**(1/12) - 1
+            # Real Return = (1 + Nominal) / (1 + Inflation) - 1
+            # Approximation: Nominal - Inflation
+            real_ret = (1 + monthly_ret) / (1 + monthly_inflation) - 1
+            calc_series = real_ret
+        else:
+            calc_series = monthly_ret
+
         month_avg = pivot.mean()
         month_median = pivot.median()
         overall_avg = monthly_ret.mean()
@@ -125,11 +145,20 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
         drawdown = (cumulative_returns / peak) - 1
         max_drawdown = drawdown.min()
 
-        # 5. Wealth Index (Growth of $10,000)
-        wealth_index = 10000 * (1 + monthly_ret).cumprod()
+        # 5. Wealth Index (Growth of 10,000)
+        wealth_index = 10000 * (1 + calc_series).cumprod()
         # Prepend starting value
         wealth_data = [{"date": str(monthly_ret.index[0] - pd.DateOffset(months=1)).split(" ")[0], "value": 10000}]
         wealth_data.extend([{"date": str(d).split(" ")[0], "value": v} for d, v in wealth_index.items()])
+
+        # 6. Drawdown Series
+        drawdown_series = drawdown.to_dict()
+        drawdown_data = [{"date": str(d).split(" ")[0], "value": v} for d, v in drawdown_series.items()]
+
+        # 7. Annual Returns
+        # Group monthly returns by year and calc product
+        annual_ret = (1 + calc_series).groupby(calc_series.index.year).prod() - 1
+        annual_returns_data = [{"year": y, "value": v} for y, v in annual_ret.items()]
 
         stats_dict = {
             "overall_avg": overall_avg,
@@ -144,7 +173,9 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame):
             "sharpe_ratio": sharpe_ratio,
             "sortino_ratio": sortino_ratio,
             "max_drawdown": max_drawdown,
-            "wealth_index": wealth_data
+            "wealth_index": wealth_data,
+            "drawdown_series": drawdown_data,
+            "annual_returns": annual_returns_data
         }
         return clean_data(stats_dict)
     except Exception as e:
@@ -267,4 +298,58 @@ def calculate_dca(monthly_ret: pd.Series, monthly_contribution: float):
 def calculate_correlation(pivot: pd.DataFrame):
      # Placeholder if needed, but we can do it in main logic using pandas corr() directly on cleaned data
      pass
+
+def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000):
+    """
+    Runs Monte Carlo simulation for future wealth projection.
+    Returns: 10th, 50th, 90th percentile paths.
+    """
+    try:
+        if monthly_ret.empty or len(monthly_ret) < 12:
+            return None
+
+        # Calculate parameters from history
+        mu = monthly_ret.mean()
+        sigma = monthly_ret.std()
+        
+        last_val = 10000 # Start projection at 10k or just relative 1.0
+        months = years * 12
+        
+        # Simulation
+        # Result shape: (months, n_sims)
+        # Generate random returns: normal distribution
+        sim_rets = np.random.normal(mu, sigma, (months, n_sims))
+        
+        # Calculate cumulative paths
+        # (1 + r).cumprod()
+        sim_growth = (1 + sim_rets).cumprod(axis=0)
+        sim_paths = last_val * sim_growth
+        
+        # Insert start value
+        sim_paths = np.vstack([np.full((1, n_sims), last_val), sim_paths])
+        
+        # Calculate percentiles at each time step
+        p10 = np.percentile(sim_paths, 10, axis=1)
+        p50 = np.percentile(sim_paths, 50, axis=1)
+        p90 = np.percentile(sim_paths, 90, axis=1)
+        
+        # Format for chart
+        # We need dates. Start from "Today" + 1 month
+        start_date = pd.Timestamp.now()
+        dates = [start_date + pd.DateOffset(months=i) for i in range(months + 1)]
+        
+        projection_data = []
+        for i in range(len(dates)):
+            projection_data.append({
+                "date": str(dates[i]).split(" ")[0],
+                "p10": p10[i],
+                "p50": p50[i],
+                "p90": p90[i]
+            })
+            
+        return projection_data
+    except Exception as e:
+        logger.error(f"Error in Monte Carlo: {e}")
+        return None
+
 

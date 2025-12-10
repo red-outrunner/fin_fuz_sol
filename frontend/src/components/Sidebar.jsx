@@ -1,9 +1,11 @@
+
 import React from 'react';
 
 const Sidebar = ({
     ticker, setTicker,
     startYear, setStartYear,
     endDate, setEndDate,
+    inflationAdjusted, setInflationAdjusted,
     onAnalyze, loading
 }) => {
     const tickerOptions = {
@@ -51,6 +53,26 @@ const Sidebar = ({
                             onChange={(e) => setTicker(e.target.value)}
                         />
                     </div>
+                </div>
+
+                {/* Section: Advanced Settings */}
+                <div className="group">
+                    <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 group-hover:text-gold transition-colors duration-300">
+                        Analysis Settings
+                    </h2>
+                    <label className="flex items-center justify-between cursor-pointer group/toggle">
+                        <span className="text-sm font-medium text-cream group-hover/toggle:text-gold transition-colors">Adjust for Inflation (~5%)</span>
+                        <div className="relative">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={inflationAdjusted}
+                                onChange={(e) => setInflationAdjusted(e.target.checked)}
+                            />
+                            <div className={`block w-10 h-6 rounded-full transition-colors ${inflationAdjusted ? 'bg-gold' : 'bg-slate-700'}`}></div>
+                            <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${inflationAdjusted ? 'transform translate-x-4' : ''}`}></div>
+                        </div>
+                    </label>
                 </div>
 
                 {/* Section: Time Horizon */}

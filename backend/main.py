@@ -12,7 +12,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo
 
 
 # Setup logging
@@ -69,7 +69,12 @@ def analyze_ticker(request: AnalysisRequest):
         "ticker": request.ticker,
         "stats": stats,
         "pivot_data": pivot_data,
-        "monthly_returns": processed['monthly_ret'].to_dict() # Date -> Return
+        "monthly_returns": processed['monthly_ret'].to_dict(), # Date -> Return
+        "moving_averages": {
+            "ma_12": processed['ma_12'].where(pd.notnull(processed['ma_12']), None).to_dict(),
+            "ma_60": processed['ma_60'].where(pd.notnull(processed['ma_60']), None).to_dict(),
+            "prices": processed['prices'].to_dict()
+        }
     }
     
     return clean_data(response_data)
@@ -93,6 +98,26 @@ def ml_analysis(request: AnalysisRequest):
         raise HTTPException(status_code=400, detail="Not enough data for ML analysis (need > 2 years)")
         
     return clean_data(ml_results)
+
+@app.post("/api/projection")
+def get_wealth_projection(request: AnalysisRequest):
+    logger.info(f"Running Wealth Projection for {request.ticker}")
+    start_date = f"{request.start_year}-01-01"
+    data = download_data(request.ticker, start_date, request.end_date)
+    
+    if data is None:
+        raise HTTPException(status_code=404, detail="Data not found")
+        
+    processed = process_data(data)
+    if processed is None:
+        raise HTTPException(status_code=500, detail="Error processing data")
+        
+    projection = run_monte_carlo(processed['monthly_ret'])
+    
+    if projection is None:
+        raise HTTPException(status_code=400, detail="Not enough data for projection")
+        
+    return clean_data(projection)
 
 @app.post("/api/stats")
 def statistical_tests(request: AnalysisRequest):

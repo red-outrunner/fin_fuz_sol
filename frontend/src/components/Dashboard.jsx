@@ -11,8 +11,9 @@ import axios from 'axios';
 
 const Dashboard = () => {
     const [ticker, setTicker] = useState('^J203.JO');
-    const [startYear, setStartYear] = useState(1990);
+    const [startYear, setStartYear] = useState(2018);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [inflationAdjusted, setInflationAdjusted] = useState(false);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -26,7 +27,8 @@ const Dashboard = () => {
             const response = await axios.post('http://localhost:8000/api/analyze', {
                 ticker,
                 start_year: startYear,
-                end_date: endDate
+                end_date: endDate,
+                inflation_rate: inflationAdjusted ? 0.05 : 0.0
             });
             setData(response.data);
         } catch (err) {
@@ -73,6 +75,7 @@ const Dashboard = () => {
                 ticker={ticker} setTicker={setTicker}
                 startYear={startYear} setStartYear={setStartYear}
                 endDate={endDate} setEndDate={setEndDate}
+                inflationAdjusted={inflationAdjusted} setInflationAdjusted={setInflationAdjusted}
                 onAnalyze={handleAnalyze}
                 loading={loading}
             />
