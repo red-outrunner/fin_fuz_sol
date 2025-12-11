@@ -353,3 +353,58 @@ def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000)
         return None
 
 
+
+def get_company_profile(ticker: str):
+    """
+    Fetches company profile: major shareholder and sentiment.
+    Returns None if data unavailable (e.g. indices).
+    """
+    try:
+        t = yf.Ticker(ticker)
+        
+        # 1. Biggest Shareholder
+        biggest_holder = None
+        try:
+             # institutional_holders returns a DataFrame
+             ih = t.institutional_holders
+             if ih is not None and not ih.empty:
+                 # Usually columns are "Holder", "Shares", "Date Reported", "% Out", "Value"
+                 # Sort by "% Out" or "Shares" just to be safe, though usually sorted by default
+                 # yfinance column names can vary slightly by version, but 'Holder' is standard
+                 # Let's take the first row
+                 top_row = ih.iloc[0]
+                 # specific handling for different column names
+                 holder_name = top_row.get(0, top_row.iloc[0]) if isinstance(top_row.keys()[0], int) else top_row.get('Holder', top_row.get('Holder Name'))
+                 pct_held = top_row.get(3, top_row.iloc[3]) if isinstance(top_row.keys()[0], int) else top_row.get('% Out', top_row.get('% Held'))
+                 
+                 biggest_holder = {
+                     "name": str(holder_name),
+                     "percent": str(pct_held) # keep as string (e.g. 0.08 or '8%') or float
+                 }
+        except Exception as e:
+            # logger.warning(f"Could not fetch holders for {ticker}: {e}")
+            pass
+
+        # 2. Sentiment / Recommendation
+        sentiment = None
+        try:
+            info = t.info
+            rec_key = info.get('recommendationKey') # 'buy', 'hold', 'sell', 'strong_buy'
+            rec_mean = info.get('recommendationMean') # 1.0 - 5.0 typically
+            
+            if rec_key:
+                sentiment = {
+                    "key": rec_key,
+                    "score": rec_mean
+                }
+        except Exception as e:
+            pass
+
+        return {
+            "biggest_shareholder": biggest_holder,
+            "sentiment": sentiment
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching profile: {e}")
+        return None

@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 const KPICards = ({ stats }) => {
@@ -10,14 +11,21 @@ const KPICards = ({ stats }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
       {metrics.map((metric, index) => (
-        <div key={index} className="bg-white p-6 rounded-sm border border-beige shadow-sm hover:shadow-md transition-all duration-300 group">
-          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 group-hover:text-gold transition-colors">{metric.label}</h3>
-          <p className={`text-3xl font-serif font-bold mb-1 ${metric.isNegative ? 'text-error' : 'text-navy'}`}>
-            {metric.value}
-          </p>
-          <p className="text-xs text-slate-400 font-medium">{metric.desc}</p>
+        <div
+          key={index}
+          className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
+        >
+          <div className="flex flex-col h-full justify-between">
+            <div>
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 group-hover:text-gold transition-colors">{metric.label}</h3>
+              <p className={`text-3xl font-serif font-bold tracking-tight mb-2 ${metric.isNegative ? 'text-error' : 'text-navy'}`}>
+                {metric.value}
+              </p>
+            </div>
+            <p className="text-xs text-slate-400 font-medium leading-relaxed border-t border-slate-100 pt-3 mt-2">{metric.desc}</p>
+          </div>
         </div>
       ))}
     </div>

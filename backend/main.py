@@ -12,7 +12,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile
 
 
 # Setup logging
@@ -311,6 +311,16 @@ def export_pdf(request: AnalysisRequest):
         'Content-Disposition': f'attachment; filename="{request.ticker}_report.pdf"'
     }
     return StreamingResponse(buffer, headers=headers, media_type='application/pdf')
+
+
+@app.post("/api/profile")
+def company_profile(request: AnalysisRequest):
+    logger.info(f"Fetching Profile for {request.ticker}")
+    profile = get_company_profile(request.ticker)
+    if profile is None:
+         # Return empty structure instead of error for UI smoothness
+         return {"biggest_shareholder": None, "sentiment": None}
+    return clean_data(profile)
 
 class DcaRequest(BaseModel):
     ticker: str

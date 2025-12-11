@@ -1,16 +1,18 @@
 import KPICards from './KPICards';
+import CompanyProfile from './CompanyProfile';
 import WealthChart from './charts/WealthChart';
 import DrawdownChart from './charts/DrawdownChart';
 import AnnualReturns from './charts/AnnualReturns';
 import WealthProjection from './charts/WealthProjection';
 
-const Summary = ({ data }) => {
+const Summary = ({ data, profile }) => {
     const { stats, ticker } = data;
 
     return (
         <div className="space-y-10">
             <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4">Analysis Summary: {ticker}</h2>
 
+            <CompanyProfile profile={profile} />
             <KPICards stats={stats} />
 
             <div className="mb-12">
