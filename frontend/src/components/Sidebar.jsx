@@ -126,6 +126,23 @@ const Sidebar = ({
                     ) : 'Run Analysis'}
                 </button>
             </div>
+
+            {/* Footer Marker */}
+            <div className="p-4 border-t border-white/5 bg-navy-dark/80 text-center">
+                <p className="text-[10px] text-slate-500">
+                    A product of{' '}
+                    <span className="text-gold/80">"fuzile solution PTY LTD"</span>
+                </p>
+                <a
+                    href="https://fuzilesolutions.netlify.app/monthly-analyser"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-gold/60 hover:text-gold transition-colors mt-1 block hover:underline"
+                >
+                    Visit Website
+                </a>
+            </div>
+
         </aside>
     );
 };
