@@ -511,7 +511,7 @@ def get_news(ticker: str):
                     "summary": snippet
                 })
                 
-                if len(results) >= 10: break
+                if len(results) >= 4: break
             except Exception:
                 continue
                 
