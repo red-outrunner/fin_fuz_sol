@@ -8,6 +8,10 @@ from sklearn.mixture import GaussianMixture
 from sklearn.ensemble import IsolationForest
 from scipy import stats
 import logging
+import requests
+from bs4 import BeautifulSoup
+import re
+import urllib.parse
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -402,9 +406,203 @@ def get_company_profile(ticker: str):
 
         return {
             "biggest_shareholder": biggest_holder,
-            "sentiment": sentiment
+            "sentiment": sentiment,
+            "sector": t.info.get('sector'),
+            "industry": t.info.get('industry'),
+            "summary": t.info.get('longBusinessSummary')
         }
 
     except Exception as e:
         logger.error(f"Error fetching profile: {e}")
         return None
+
+def get_key_stats(ticker: str):
+    """
+    Fetches fundamental statistics for the company.
+    """
+    try:
+        t = yf.Ticker(ticker)
+        info = t.info
+        
+        # Helper to safely get value or formatting
+        def fmt(key, is_pct=False, is_currency=False):
+            val = info.get(key)
+            if val is None: return None
+            return val
+
+        stats = {
+            "valuation": {
+                "market_cap": fmt("marketCap"),
+                "pe_ratio": fmt("trailingPE"),
+                "forward_pe": fmt("forwardPE"),
+                "peg_ratio": fmt("pegRatio"),
+                "price_to_book": fmt("priceToBook"),
+                "dividend_yield": fmt("dividendYield"),
+            },
+            "financials": {
+                "revenue": fmt("totalRevenue"),
+                "revenue_growth": fmt("revenueGrowth"),
+                "gross_margins": fmt("grossMargins"),
+                "operating_margins": fmt("operatingMargins"),
+                "profit_margins": fmt("profitMargins"),
+                "ebitda": fmt("ebitda"),
+            },
+            "trading": {
+                "beta": fmt("beta"),
+                "short_ratio": fmt("shortRatio"),
+                "target_high": fmt("targetHighPrice"),
+                "target_low": fmt("targetLowPrice"),
+                "target_mean": fmt("targetMeanPrice"),
+                "recommendation_mean": fmt("recommendationMean"),
+            }
+        }
+        return clean_data(stats)
+    except Exception as e:
+        logger.error(f"Error fetching stats for {ticker}: {e}")
+        return None
+
+def get_news(ticker: str):
+    """
+    Fetches latest news for the company using DuckDuckGo HTML search.
+    """
+    try:
+        # Construct query
+        query = f"{ticker} stock news"
+        url = f"https://html.duckduckgo.com/html?q={urllib.parse.quote(query)}"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        results = []
+        
+        # DDG HTML results are usually in .result__body
+        for result in soup.select('.result'):
+            try:
+                title_tag = result.select_one('.result__a')
+                if not title_tag: continue
+                
+                title = title_tag.get_text()
+                link = title_tag.get('href')
+                
+                # DDG links are redirects, e.g. //duckduckgo.com/l/?uddg=...
+                # We can try to extract 'uddg' param
+                if 'duckduckgo.com/l/' in link:
+                     parsed = urllib.parse.urlparse(link)
+                     qs = urllib.parse.parse_qs(parsed.query)
+                     if 'uddg' in qs:
+                         link = qs['uddg'][0]
+
+                snippet_tag = result.select_one('.result__snippet')
+                snippet = snippet_tag.get_text() if snippet_tag else ""
+                
+                # Extract source from snippet or url
+                domain = urllib.parse.urlparse(link).netloc.replace('www.', '')
+                
+                results.append({
+                    "title": title,
+                    "publisher": domain,
+                    "link": link,
+                    "date": "Recent", # DDG HTML doesn't reliably give dates
+                    "thumbnail": None,
+                    "summary": snippet
+                })
+                
+                if len(results) >= 10: break
+            except Exception:
+                continue
+                
+        return results
+    except Exception as e:
+        logger.error(f"Error fetching news for {ticker}: {e}")
+        return []
+
+def get_article_content(url: str):
+    """
+    Fetches and extracts text content from a news URL.
+    """
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Heuristic to find main content
+        # 1. Look for <article>
+        article = soup.find('article')
+        
+        # 2. If no article, look for common main content divs
+        if not article:
+            for cls in ['main-content', 'story-content', 'article-body', 'post-content']:
+                article = soup.find(class_=re.compile(cls))
+                if article: break
+        
+        # 3. Fallback to extracting all paragraphs if reasonable count
+        if not article:
+            paras = soup.find_all('p')
+            # Filter distinct content paragraphs (simple heuristic: length > 50 chars)
+            content_paras = [p.get_text() for p in paras if len(p.get_text()) > 50]
+            text = "\n\n".join(content_paras)
+        else:
+             # Extract text from found container
+             text = ""
+             for p in article.find_all(['p', 'h2', 'h3']):
+                 text += p.get_text() + "\n\n"
+
+        return {"content": text if len(text) > 100 else "Could not extract article content automatically. Please visit the link."}
+
+    except Exception as e:
+        logger.error(f"Error extracting content from {url}: {e}")
+        return {"content": f"Error loading article: {str(e)}"}
+
+
+def get_calendar(ticker: str):
+    """
+    Fetches upcoming earnings and dividend events.
+    """
+    try:
+        t = yf.Ticker(ticker)
+        
+        # Calendar returns a dict with keys like 'Dividend Date', 'Earnings Date', etc.
+        cal = t.calendar
+        
+        events = []
+        
+        if cal:
+            # Handle difference in return structure (sometimes dataframe, sometimes dict)
+            # Recent yfinance returns simple dict
+            
+            # Earnings
+            earnings_date = cal.get('Earnings Date')
+            if earnings_date:
+                # specific handling if it's a list
+                if isinstance(earnings_date, list):
+                     earnings_date = earnings_date[0]
+                events.append({
+                    "event": "Earnings Release",
+                    "date": str(earnings_date).split(" ")[0]
+                })
+
+            # Dividends
+            div_date = cal.get('Dividend Date')
+            ex_div = cal.get('Ex-Dividend Date')
+            
+            if div_date:
+                events.append({
+                    "event": "Dividend Date",
+                    "date": str(div_date).split(" ")[0]
+                })
+            if ex_div:
+                events.append({
+                    "event": "Ex-Dividend Date",
+                    "date": str(ex_div).split(" ")[0]
+                })
+
+        return events
+    except Exception as e:
+        logger.error(f"Error fetching calendar for {ticker}: {e}")
+        return []

@@ -12,7 +12,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content
 
 
 # Setup logging
@@ -321,6 +321,35 @@ def company_profile(request: AnalysisRequest):
          # Return empty structure instead of error for UI smoothness
          return {"biggest_shareholder": None, "sentiment": None}
     return clean_data(profile)
+
+@app.post("/api/fundamentals")
+def get_fundamentals(request: AnalysisRequest):
+    logger.info(f"Fetching Fundamentals for {request.ticker}")
+    stats = get_key_stats(request.ticker)
+    if stats is None:
+        raise HTTPException(status_code=404, detail="Fundamentals not found")
+    return stats
+
+@app.post("/api/news")
+def get_company_news(request: AnalysisRequest):
+    logger.info(f"Fetching News for {request.ticker}")
+    news = get_news(request.ticker)
+    return clean_data(news)
+
+@app.post("/api/calendar")
+def get_company_calendar(request: AnalysisRequest):
+    logger.info(f"Fetching Calendar for {request.ticker}")
+    calendar = get_calendar(request.ticker)
+    return clean_data(calendar)
+
+class ArticleRequest(BaseModel):
+    url: str
+
+@app.post("/api/news/read")
+def read_news_article(request: ArticleRequest):
+    logger.info(f"Reading article: {request.url}")
+    content = get_article_content(request.url)
+    return clean_data(content)
 
 class DcaRequest(BaseModel):
     ticker: str

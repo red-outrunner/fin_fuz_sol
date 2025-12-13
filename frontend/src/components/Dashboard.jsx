@@ -7,6 +7,9 @@ import BarChart from './charts/BarChart';
 import Heatmap from './charts/Heatmap';
 import ScatterPlot from './charts/ScatterPlot';
 import DCASimulator from './DCASimulator';
+import NewsFeed from './NewsFeed';
+import KeyStats from './KeyStats';
+import EarningsCalendar from './EarningsCalendar';
 import axios from 'axios';
 
 const Dashboard = () => {
@@ -21,6 +24,14 @@ const Dashboard = () => {
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
     const [profileData, setProfileData] = useState(null);
+    const [fundamentals, setFundamentals] = useState(null);
+    const [news, setNews] = useState(null);
+    const [calendar, setCalendar] = useState(null);
+
+    // Read Mode State
+    const [readingArticle, setReadingArticle] = useState(null);
+    const [articleContent, setArticleContent] = useState(null);
+    const [loadingArticle, setLoadingArticle] = useState(false);
 
     const handleAnalyze = async () => {
         setLoading(true);
@@ -28,7 +39,7 @@ const Dashboard = () => {
         setProfileData(null);
         try {
             // Run requests in parallel
-            const [analysisRes, profileRes] = await Promise.all([
+            const [analysisRes, profileRes, fundRes, newsRes, calRes] = await Promise.all([
                 axios.post('http://localhost:8000/api/analyze', {
                     ticker,
                     start_year: startYear,
@@ -39,14 +50,29 @@ const Dashboard = () => {
                     ticker,
                     start_year: startYear,
                     end_date: endDate
-                }).catch(err => {
-                    console.warn("Profile fetch failed:", err);
-                    return { data: null };
-                })
+                }).catch(err => ({ data: null })),
+                axios.post('http://localhost:8000/api/fundamentals', {
+                    ticker,
+                    start_year: startYear,
+                    end_date: endDate
+                }).catch(err => ({ data: null })),
+                axios.post('http://localhost:8000/api/news', {
+                    ticker,
+                    start_year: startYear,
+                    end_date: endDate
+                }).catch(err => ({ data: [] })),
+                axios.post('http://localhost:8000/api/calendar', {
+                    ticker,
+                    start_year: startYear,
+                    end_date: endDate
+                }).catch(err => ({ data: [] }))
             ]);
 
             setData(analysisRes.data);
             setProfileData(profileRes.data);
+            setFundamentals(fundRes.data);
+            setNews(newsRes.data);
+            setCalendar(calRes.data);
         } catch (err) {
             console.error("Analysis Error:", err);
             const errorMessage = err.response?.data?.detail || err.message || 'Analysis failed. Please check the ticker and try again.';
@@ -83,6 +109,28 @@ const Dashboard = () => {
             console.error("Export failed:", err);
             alert(`Export failed for ${type}`);
         }
+    };
+
+    const handleReadNews = async (newsItem) => {
+        setReadingArticle(newsItem);
+        setLoadingArticle(true);
+        setArticleContent(null);
+
+        try {
+            const res = await axios.post('http://localhost:8000/api/news/read', {
+                url: newsItem.link
+            });
+            setArticleContent(res.data.content);
+        } catch (err) {
+            setArticleContent("Failed to load article content. Please try visiting the original link.");
+        } finally {
+            setLoadingArticle(false);
+        }
+    };
+
+    const closeReader = () => {
+        setReadingArticle(null);
+        setArticleContent(null);
     };
 
     return (
@@ -171,6 +219,19 @@ const Dashboard = () => {
                         </header>
 
                         <div className="min-h-[600px]">
+                            {/* Bloomberg Terminal Section */}
+                            <div className="grid grid-cols-12 gap-6 mb-12 h-[400px]">
+                                <div className="col-span-12 lg:col-span-3 h-full">
+                                    <NewsFeed news={news} onRead={handleReadNews} />
+                                </div>
+                                <div className="col-span-12 lg:col-span-7 h-full">
+                                    <KeyStats stats={fundamentals} />
+                                </div>
+                                <div className="col-span-12 lg:col-span-2 h-full">
+                                    <EarningsCalendar events={calendar} />
+                                </div>
+                            </div>
+
                             {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} /></div>}
                             {activeTab === 'charts' && (
                                 <div className="space-y-12 animate-in fade-in duration-300">
@@ -191,6 +252,48 @@ const Dashboard = () => {
                             {activeTab === 'comparison' && <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
                             {activeTab === 'ml' && <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
                             {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                        </div>
+                    </div>
+                )}
+
+                {/* Read Mode Modal */}
+                {readingArticle && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                        <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col">
+                            <div className="bg-navy p-4 flex justify-between items-center text-white">
+                                <div>
+                                    <h3 className="font-serif text-lg font-bold truncate max-w-2xl">{readingArticle.title}</h3>
+                                    <p className="text-xs text-blue-200">{readingArticle.publisher} • {readingArticle.date}</p>
+                                </div>
+                                <button onClick={closeReader} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
+
+                            <div className="p-8 overflow-y-auto custom-scrollbar font-serif text-lg leading-relaxed text-slate-800 bg-cream">
+                                {loadingArticle ? (
+                                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                        <div className="w-12 h-12 border-4 border-navy border-t-gold rounded-full animate-spin"></div>
+                                        <p className="text-navy font-sans text-sm tracking-wider">FETCHING CONTENT...</p>
+                                    </div>
+                                ) : (
+                                    <div className="prose max-w-none">
+                                        {articleContent ? (
+                                            articleContent.split('\n\n').map((para, i) => (
+                                                <p key={i} className="mb-4">{para}</p>
+                                            ))
+                                        ) : (
+                                            <p className="text-center italic text-slate-500">No content available.</p>
+                                        )}
+
+                                        <div className="mt-8 pt-6 border-t border-slate-300 flex justify-center">
+                                            <a href={readingArticle.link} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-navy text-white rounded hover:bg-navy-light transition-colors font-sans text-sm">
+                                                Open Original Link
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
