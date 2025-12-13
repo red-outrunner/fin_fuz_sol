@@ -218,9 +218,9 @@ const Dashboard = () => {
                             </div>
                         </header>
 
-                        <div className="min-h-[600px]">
+                        <div className="flex flex-col min-h-[600px]">
                             {/* Bloomberg Terminal Section */}
-                            <div className="grid grid-cols-12 gap-6 mb-12 h-[400px]">
+                            <div className="grid grid-cols-12 gap-6 mb-12 h-96 flex-shrink-0 relative z-10">
                                 <div className="col-span-12 lg:col-span-3 h-full">
                                     <NewsFeed news={news} onRead={handleReadNews} />
                                 </div>
@@ -232,26 +232,28 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} /></div>}
-                            {activeTab === 'charts' && (
-                                <div className="space-y-12 animate-in fade-in duration-300">
-                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Monthly Returns</h3>
-                                        <BarChart data={data} />
+                            <div className="flex-1 relative z-0">
+                                {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} /></div>}
+                                {activeTab === 'charts' && (
+                                    <div className="space-y-12 animate-in fade-in duration-300">
+                                        <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                            <h3 className="text-lg font-serif font-bold mb-6 text-navy">Monthly Returns</h3>
+                                            <BarChart data={data} />
+                                        </div>
+                                        <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                            <h3 className="text-lg font-serif font-bold mb-6 text-navy">Risk vs Return</h3>
+                                            <ScatterPlot data={data} />
+                                        </div>
+                                        <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                            <h3 className="text-lg font-serif font-bold mb-6 text-navy">Historical Heatmap</h3>
+                                            <Heatmap data={data} />
+                                        </div>
                                     </div>
-                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Risk vs Return</h3>
-                                        <ScatterPlot data={data} />
-                                    </div>
-                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Historical Heatmap</h3>
-                                        <Heatmap data={data} />
-                                    </div>
-                                </div>
-                            )}
-                            {activeTab === 'comparison' && <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                            {activeTab === 'ml' && <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                            {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                                )}
+                                {activeTab === 'comparison' && <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                                {activeTab === 'ml' && <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                                {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                            </div>
                         </div>
                     </div>
                 )}
