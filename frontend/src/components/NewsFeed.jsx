@@ -27,7 +27,6 @@ const NewsFeed = ({ news, onRead }) => {
                             <h4 className="text-sm text-gray-200 group-hover:text-blue-300 font-medium leading-tight mb-1">
                                 {item.title}
                             </h4>
-                            <p className="text-xs text-gray-400 line-clamp-2 mb-2">{item.summary}</p>
 
                             <div className="flex gap-2 mt-1">
                                 <button
