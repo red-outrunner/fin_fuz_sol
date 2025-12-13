@@ -177,7 +177,7 @@ const Dashboard = () => {
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <header className="flex justify-between items-center mb-10 pb-4 border-b border-navy/5">
                             <nav className="flex space-x-2 bg-white/50 p-1 rounded-lg border border-white/40 shadow-sm backdrop-blur-sm">
-                                {['summary', 'charts', 'comparison', 'ml', 'dca'].map((tab) => (
+                                {['summary', 'charts', 'comparison', 'ml', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -218,42 +218,45 @@ const Dashboard = () => {
                             </div>
                         </header>
 
-                        <div className="flex flex-col min-h-[600px]">
-                            {/* Bloomberg Terminal Section */}
-                            <div className="grid grid-cols-12 gap-6 mb-12 h-96 flex-shrink-0 relative z-10">
-                                <div className="col-span-12 lg:col-span-3 h-full">
-                                    <NewsFeed news={news} onRead={handleReadNews} />
+                        <div className="min-h-[600px]">
+                            {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} /></div>}
+                            {activeTab === 'charts' && (
+                                <div className="space-y-12 animate-in fade-in duration-300">
+                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Monthly Returns</h3>
+                                        <BarChart data={data} />
+                                    </div>
+                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Risk vs Return</h3>
+                                        <ScatterPlot data={data} />
+                                    </div>
+                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Historical Heatmap</h3>
+                                        <Heatmap data={data} />
+                                    </div>
                                 </div>
-                                <div className="col-span-12 lg:col-span-7 h-full">
-                                    <KeyStats stats={fundamentals} />
-                                </div>
-                                <div className="col-span-12 lg:col-span-2 h-full">
-                                    <EarningsCalendar events={calendar} />
-                                </div>
-                            </div>
+                            )}
+                            {activeTab === 'comparison' && <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                            {activeTab === 'ml' && <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                            {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
 
-                            <div className="flex-1 relative z-0">
-                                {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} /></div>}
-                                {activeTab === 'charts' && (
-                                    <div className="space-y-12 animate-in fade-in duration-300">
-                                        <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                            <h3 className="text-lg font-serif font-bold mb-6 text-navy">Monthly Returns</h3>
-                                            <BarChart data={data} />
+                            {/* Terminal Tab */}
+                            {activeTab === 'terminal' && (
+                                <div className="animate-in fade-in duration-300">
+                                    <h3 className="text-xl font-serif font-bold mb-6 text-navy">Market Terminal</h3>
+                                    <div className="grid grid-cols-12 gap-6 h-[70vh]">
+                                        <div className="col-span-12 lg:col-span-3 h-full">
+                                            <NewsFeed news={news} onRead={handleReadNews} />
                                         </div>
-                                        <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                            <h3 className="text-lg font-serif font-bold mb-6 text-navy">Risk vs Return</h3>
-                                            <ScatterPlot data={data} />
+                                        <div className="col-span-12 lg:col-span-7 h-full">
+                                            <KeyStats stats={fundamentals} />
                                         </div>
-                                        <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                            <h3 className="text-lg font-serif font-bold mb-6 text-navy">Historical Heatmap</h3>
-                                            <Heatmap data={data} />
+                                        <div className="col-span-12 lg:col-span-2 h-full">
+                                            <EarningsCalendar events={calendar} />
                                         </div>
                                     </div>
-                                )}
-                                {activeTab === 'comparison' && <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                                {activeTab === 'ml' && <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                                {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
