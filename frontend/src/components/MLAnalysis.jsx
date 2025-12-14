@@ -44,20 +44,33 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
     const COLORS = ['#1A2433', '#C5A059', '#4A7C59', '#8C735A']; // Navy, Gold, Green, Bronze
 
     return (
-        <div className="space-y-10">
-            <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4">Machine Learning Insights</h2>
+        <div className="space-y-12 animate-in fade-in duration-500">
+            <div className="border-b border-navy/5 pb-6">
+                <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4 mb-2">Machine Learning Insights</h2>
+                <p className="text-slate-500 text-sm pl-5 max-w-3xl">
+                    Our algorithms analyze decades of price movements to identify hidden patterns and risks that traditional metrics might miss.
+                </p>
+            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-6 rounded-sm border border-beige shadow-sm">
-                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Market Regimes (GMM Clustering)</h3>
+            {/* Section 1: Market Regimes */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-serif font-bold text-navy">Market Regimes (k-Means/GMM)</h3>
+                        <span className="text-xs font-bold text-gold uppercase tracking-wider bg-navy/5 px-2 py-1 rounded">Pattern Recognition</span>
+                    </div>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
-                                <XAxis type="number" dataKey="x" name="PCA 1" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
-                                <YAxis type="number" dataKey="y" name="PCA 2" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
-                                <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059' }} />
-                                <Scatter name="Clusters" data={clusterData} fill="#8884d8">
+                                <XAxis type="number" dataKey="x" name="Principal Component 1" stroke="#8C735A" tick={{ fill: '#64748B', fontSize: 10 }} />
+                                <YAxis type="number" dataKey="y" name="Principal Component 2" stroke="#8C735A" tick={{ fill: '#64748B', fontSize: 10 }} />
+                                <Tooltip
+                                    cursor={{ strokeDasharray: '3 3' }}
+                                    contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0', borderRadius: '4px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(value) => value.toFixed(2)}
+                                />
+                                <Scatter name="Market States" data={clusterData} fill="#8884d8">
                                     {clusterData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[entry.cluster % COLORS.length]} />
                                     ))}
@@ -65,31 +78,90 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
                             </ScatterChart>
                         </ResponsiveContainer>
                     </div>
-                    <p className="text-sm text-slate-500 mt-4 leading-relaxed">
-                        Clusters represent different market regimes identified by Gaussian Mixture Models on PCA-reduced monthly return sequences.
-                    </p>
                 </div>
 
-                <div className="bg-white p-6 rounded-sm border border-beige shadow-sm">
-                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Anomaly Detection (Isolation Forest)</h3>
+                {/* Explanation Card 1 */}
+                <div className="lg:col-span-1 bg-navy/5 p-6 rounded-lg border border-navy/10">
+                    <h4 className="font-bold text-navy mb-3 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        What This Means
+                    </h4>
+                    <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                        The algorithms group historical months into "clusters" based on similar behavior (volatility, direction, momentum).
+                    </p>
+                    <div className="bg-white p-4 rounded border border-beige-dark/30 shadow-sm">
+                        <h5 className="text-xs font-bold text-gold uppercase mb-2">Investor Takeaway</h5>
+                        <ul className="text-sm text-slate-700 space-y-2">
+                            <li className="flex gap-2">
+                                <span className="text-navy font-bold">•</span>
+                                <span>Points close together indicate <strong>stable, predictable</strong> market conditions.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-navy font-bold">•</span>
+                                <span>Widely scattered points suggest <strong>uncertainty and high volatility</strong>.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-navy font-bold">•</span>
+                                <span>If current data moves to a new cluster, expect a <strong>regime shift</strong> (e.g., Bull to Bear).</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            {/* Section 2: Anomalies */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-serif font-bold text-navy">Anomaly Detection</h3>
+                        <span className="text-xs font-bold text-error/80 uppercase tracking-wider bg-red-50 px-2 py-1 rounded">Risk Alert</span>
+                    </div>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
-                                <XAxis type="number" dataKey="x" name="PCA 1" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
-                                <YAxis type="number" dataKey="y" name="PCA 2" stroke="#8C735A" tick={{ fill: '#2C3E50' }} />
-                                <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059' }} />
+                                <XAxis type="number" dataKey="x" name="Principal Component 1" stroke="#8C735A" tick={{ fill: '#64748B', fontSize: 10 }} />
+                                <YAxis type="number" dataKey="y" name="Principal Component 2" stroke="#8C735A" tick={{ fill: '#64748B', fontSize: 10 }} />
+                                <Tooltip
+                                    cursor={{ strokeDasharray: '3 3' }}
+                                    contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0', borderRadius: '4px' }}
+                                />
                                 <Scatter name="Anomalies" data={clusterData} fill="#8884d8">
                                     {clusterData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.isAnomaly ? '#8C4A4A' : '#E2E8F0'} />
+                                        <Cell key={`cell-${index}`} fill={entry.isAnomaly ? '#EF4444' : '#CBD5E1'} opacity={entry.isAnomaly ? 1 : 0.5} />
                                     ))}
                                 </Scatter>
                             </ScatterChart>
                         </ResponsiveContainer>
                     </div>
-                    <p className="text-sm text-slate-500 mt-4 leading-relaxed">
-                        Red points indicate anomalies (unusual market behavior) detected by Isolation Forest.
+                </div>
+
+                {/* Explanation Card 2 */}
+                <div className="lg:col-span-1 bg-red-50/50 p-6 rounded-lg border border-red-100">
+                    <h4 className="font-bold text-navy mb-3 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        What This Means
+                    </h4>
+                    <p className="text-sm text-slate-600 mb-4 leading-relaxed">
+                        Isolation Forests identify data points (months) that are mathematically distinct from the "normal" behavior of the asset.
                     </p>
+                    <div className="bg-white p-4 rounded border border-red-100 shadow-sm">
+                        <h5 className="text-xs font-bold text-error uppercase mb-2">Investor Takeaway</h5>
+                        <ul className="text-sm text-slate-700 space-y-2">
+                            <li className="flex gap-2">
+                                <span className="text-error font-bold">•</span>
+                                <span><strong className="text-error">Red Points</strong> are "outliers" or anomalies.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-error font-bold">•</span>
+                                <span>These often correspond to <strong>extreme events</strong> like market crashes, bubbles, or sudden shocks.</span>
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-error font-bold">•</span>
+                                <span>A high number of recent red points suggests the asset is currently in <strong>unpredictable territory</strong>. Proceed with caution.</span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
