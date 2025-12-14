@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart } from 'recharts';
 import axios from 'axios';
+import { API_BASE_URL } from '../../api';
 
 const WealthProjection = ({ ticker, startYear, endDate }) => {
     const [data, setData] = useState(null);
@@ -11,7 +12,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
         const fetchProjection = async () => {
             setLoading(true);
             try {
-                const response = await axios.post('http://localhost:8000/api/projection', {
+                const response = await axios.post(`${API_BASE_URL}/api/projection`, {
                     ticker,
                     start_year: startYear,
                     end_date: endDate

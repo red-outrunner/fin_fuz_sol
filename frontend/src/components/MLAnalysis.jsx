@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../api';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const MLAnalysis = ({ ticker, startYear, endDate }) => {
@@ -11,7 +12,7 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
         const fetchMLData = async () => {
             setLoading(true);
             try {
-                const response = await axios.post('http://localhost:8000/api/ml', {
+                const response = await axios.post(`${API_BASE_URL}/api/ml`, {
                     ticker,
                     start_year: startYear,
                     end_date: endDate

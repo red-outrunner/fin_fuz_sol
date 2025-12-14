@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../api';
 
 const DCASimulator = ({ ticker, startYear, endDate }) => {
     const [contribution, setContribution] = useState(500);
@@ -14,7 +15,7 @@ const DCASimulator = ({ ticker, startYear, endDate }) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.post('http://localhost:8000/api/dca', {
+            const response = await axios.post(`${API_BASE_URL}/api/dca`, {
                 ticker,
                 start_year: startYear,
                 end_date: endDate,

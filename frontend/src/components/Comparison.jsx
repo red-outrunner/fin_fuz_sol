@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Comparison = ({ ticker, startYear, endDate }) => {
@@ -13,7 +14,7 @@ const Comparison = ({ ticker, startYear, endDate }) => {
     const fetchComparisonData = async (tickersToFetch) => {
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:8000/api/compare', {
+            const response = await axios.post(`${API_BASE_URL}/api/compare`, {
                 tickers: tickersToFetch,
                 start_year: startYear,
                 end_date: endDate
@@ -41,7 +42,7 @@ const Comparison = ({ ticker, startYear, endDate }) => {
             return;
         }
         try {
-            const response = await axios.post('http://localhost:8000/api/correlation', {
+            const response = await axios.post(`${API_BASE_URL}/api/correlation`, {
                 tickers: tickersToFetch,
                 start_year: startYear,
                 end_date: endDate

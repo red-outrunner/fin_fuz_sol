@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../api';
 
 const Sidebar = ({
     ticker, setTicker,
@@ -36,7 +37,7 @@ const Sidebar = ({
             if (searchQuery.length > 2) {
                 setIsSearching(true);
                 try {
-                    const response = await axios.post('http://localhost:8000/api/search', {
+                    const response = await axios.post(`${API_BASE_URL}/api/search`, {
                         query: searchQuery
                     });
                     setSearchResults(response.data);

@@ -12,6 +12,7 @@ import KeyStats from './KeyStats';
 import EarningsCalendar from './EarningsCalendar';
 import CIOAllocator from './CIOAllocator';
 import axios from 'axios';
+import { API_BASE_URL } from '../api';
 
 const Dashboard = () => {
     const [ticker, setTicker] = useState('^J203.JO');
@@ -41,28 +42,28 @@ const Dashboard = () => {
         try {
             // Run requests in parallel
             const [analysisRes, profileRes, fundRes, newsRes, calRes] = await Promise.all([
-                axios.post('http://localhost:8000/api/analyze', {
+                axios.post(`${API_BASE_URL}/api/analyze`, {
                     ticker,
                     start_year: startYear,
                     end_date: endDate,
                     inflation_rate: inflationAdjusted ? 0.05 : 0.0
                 }),
-                axios.post('http://localhost:8000/api/profile', {
+                axios.post(`${API_BASE_URL}/api/profile`, {
                     ticker,
                     start_year: startYear,
                     end_date: endDate
                 }).catch(err => ({ data: null })),
-                axios.post('http://localhost:8000/api/fundamentals', {
+                axios.post(`${API_BASE_URL}/api/fundamentals`, {
                     ticker,
                     start_year: startYear,
                     end_date: endDate
                 }).catch(err => ({ data: null })),
-                axios.post('http://localhost:8000/api/news', {
+                axios.post(`${API_BASE_URL}/api/news`, {
                     ticker,
                     start_year: startYear,
                     end_date: endDate
                 }).catch(err => ({ data: [] })),
-                axios.post('http://localhost:8000/api/calendar', {
+                axios.post(`${API_BASE_URL}/api/calendar`, {
                     ticker,
                     start_year: startYear,
                     end_date: endDate
@@ -86,7 +87,7 @@ const Dashboard = () => {
     const handleExport = async (type) => {
         setIsExportMenuOpen(false);
         try {
-            const response = await axios.post(`http://localhost:8000/api/export/${type}`, {
+            const response = await axios.post(`${API_BASE_URL}/api/export/${type}`, {
                 ticker,
                 start_year: startYear,
                 end_date: endDate
@@ -118,7 +119,7 @@ const Dashboard = () => {
         setArticleContent(null);
 
         try {
-            const res = await axios.post('http://localhost:8000/api/news/read', {
+            const res = await axios.post(`${API_BASE_URL}/api/news/read`, {
                 url: newsItem.link
             });
             setArticleContent(res.data.content);
