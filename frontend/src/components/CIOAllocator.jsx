@@ -14,7 +14,7 @@ const CIOAllocator = () => {
         { ticker: "NED", weight: 4.64, name: "Nedbank" },
         { ticker: "MTN", weight: 5.92, name: "MTN Group" },
         { ticker: "PPE", weight: 6.37, name: "Purple Group" },
-        { ticker: "CTA", weight: 10.08, name: "Capital & Counties" }, // Note: Ticker check needed, but keeping original code's intent
+        { ticker: "AXX.JO", weight: 10.08, name: "Araxi Limited" },
         { ticker: "EXX", weight: 7.19, name: "Exxaro" },
         { ticker: "PMR", weight: 2.79, name: "Pan African Resources" },
         { ticker: "RNI", weight: 5.48, name: "Reinet" },
