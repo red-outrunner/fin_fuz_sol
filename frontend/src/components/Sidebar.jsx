@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 
 const Sidebar = ({
     ticker, setTicker,
@@ -8,6 +9,58 @@ const Sidebar = ({
     inflationAdjusted, setInflationAdjusted,
     onAnalyze, loading
 }) => {
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+    const searchRef = useRef(null);
+
+    // Click outside to close results
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setShowResults(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Debounce Search
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(async () => {
+            if (searchQuery.length > 2) {
+                setIsSearching(true);
+                try {
+                    const response = await axios.post('http://localhost:8000/api/search', {
+                        query: searchQuery
+                    });
+                    setSearchResults(response.data);
+                    setShowResults(true);
+                } catch (error) {
+                    console.error("Search failed", error);
+                } finally {
+                    setIsSearching(false);
+                }
+            } else {
+                setSearchResults([]);
+                setShowResults(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
+
+    const handleSelectTicker = (symbol) => {
+        setTicker(symbol);
+        setSearchQuery('');
+        setShowResults(false);
+    };
+
     const tickerOptions = {
         "🇿🇦 JSE All Share (^J203.JO)": "^J203.JO",
         "🇿🇦 JSE Financials (^J258.JO)": "^J258.JO",
@@ -38,13 +91,16 @@ const Sidebar = ({
                     <h2 className="text-xs font-bold text-gold/80 uppercase tracking-widest">
                         Asset Selection
                     </h2>
-                    <div className="space-y-3">
+                    <div className="space-y-3" ref={searchRef}>
                         <div className="relative">
                             <select
-                                value={Object.keys(tickerOptions).find(key => tickerOptions[key] === ticker) || ticker}
-                                onChange={(e) => setTicker(tickerOptions[e.target.value] || e.target.value)}
+                                value={Object.keys(tickerOptions).find(key => tickerOptions[key] === ticker) || ""}
+                                onChange={(e) => {
+                                    if (e.target.value) setTicker(tickerOptions[e.target.value]);
+                                }}
                                 className="w-full bg-navy/50 border border-white/10 rounded-lg p-3 text-sm text-cream focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all appearance-none cursor-pointer hover:bg-navy/70"
                             >
+                                <option value="" disabled>Select Core Index</option>
                                 {Object.keys(tickerOptions).map(name => (
                                     <option key={name} value={name} className="bg-navy-dark text-cream">{name}</option>
                                 ))}
@@ -56,12 +112,44 @@ const Sidebar = ({
                             </div>
                         </div>
 
-                        <input
-                            type="text"
-                            placeholder="Type custom ticker..."
-                            className="w-full bg-navy/30 border border-white/5 rounded-lg p-3 text-sm text-cream placeholder-slate-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all hover:border-white/20"
-                            onChange={(e) => setTicker(e.target.value)}
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                placeholder="Search ticker (e.g. Naspers)..."
+                                className="w-full bg-navy/30 border border-white/5 rounded-lg p-3 text-sm text-cream placeholder-slate-500 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all hover:border-white/20"
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
+                            />
+                            {isSearching && (
+                                <div className="absolute right-3 top-3">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gold"></div>
+                                </div>
+                            )}
+
+                            {showResults && searchResults.length > 0 && (
+                                <div className="absolute left-0 right-0 mt-2 bg-navy-dark border border-gold/20 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar">
+                                    {searchResults.map((result) => (
+                                        <div
+                                            key={result.symbol}
+                                            onClick={() => handleSelectTicker(result.symbol)}
+                                            className="p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-bold text-gold text-sm">{result.symbol}</span>
+                                                <span className="text-[10px] text-slate-400 bg-white/5 px-2 py-0.5 rounded">{result.exchange}</span>
+                                            </div>
+                                            <div className="text-xs text-slate-300 truncate mt-0.5">{result.shortname}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Display Current Selection if it's not in the dropdown list roughly */}
+                        <div className="text-[10px] text-slate-500 text-center">
+                            Current: <span className="text-gold font-mono">{ticker}</span>
+                        </div>
                     </div>
                 </div>
 

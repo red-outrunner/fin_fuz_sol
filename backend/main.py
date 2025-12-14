@@ -12,7 +12,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers
 
 
 # Setup logging
@@ -35,15 +35,23 @@ class AnalysisRequest(BaseModel):
     ticker: str
     start_year: int
     end_date: str
-
 class ComparisonRequest(BaseModel):
     tickers: List[str]
     start_year: int
     end_date: str
 
+class SearchRequest(BaseModel):
+    query: str
+
 @app.get("/")
 def read_root():
     return {"message": "Global Index Analyzer API is running"}
+
+@app.post("/api/search")
+def search_handler(request: SearchRequest):
+    logger.info(f"Searching for: {request.query}")
+    results = search_tickers(request.query)
+    return clean_data(results)
 
 @app.post("/api/analyze")
 def analyze_ticker(request: AnalysisRequest):

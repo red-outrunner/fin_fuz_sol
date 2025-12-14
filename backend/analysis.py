@@ -606,3 +606,44 @@ def get_calendar(ticker: str):
     except Exception as e:
         logger.error(f"Error fetching calendar for {ticker}: {e}")
         return []
+
+def search_tickers(query: str):
+    """
+    Searches for tickers using Yahoo Finance Autocomplete API.
+    """
+    try:
+        url = "https://query2.finance.yahoo.com/v1/finance/search"
+        params = {
+            "q": query,
+            "quotesCount": 10,
+            "newsCount": 0,
+            "enableFuzzyQuery": "true",
+            "enableCb": "false"
+        }
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=5)
+        data = response.json()
+        
+        quotes = data.get('quotes', [])
+        
+        results = []
+        for quote in quotes:
+            # Filter out non-equity if desired, currently keeping most valid types
+            if 'symbol' not in quote: continue
+            
+            results.append({
+                "symbol": quote['symbol'],
+                "shortname": quote.get('shortname', quote['symbol']),
+                "longname": quote.get('longname', ''),
+                "exchange": quote.get('exchange', ''),
+                "typeDisp": quote.get('typeDisp', '')
+            })
+            
+        return results
+    except Exception as e:
+        logger.error(f"Error searching tickers for {query}: {e}")
+        return []
