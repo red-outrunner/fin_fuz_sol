@@ -1,7 +1,7 @@
 [build]
-  # Run from root, explicitly enter directory
-  command = "cd frontend && npm install && npm run build"
-  publish = "frontend/dist"
+  base = "frontend"
+  publish = "dist"
+  command = "npm install && npm run build"
 
 [context.production.environment]
   NODE_VERSION = "20"
