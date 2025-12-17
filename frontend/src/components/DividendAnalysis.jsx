@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { DollarSign, TrendingUp, Calendar, Percent } from 'lucide-react';
 
 const DividendAnalysis = ({ ticker, startYear }) => {
     const [data, setData] = useState(null);
@@ -53,19 +54,41 @@ const DividendAnalysis = ({ ticker, startYear }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="border-b border-navy/5 pb-6">
-                <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4 title-font">Dividend Analysis</h2>
-                <div className="flex gap-6 mt-4 pl-5">
-                    <div>
-                        <span className="text-xs font-bold text-slate-500 uppercase">Current Yield</span>
-                        <p className="text-2xl font-serif font-bold text-green-600">{(data.current_yield * 100).toFixed(2)}%</p>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font">Dividend Analysis</h2>
+                <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
+                <p className="text-slate-500 text-sm pl-1">
+                    Historical payout performance and growth sustainability.
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 flex items-center gap-4 group hover:shadow-md transition-shadow">
+                    <div className="p-3 bg-green-50 rounded-full text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                        <Percent className="w-6 h-6" />
                     </div>
                     <div>
-                        <span className="text-xs font-bold text-slate-500 uppercase">Payout Ratio</span>
-                        <p className="text-2xl font-serif font-bold text-navy">{(data.payout_ratio * 100).toFixed(2)}%</p>
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Yield</span>
+                        <p className="text-3xl font-serif font-bold text-navy">{(data.current_yield * 100).toFixed(2)}%</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 flex items-center gap-4 group hover:shadow-md transition-shadow">
+                    <div className="p-3 bg-blue-50 rounded-full text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <DollarSign className="w-6 h-6" />
                     </div>
                     <div>
-                        <span className="text-xs font-bold text-slate-500 uppercase">Years of Data</span>
-                        <p className="text-2xl font-serif font-bold text-navy">{data.annual.length}</p>
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Payout Ratio</span>
+                        <p className="text-3xl font-serif font-bold text-navy">{(data.payout_ratio * 100).toFixed(2)}%</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 flex items-center gap-4 group hover:shadow-md transition-shadow">
+                    <div className="p-3 bg-gold/10 rounded-full text-yellow-700 group-hover:bg-gold group-hover:text-white transition-colors">
+                        <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Track Record</span>
+                        <p className="text-3xl font-serif font-bold text-navy">{data.annual.length} <span className="text-sm text-slate-400 font-sans font-normal">Years</span></p>
                     </div>
                 </div>
             </div>

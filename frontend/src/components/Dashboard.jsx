@@ -186,10 +186,10 @@ const Dashboard = () => {
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
                                         className={`
-                                            px-6 py-2 rounded-md font-medium text-sm transition-all duration-200
+                                            px-6 py-2 rounded-md font-medium text-sm transition-all duration-300 relative overflow-hidden group
                                             ${activeTab === tab
-                                                ? 'bg-navy text-cream shadow-md'
-                                                : 'text-slate-500 hover:text-navy hover:bg-white/50'}
+                                                ? 'text-gold bg-navy shadow-md'
+                                                : 'text-slate-500 hover:text-navy hover:bg-slate-50'}
                                         `}
                                     >
                                         {tab.charAt(0).toUpperCase() + tab.slice(1)}
