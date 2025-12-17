@@ -607,6 +607,55 @@ def get_calendar(ticker: str):
         logger.error(f"Error fetching calendar for {ticker}: {e}")
         return []
 
+def get_dividend_history(ticker: str, start_year: int = 2010):
+    """
+    Fetches historical dividend data.
+    """
+    try:
+        t = yf.Ticker(ticker)
+        dividends = t.dividends
+        
+        if dividends is None or dividends.empty:
+            return None
+            
+        # Filter by date
+        start_date = f"{start_year}-01-01"
+        dividends = dividends[dividends.index >= start_date]
+        
+        if dividends.empty:
+            return None
+            
+        # Group by year for annual growth
+        annual_div = dividends.resample('Y').sum()
+        
+        # Calculate Growth
+        growth = annual_div.pct_change().dropna()
+        
+        div_data = []
+        for date, val in dividends.items():
+             div_data.append({
+                 "date": str(date).split(" ")[0],
+                 "value": val
+             })
+             
+        annual_data = []
+        for date, val in annual_div.items():
+            annual_data.append({
+                "year": date.year,
+                "value": val,
+                "growth": growth.get(date, 0)
+            })
+            
+        return {
+            "history": div_data,
+            "annual": annual_data,
+            "current_yield": t.info.get('dividendYield', 0),
+            "payout_ratio": t.info.get('payoutRatio', 0)
+        }
+    except Exception as e:
+        logger.error(f"Error fetching dividends for {ticker}: {e}")
+        return None
+
 def search_tickers(query: str):
     """
     Searches for tickers using Yahoo Finance Autocomplete API.
