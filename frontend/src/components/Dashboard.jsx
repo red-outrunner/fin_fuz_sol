@@ -13,6 +13,8 @@ import EarningsCalendar from './EarningsCalendar';
 import CIOAllocator from './CIOAllocator';
 import RiskAnalysis from './RiskAnalysis';
 import DividendAnalysis from './DividendAnalysis';
+import ValuationLab from './ValuationLab';
+import SmartReport from './SmartReport';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
@@ -180,13 +182,13 @@ const Dashboard = () => {
                 {data && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <header className="flex justify-between items-center mb-10 pb-4 border-b border-navy/5">
-                            <nav className="flex space-x-2 bg-white/50 p-1 rounded-lg border border-white/40 shadow-sm backdrop-blur-sm">
-                                {['summary', 'charts', 'comparison', 'risk', 'dividends', 'ml', 'cio', 'dca', 'terminal'].map((tab) => (
+                            <nav className="flex space-x-2 bg-white/50 p-1 rounded-lg border border-white/40 shadow-sm backdrop-blur-sm relative z-10">
+                                {['summary', 'charts', 'report', 'valuation', 'comparison', 'risk', 'dividends', 'ml', 'cio', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
                                         className={`
-                                            px-6 py-2 rounded-md font-medium text-sm transition-all duration-300 relative overflow-hidden group
+                                            px-4 py-2 rounded-md font-medium text-xs lg:text-sm transition-all duration-300 relative overflow-hidden group whitespace-nowrap
                                             ${activeTab === tab
                                                 ? 'text-gold bg-navy shadow-md'
                                                 : 'text-slate-500 hover:text-navy hover:bg-slate-50'}
@@ -240,6 +242,8 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                             )}
+                            {activeTab === 'report' && <div className="animate-in fade-in duration-300"><SmartReport ticker={ticker} data={data} profile={profileData} /></div>}
+                            {activeTab === 'valuation' && <div className="animate-in fade-in duration-300"><ValuationLab ticker={ticker} /></div>}
                             {activeTab === 'comparison' && <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
                             {activeTab === 'risk' && <div className="animate-in fade-in duration-300"><RiskAnalysis stats={data.stats} data={data.drawdown_series} /></div>}
                             {activeTab === 'dividends' && <div className="animate-in fade-in duration-300"><DividendAnalysis ticker={ticker} startYear={startYear} /></div>}

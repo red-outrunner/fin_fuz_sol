@@ -12,7 +12,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials
 
 
 # Setup logging
@@ -357,6 +357,14 @@ def get_dividends(request: AnalysisRequest):
     if dividends is None:
         return {"history": [], "annual": [], "current_yield": 0, "payout_ratio": 0}
     return clean_data(dividends)
+
+@app.post("/api/valuation")
+def get_valuation_data(request: AnalysisRequest):
+    logger.info(f"Fetching Financials for Valuation: {request.ticker}")
+    financials = get_financials(request.ticker)
+    if financials is None:
+        raise HTTPException(status_code=404, detail="Financial data for valuation not found")
+    return clean_data(financials)
 
 class ArticleRequest(BaseModel):
     url: str

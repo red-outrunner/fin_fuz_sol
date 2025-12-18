@@ -696,3 +696,61 @@ def search_tickers(query: str):
     except Exception as e:
         logger.error(f"Error searching tickers for {query}: {e}")
         return []
+
+def get_financials(ticker: str):
+    """
+    Fetches financial data needed for Valuation (DCF).
+    """
+    try:
+        t = yf.Ticker(ticker)
+        info = t.info
+        
+        # 1. Free Cash Flow
+        # yfinance often returns cashflow as a DataFrame in t.cashflow
+        fcf = None
+        try:
+             cf = t.cashflow
+             if cf is not None and not cf.empty:
+                 # Look for 'Free Cash Flow' or calculate 'Total Cash From Operating Activities' - 'Capital Expenditures'
+                 # Note: yfinance rows are localized, usually "Free Cash Flow" exists in recent versions
+                 if "Free Cash Flow" in cf.index:
+                     fcf = cf.loc["Free Cash Flow"].iloc[0] # Most recent
+                 elif "Total Cash From Operating Activities" in cf.index and "Capital Expenditures" in cf.index:
+                     fcf = cf.loc["Total Cash From Operating Activities"].iloc[0] + cf.loc["Capital Expenditures"].iloc[0] # CapEx is usually negative
+        except Exception:
+            pass
+            
+        # Fallback to info provided FCF if available (often not reliable/present)
+        if fcf is None:
+             fcf = info.get("freeCashflow")
+             
+        # 2. Shares Outstanding
+        shares = info.get("sharesOutstanding")
+        
+        # 3. Beta
+        beta = info.get("beta")
+        
+        # 4. WACC components (Simplified)
+        # We need Risk Free Rate (assume 4%), Market Risk Premium (assume 5%)
+        # Cost of Equity = Rf + Beta * (Rm - Rf)
+        # Cost of Debt = (Interest Expense / Total Debt) * (1 - Tax Rate) -> Hard to get accurately automatically
+        # For MVP, we will let user edit the Discount Rate, but calculate a suggested one mostly based on Equity
+        
+        risk_free = 0.04
+        market_premium = 0.05
+        suggested_discount_rate = 0.10 # Default
+        
+        if beta:
+             suggested_discount_rate = risk_free + beta * market_premium
+             
+        return {
+            "fcf": fcf,
+            "shares_outstanding": shares,
+            "beta": beta,
+            "price": info.get("currentPrice", info.get("regularMarketPreviousClose")),
+            "suggested_discount_rate": suggested_discount_rate,
+            "currency": info.get("currency", "USD")
+        }
+    except Exception as e:
+        logger.error(f"Error fetching financials for {ticker}: {e}")
+        return None
