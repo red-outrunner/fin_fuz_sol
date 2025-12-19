@@ -36,11 +36,18 @@ def clean_data(data):
     return data
 
 def download_data(ticker: str, start_date: str, end_date: str):
-    """Downloads data from yfinance."""
+    """Downloads data from yfinance using Ticker object for better isolation."""
     try:
-        data = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=False)
+        # Use Ticker object to avoid shared state/caching issues with yf.download in threads
+        ticker_obj = yf.Ticker(ticker)
+        data = ticker_obj.history(start=start_date, end=end_date, auto_adjust=True)
+        
         if data is None or data.empty:
             return None
+            
+        # Ensure index is datetime (sometimes yfinance returns string index if data is weird)
+        data.index = pd.to_datetime(data.index)
+        
         return data
     except Exception as e:
         logger.error(f"Error downloading data for {ticker}: {e}")
