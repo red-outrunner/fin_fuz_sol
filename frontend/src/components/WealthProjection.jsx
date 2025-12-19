@@ -47,7 +47,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm max-w-2xl">
                     Probabilistic forecasting using Monte Carlo simulations (1,000 runs) based on historical volatility and drift.
-                    Projections assume a hypothetical $10,000 investment.
+                    Projections assume a hypothetical R10,000 investment.
                 </p>
             </div>
 
@@ -60,7 +60,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                     <div className="p-4 bg-slate-50/50 rounded border border-slate-100">
                         <span className="text-xs text-slate-400 uppercase tracking-widest block mb-1">Conservative (10th %ile)</span>
                         <span className="text-2xl font-bold font-serif text-slate-600">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(finalPoint.p10)}
+                            {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(finalPoint.p10)}
                         </span>
                         <span className={`block text-xs font-bold mt-1 ${downside >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                             {downside >= 0 ? '+' : ''}{downside.toFixed(0)}%
@@ -69,7 +69,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                     <div className="p-4 bg-navy/5 rounded border border-navy/10 transform scale-105 shadow-sm">
                         <span className="text-xs text-navy uppercase tracking-widest block mb-1 font-bold">Base Case (Median)</span>
                         <span className="text-3xl font-bold font-serif text-navy">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(finalPoint.p50)}
+                            {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(finalPoint.p50)}
                         </span>
                         <span className={`block text-xs font-bold mt-1 ${base >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                             {base >= 0 ? '+' : ''}{base.toFixed(0)}%
@@ -78,7 +78,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                     <div className="p-4 bg-green-50/50 rounded border border-green-100">
                         <span className="text-xs text-green-700 uppercase tracking-widest block mb-1">Bull Case (90th %ile)</span>
                         <span className="text-2xl font-bold font-serif text-green-700">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(finalPoint.p90)}
+                            {new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(finalPoint.p90)}
                         </span>
                         <span className={`block text-xs font-bold mt-1 ${upside >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                             {upside >= 0 ? '+' : ''}{upside.toFixed(0)}%
@@ -114,12 +114,12 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                             <YAxis
                                 stroke="#94A3B8"
                                 tick={{ fontSize: 12 }}
-                                tickFormatter={(val) => `$${val / 1000}k`}
+                                tickFormatter={(val) => `R${val / 1000}k`}
                             />
                             <Tooltip
                                 contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0' }}
                                 formatter={(value, name) => [
-                                    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value),
+                                    new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value),
                                     name === 'p90' ? '90th Percentile' : name === 'p50' ? 'Median Outcome' : '10th Percentile'
                                 ]}
                                 labelStyle={{ color: '#1A2433', fontWeight: 'bold' }}

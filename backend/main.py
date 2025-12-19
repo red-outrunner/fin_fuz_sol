@@ -13,6 +13,13 @@ import pandas as pd
 from datetime import datetime
 import logging
 from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials
+import models, schemas, auth, database
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+from fastapi import Depends, status
+
+# Initialise DB
+models.Base.metadata.create_all(bind=database.engine)
 
 
 # Setup logging
@@ -42,6 +49,41 @@ class ComparisonRequest(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str
+
+# --- Auth Endpoints ---
+@app.post("/api/auth/register", response_model=schemas.User)
+def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    hashed_password = auth.get_password_hash(user.password)
+    # Automatically assign "pro" tier for demonstration, or default to "free"
+    # Using "free" as default, but let's make the FIRST user admin/institutional? No, keep simple.
+    db_user = models.User(email=user.email, hashed_password=hashed_password, tier="free")
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/api/auth/token", response_model=schemas.Token)
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    user = db.query(models.User).filter(models.User.email == form_data.username).first()
+    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = auth.create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer", "tier": user.tier}
+
+@app.get("/api/auth/me", response_model=schemas.User)
+def read_users_me(current_user: schemas.User = Depends(auth.get_current_active_user)):
+    return current_user
+# ----------------------
 
 @app.get("/")
 def read_root():
