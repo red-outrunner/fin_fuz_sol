@@ -5,8 +5,12 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 const Comparison = ({ ticker, startYear, endDate }) => {
     const [benchmarkStats, setBenchmarkStats] = useState({});
-
-    // ... (existing state)
+    const [comparisonTicker, setComparisonTicker] = useState('');
+    const [activeComparisons, setActiveComparisons] = useState([ticker]);
+    const [comparisonData, setComparisonData] = useState({});
+    const [correlationData, setCorrelationData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const fetchComparisonData = async (tickersToFetch) => {
         setLoading(true);
@@ -44,9 +48,56 @@ const Comparison = ({ ticker, startYear, endDate }) => {
         }
     };
 
-    // ... (useEffect and other handlers remain similar)
+    useEffect(() => {
+        // Initial fetch for the main ticker
+        fetchComparisonData(activeComparisons);
+        if (activeComparisons.length > 1) {
+            fetchCorrelation(activeComparisons);
+        }
+    }, [ticker, startYear, endDate]);
 
-    // ... (Chart render logic)
+    const fetchCorrelation = async (tickersToFetch) => {
+        if (tickersToFetch.length < 2) {
+            setCorrelationData(null);
+            return;
+        }
+        try {
+            const response = await axios.post(`${API_BASE_URL}/api/correlation`, {
+                tickers: tickersToFetch,
+                start_year: startYear,
+                end_date: endDate
+            });
+            setCorrelationData(response.data);
+        } catch (err) {
+            console.error("Correlation fetch error:", err);
+            // Don't set main error, just log it, as this is secondary data
+        }
+    };
+
+    const handleAddComparison = () => {
+        if (comparisonTicker && !activeComparisons.includes(comparisonTicker)) {
+            const newComparisons = [...activeComparisons, comparisonTicker];
+            setActiveComparisons(newComparisons);
+            fetchComparisonData(newComparisons);
+            fetchCorrelation(newComparisons);
+            setComparisonTicker('');
+        }
+    };
+
+    const chartData = [];
+    if (Object.keys(comparisonData).length > 0) {
+        for (let i = 1; i <= 12; i++) {
+            const point = { name: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i - 1] };
+            Object.keys(comparisonData).forEach(t => {
+                if (comparisonData[t] && comparisonData[t][i] !== undefined) {
+                    point[t] = comparisonData[t][i] * 100;
+                }
+            });
+            chartData.push(point);
+        }
+    }
+
+    const colors = ['#1A2433', '#C5A059', '#4A7C59', '#8C735A', '#2C3E50'];
 
     // Helper to find best value for highlighting
     const getBest = (metric) => {
