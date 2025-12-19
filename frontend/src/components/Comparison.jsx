@@ -85,11 +85,11 @@ const Comparison = ({ ticker, startYear, endDate }) => {
     };
 
     const chartData = [];
-    if (Object.keys(comparisonData).length > 0) {
+    if (comparisonData && typeof comparisonData === 'object' && Object.keys(comparisonData).length > 0) {
         for (let i = 1; i <= 12; i++) {
             const point = { name: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i - 1] };
             Object.keys(comparisonData).forEach(t => {
-                if (comparisonData[t] && comparisonData[t][i] !== undefined) {
+                if (comparisonData[t] && typeof comparisonData[t] === 'object' && comparisonData[t][i] !== undefined && comparisonData[t][i] !== null) {
                     point[t] = comparisonData[t][i] * 100;
                 }
             });
@@ -103,10 +103,12 @@ const Comparison = ({ ticker, startYear, endDate }) => {
     const getBest = (metric) => {
         let bestVal = -Infinity;
         let bestTicker = null;
+        if (!benchmarkStats) return null;
+
         Object.entries(benchmarkStats).forEach(([t, s]) => {
-            if (!s) return;
+            if (!s || typeof s !== 'object') return;
             const val = (metric === 'volatility' || metric === 'max_drawdown') ? -s[metric] : s[metric]; // Invert for "lower is better"
-            if (val > bestVal) {
+            if (val !== undefined && val !== null && val > bestVal) {
                 bestVal = val;
                 bestTicker = t;
             }
@@ -145,7 +147,7 @@ const Comparison = ({ ticker, startYear, endDate }) => {
             {error && <p className="text-error font-bold bg-red-50 p-4 border-l-4 border-error rounded shadow-sm">{error}</p>}
 
             {/* Performance Matrix (Premium Feature) */}
-            {Object.keys(benchmarkStats).length > 0 && (
+            {benchmarkStats && Object.keys(benchmarkStats).length > 0 && (
                 <div className="bg-white p-8 rounded-lg shadow-xl border border-gold/20 relative overflow-hidden">
                     <div className="absolute top-0 right-0 bg-gold text-navy text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-bl-lg">
                         Premium Analysis
@@ -236,16 +238,13 @@ const Comparison = ({ ticker, startYear, endDate }) => {
             </div>
 
             {/* Correlation Matrix Section */}
-            {correlationData && (
+            {correlationData && correlationData.tickers && correlationData.matrix && (
                 <div className="mt-12 bg-white p-8 rounded-lg shadow-soft border border-beige-dark/20">
                     <h3 className="text-xl font-serif font-bold text-navy mb-6 flex items-center gap-3">
                         Correlation Matrix
                     </h3>
-                    {/* ... (Correlation Matrix Rendering - reusing logic but improved styling if needed) ... */
-                        /* For brevity, I'll keep the logic mostly same but ensure it uses the new design tokens */
-                    }
+
                     <div className="overflow-x-auto">
-                        {/* ... matrix grid ... */}
                         <div className="inline-block min-w-full">
                             <div className="grid border border-beige-light" style={{
                                 gridTemplateColumns: `auto repeat(${correlationData.tickers.length}, minmax(100px, 1fr))`
