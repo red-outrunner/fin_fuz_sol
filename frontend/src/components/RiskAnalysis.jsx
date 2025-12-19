@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 
-const RiskAnalysis = ({ stats, data }) => {
-    if (!stats || !data) return null;
+const RiskAnalysis = ({ stats }) => {
+    if (!stats) return null;
 
     // Prepare Drawdown Data
     const drawdownData = stats.drawdown_series || [];
