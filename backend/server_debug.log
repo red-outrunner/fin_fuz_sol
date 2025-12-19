@@ -18,3 +18,31 @@ INFO:     127.0.0.1:45144 - "POST /api/search HTTP/1.1" 200 OK
 INFO:     127.0.0.1:45150 - "POST /api/search HTTP/1.1" 200 OK
 INFO:main:Searching for: absa
 INFO:     127.0.0.1:49000 - "POST /api/search HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53950 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:main:Searching for: absa
+INFO:main:Analyzing ^J203.JO from 2018 to 2025-12-19
+INFO:main:Fetching Profile for ^J203.JO
+INFO:main:Fetching Fundamentals for ^J203.JO
+INFO:main:Fetching News for ^J203.JO
+INFO:main:Fetching Calendar for ^J203.JO
+INFO:     127.0.0.1:38468 - "POST /api/search HTTP/1.1" 200 OK
+ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: ^J203.JO"}}}
+ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: ^J203.JO"}}}
+INFO:     127.0.0.1:38504 - "POST /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38520 - "POST /api/calendar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38498 - "POST /api/fundamentals HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38480 - "POST /api/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38484 - "POST /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45498 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:main:Searching for: absa
+INFO:     127.0.0.1:45498 - "POST /api/search HTTP/1.1" 200 OK
+INFO:main:Analyzing ABG.JO from 2018 to 2025-12-19
+INFO:main:Fetching Profile for ABG.JO
+INFO:main:Fetching Fundamentals for ABG.JO
+INFO:main:Fetching News for ABG.JO
+INFO:main:Fetching Calendar for ABG.JO
+INFO:     127.0.0.1:45498 - "POST /api/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56588 - "POST /api/calendar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56568 - "POST /api/fundamentals HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56564 - "POST /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56582 - "POST /api/news HTTP/1.1" 200 OK

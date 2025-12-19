@@ -342,61 +342,57 @@ const Dashboard = () => {
                             </ProtectedComponent>
                         )}
                     </div>
-                    </div>
-    )
-}
+                )}
 
-{/* Read Mode Modal */ }
-{
-    readingArticle && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col">
-                <div className="bg-navy p-4 flex justify-between items-center text-white">
-                    <div>
-                        <h3 className="font-serif text-lg font-bold truncate max-w-2xl">{readingArticle.title}</h3>
-                        <p className="text-xs text-blue-200">{readingArticle.publisher} • {readingArticle.date}</p>
-                    </div>
-                    <button onClick={closeReader} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
+                {/* Read Mode Modal */}
+                {readingArticle && (
+                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                        <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col">
+                            <div className="bg-navy p-4 flex justify-between items-center text-white">
+                                <div>
+                                    <h3 className="font-serif text-lg font-bold truncate max-w-2xl">{readingArticle.title}</h3>
+                                    <p className="text-xs text-blue-200">{readingArticle.publisher} • {readingArticle.date}</p>
+                                </div>
+                                <button onClick={closeReader} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
 
-                <div className="p-8 overflow-y-auto custom-scrollbar font-serif text-lg leading-relaxed text-slate-800 bg-cream">
-                    {loadingArticle ? (
-                        <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                            <div className="w-12 h-12 border-4 border-navy border-t-gold rounded-full animate-spin"></div>
-                            <p className="text-navy font-sans text-sm tracking-wider">FETCHING CONTENT...</p>
-                        </div>
-                    ) : (
-                        <div className="prose max-w-none">
-                            {articleContent ? (
-                                articleContent.split('\n\n').map((para, i) => (
-                                    <p key={i} className="mb-4">{para}</p>
-                                ))
-                            ) : (
-                                <p className="text-center italic text-slate-500">No content available.</p>
-                            )}
+                            <div className="p-8 overflow-y-auto custom-scrollbar font-serif text-lg leading-relaxed text-slate-800 bg-cream">
+                                {loadingArticle ? (
+                                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                        <div className="w-12 h-12 border-4 border-navy border-t-gold rounded-full animate-spin"></div>
+                                        <p className="text-navy font-sans text-sm tracking-wider">FETCHING CONTENT...</p>
+                                    </div>
+                                ) : (
+                                    <div className="prose max-w-none">
+                                        {articleContent ? (
+                                            articleContent.split('\n\n').map((para, i) => (
+                                                <p key={i} className="mb-4">{para}</p>
+                                            ))
+                                        ) : (
+                                            <p className="text-center italic text-slate-500">No content available.</p>
+                                        )}
 
-                            <div className="mt-8 pt-6 border-t border-slate-300 flex justify-center">
-                                <a href={readingArticle.link} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-navy text-white rounded hover:bg-navy-light transition-colors font-sans text-sm">
-                                    Open Original Link
-                                </a>
+                                        <div className="mt-8 pt-6 border-t border-slate-300 flex justify-center">
+                                            <a href={readingArticle.link} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-navy text-white rounded hover:bg-navy-light transition-colors font-sans text-sm">
+                                                Open Original Link
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    )
-}
-            </main >
+                    </div>
+                )}
+            </main>
 
-    <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        targetTier={targetUpgradeTier}
-    />
-        </div >
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                targetTier={targetUpgradeTier}
+            />
+        </div>
     );
 };
 
