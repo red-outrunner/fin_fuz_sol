@@ -1,17 +1,17 @@
-
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 
 const KPICards = ({ stats }) => {
   const { user } = useAuth();
+  if (!stats) return null;
   const isPro = user?.tier === 'pro' || user?.tier === 'institutional';
 
   const metrics = [
-    { label: 'CAGR', value: `${(stats.cagr * 100).toFixed(2)}%`, desc: 'Compound Annual Growth Rate', isPremium: false },
-    { label: 'Volatility', value: `${(stats.volatility * 100).toFixed(2)}%`, desc: 'Annualized Standard Deviation', isPremium: true },
-    { label: 'Sharpe Ratio', value: stats.sharpe_ratio.toFixed(2), desc: 'Risk-Adjusted Return (Rf=2%)', isPremium: true },
-    { label: 'Sortino Ratio', value: stats.sortino_ratio ? stats.sortino_ratio.toFixed(2) : 'N/A', desc: 'Downside Risk-Adjusted Return', isPositive: true, isPremium: true },
-    { label: 'Max Drawdown', value: `${(stats.max_drawdown * 100).toFixed(2)}%`, desc: 'Max Peak-to-Trough Loss', isNegative: true, isPremium: true },
+    { label: 'CAGR', value: stats.cagr !== null ? `${(stats.cagr * 100).toFixed(2)}%` : 'N/A', desc: 'Compound Annual Growth Rate', isPremium: false },
+    { label: 'Volatility', value: stats.volatility !== null ? `${(stats.volatility * 100).toFixed(2)}%` : 'N/A', desc: 'Annualized Standard Deviation', isPremium: true },
+    { label: 'Sharpe Ratio', value: stats.sharpe_ratio !== null ? stats.sharpe_ratio.toFixed(2) : 'N/A', desc: 'Risk-Adjusted Return (Rf=2%)', isPremium: true },
+    { label: 'Sortino Ratio', value: stats.sortino_ratio !== null ? stats.sortino_ratio.toFixed(2) : 'N/A', desc: 'Downside Risk-Adjusted Return', isPositive: true, isPremium: true },
+    { label: 'Max Drawdown', value: stats.max_drawdown !== null ? `${(stats.max_drawdown * 100).toFixed(2)}%` : 'N/A', desc: 'Max Peak-to-Trough Loss', isNegative: true, isPremium: true },
   ];
 
   return (

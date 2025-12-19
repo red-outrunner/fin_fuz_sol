@@ -1,3 +1,4 @@
+import React from 'react';
 import KPICards from './KPICards';
 import CompanyProfile from './CompanyProfile';
 import WealthChart from './charts/WealthChart';
@@ -10,6 +11,8 @@ import { useAuth } from '../context/AuthContext';
 const Summary = ({ data, profile, onUpgrade }) => {
     const { user } = useAuth();
     const { stats, ticker } = data;
+
+    if (!stats) return <div className="p-12 text-center text-slate-500 italic">No summary statistics available for this period.</div>;
 
     return (
         <div className="space-y-10">
@@ -30,7 +33,7 @@ const Summary = ({ data, profile, onUpgrade }) => {
 
             <div className="mb-12">
                 <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Wealth Projection" onUpgrade={() => onUpgrade('pro')}>
-                    <WealthProjection ticker={ticker} startYear={data.pivot_data[0]?.year} endDate={new Date().toISOString().split('T')[0]} />
+                    <WealthProjection ticker={ticker} startYear={data.pivot_data ? data.pivot_data[0]?.year : 2018} endDate={new Date().toISOString().split('T')[0]} />
                 </ProtectedComponent>
             </div>
 
@@ -40,18 +43,18 @@ const Summary = ({ data, profile, onUpgrade }) => {
                     <table className="min-w-full divide-y divide-beige">
                         <thead className="bg-beige">
                             <tr>
-                                {Object.keys(stats.month_avg).map(month => (
+                                {Object.keys(stats.month_avg || {}).map(month => (
                                     <th key={month} className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-widest">
-                                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1]}
+                                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(month) - 1]}
                                     </th>
                                 ))}
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-beige">
                             <tr>
-                                {Object.values(stats.month_avg).map((val, idx) => (
-                                    <td key={idx} className={`px - 4 py - 5 whitespace - nowrap text - sm font - medium ${val >= 0 ? 'text-success' : 'text-error'} `}>
-                                        {(val * 100).toFixed(2)}%
+                                {Object.values(stats.month_avg || {}).map((val, idx) => (
+                                    <td key={idx} className={`px-4 py-5 whitespace-nowrap text-sm font-medium ${val >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                        {val !== null ? `${(val * 100).toFixed(2)}%` : 'N/A'}
                                     </td>
                                 ))}
                             </tr>

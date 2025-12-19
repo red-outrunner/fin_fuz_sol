@@ -46,3 +46,29 @@ INFO:     127.0.0.1:56588 - "POST /api/calendar HTTP/1.1" 200 OK
 INFO:     127.0.0.1:56568 - "POST /api/fundamentals HTTP/1.1" 200 OK
 INFO:     127.0.0.1:56564 - "POST /api/profile HTTP/1.1" 200 OK
 INFO:     127.0.0.1:56582 - "POST /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33910 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:main:Searching for: absa
+INFO:     127.0.0.1:45702 - "POST /api/search HTTP/1.1" 200 OK
+INFO:main:Analyzing ABG.JO from 2018 to 2025-12-19
+INFO:main:Fetching Profile for ABG.JO
+INFO:main:Fetching Fundamentals for ABG.JO
+INFO:main:Fetching News for ABG.JO
+INFO:main:Fetching Calendar for ABG.JO
+INFO:     127.0.0.1:59290 - "POST /api/calendar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45702 - "POST /api/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59270 - "POST /api/fundamentals HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59286 - "POST /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59258 - "POST /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44960 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:main:Searching for: absa
+INFO:     127.0.0.1:54926 - "POST /api/search HTTP/1.1" 200 OK
+INFO:main:Analyzing ABG.JO from 2018 to 2025-12-19
+INFO:main:Fetching Profile for ABG.JO
+INFO:main:Fetching Fundamentals for ABG.JO
+INFO:main:Fetching News for ABG.JO
+INFO:main:Fetching Calendar for ABG.JO
+INFO:     127.0.0.1:39926 - "POST /api/calendar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54926 - "POST /api/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39904 - "POST /api/fundamentals HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39920 - "POST /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39894 - "POST /api/profile HTTP/1.1" 200 OK
