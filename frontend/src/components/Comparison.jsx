@@ -116,6 +116,13 @@ const Comparison = ({ ticker, startYear, endDate }) => {
         return bestTicker;
     };
 
+    // Helper to safely format numbers and handle nulls
+    const formatNumber = (val, decimals = 2, isPercent = false) => {
+        if (val === undefined || val === null || isNaN(val)) return '-';
+        const multiplier = isPercent ? 100 : 1;
+        return (val * multiplier).toFixed(decimals) + (isPercent ? '%' : '');
+    };
+
     return (
         <div className="space-y-12 animate-in fade-in duration-500">
             {/* Header */}
@@ -182,22 +189,22 @@ const Comparison = ({ ticker, startYear, endDate }) => {
                                             <td className="p-4 font-bold font-serif text-lg text-navy">{t}</td>
 
                                             <td className={`p-4 text-center ${isBestCAGR ? 'text-green-700 font-bold bg-green-50/50' : 'text-slate-600'}`}>
-                                                {(s.cagr * 100).toFixed(2)}%
+                                                {formatNumber(s.cagr, 2, true)}
                                                 {isBestCAGR && <span className="ml-2 text-xs text-green-600">★</span>}
                                             </td>
 
                                             <td className={`p-4 text-center ${isBestVol ? 'text-green-700 font-bold bg-green-50/50' : 'text-slate-600'}`}>
-                                                {(s.volatility * 100).toFixed(2)}%
+                                                {formatNumber(s.volatility, 2, true)}
                                                 {isBestVol && <span className="ml-2 text-xs text-green-600">★</span>}
                                             </td>
 
                                             <td className={`p-4 text-center ${isBestSharpe ? 'text-gold font-bold bg-amber-50/50' : 'text-slate-600'}`}>
-                                                {s.sharpe_ratio.toFixed(2)}
+                                                {formatNumber(s.sharpe_ratio, 2, false)}
                                                 {isBestSharpe && <span className="ml-2 text-xs text-gold">★</span>}
                                             </td>
 
                                             <td className={`p-4 text-center ${isBestDD ? 'text-green-700 font-bold bg-green-50/50' : 'text-red-500'}`}>
-                                                {(s.max_drawdown * 100).toFixed(2)}%
+                                                {formatNumber(s.max_drawdown, 2, true)}
                                                 {isBestDD && <span className="ml-2 text-xs text-green-600">★</span>}
                                             </td>
                                         </tr>
@@ -267,19 +274,25 @@ const Comparison = ({ ticker, startYear, endDate }) => {
                                             const cell = correlationData.matrix.find(
                                                 item => item.x === colTicker && item.y === rowTicker
                                             );
-                                            const val = cell ? cell.value : 0;
+                                            // Safety check: ensure we have a valid number
+                                            const val = (cell && cell.value !== null && cell.value !== undefined) ? cell.value : null;
 
                                             // Improved Color Logic for Matrix
                                             let bg = 'bg-white';
                                             let text = 'text-slate-400';
-                                            if (val > 0.8) { bg = 'bg-navy'; text = 'text-white'; }
-                                            else if (val > 0.5) { bg = 'bg-navy/60'; text = 'text-white'; }
-                                            else if (val > 0.2) { bg = 'bg-navy/30'; text = 'text-navy'; }
-                                            else if (val < -0.2) { bg = 'bg-red-500/30'; text = 'text-red-800'; }
+
+                                            if (val !== null) {
+                                                if (val > 0.8) { bg = 'bg-navy'; text = 'text-white'; }
+                                                else if (val > 0.5) { bg = 'bg-navy/60'; text = 'text-white'; }
+                                                else if (val > 0.2) { bg = 'bg-navy/30'; text = 'text-navy'; }
+                                                else if (val < -0.2) { bg = 'bg-red-500/30'; text = 'text-red-800'; }
+                                            } else {
+                                                text = 'text-slate-300';
+                                            }
 
                                             return (
                                                 <div key={`${rowTicker}-${colTicker}`} className={`p-4 text-center ${bg} ${text} text-sm border-b border-r border-beige-light transition-colors duration-300 font-mono`}>
-                                                    {val.toFixed(2)}
+                                                    {val !== null ? val.toFixed(2) : '-'}
                                                 </div>
                                             );
                                         })}
