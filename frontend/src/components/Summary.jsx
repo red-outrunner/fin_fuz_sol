@@ -3,7 +3,7 @@ import CompanyProfile from './CompanyProfile';
 import WealthChart from './charts/WealthChart';
 import DrawdownChart from './charts/DrawdownChart';
 import AnnualReturns from './charts/AnnualReturns';
-import WealthProjection from './charts/WealthProjection';
+import WealthProjection from './WealthProjection';
 
 const Summary = ({ data, profile }) => {
     const { stats, ticker } = data;
