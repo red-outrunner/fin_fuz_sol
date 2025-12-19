@@ -10,7 +10,7 @@ import DCASimulator from './DCASimulator';
 import NewsFeed from './NewsFeed';
 import KeyStats from './KeyStats';
 import EarningsCalendar from './EarningsCalendar';
-import CIOAllocator from './CIOAllocator';
+
 import RiskAnalysis from './RiskAnalysis';
 import DividendAnalysis from './DividendAnalysis';
 import ValuationLab from './ValuationLab';
@@ -184,7 +184,7 @@ const Dashboard = () => {
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <header className="flex justify-between items-center mb-10 pb-4 border-b border-navy/5">
                             <nav className="flex space-x-2 bg-white/50 p-1 rounded-lg border border-white/40 shadow-sm backdrop-blur-sm relative z-10">
-                                {['summary', 'charts', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'cio', 'dca', 'terminal'].map((tab) => (
+                                {['summary', 'charts', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -250,7 +250,7 @@ const Dashboard = () => {
                             {activeTab === 'risk' && <div className="animate-in fade-in duration-300"><RiskAnalysis stats={data.stats} /></div>}
                             {activeTab === 'dividends' && <div className="animate-in fade-in duration-300"><DividendAnalysis ticker={ticker} startYear={startYear} /></div>}
                             {activeTab === 'patterns' && <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                            {activeTab === 'cio' && <div className="animate-in fade-in duration-300"><CIOAllocator /></div>}
+
                             {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
 
                             {/* Terminal Tab */}
