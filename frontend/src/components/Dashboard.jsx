@@ -19,6 +19,7 @@ import WealthProjection from './WealthProjection';
 import ProtectedComponent from './ProtectedComponent';
 import PaymentModal from './PaymentModal';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
 const Dashboard = () => {
@@ -270,128 +271,131 @@ const Dashboard = () => {
                             </div>
                         </header>
 
-                            {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
-                            {activeTab === 'charts' && (
-                                <div className="space-y-12 animate-in fade-in duration-300">
-                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Monthly Returns</h3>
-                                        <BarChart data={data} />
-                                    </div>
-                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Risk vs Return</h3>
-                                        <ScatterPlot data={data} />
-                                    </div>
-                                    <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Historical Heatmap</h3>
-                                        <Heatmap data={data} />
-                                    </div>
+                        {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
+                        {activeTab === 'charts' && (
+                            <div className="space-y-12 animate-in fade-in duration-300">
+                                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Monthly Returns</h3>
+                                    <BarChart data={data} />
                                 </div>
-                            )}
-                            {activeTab === 'report' && (
-                                <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="AI Smart Report" onUpgrade={() => handleOpenUpgrade('institutional')}>
-                                    <div className="animate-in fade-in duration-300"><SmartReport ticker={ticker} data={data} profile={profileData} /></div>
-                                </ProtectedComponent>
-                            )}
-                            {activeTab === 'valuation' && (
-                                <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Valuation Lab" onUpgrade={() => handleOpenUpgrade('institutional')}>
-                                    <div className="animate-in fade-in duration-300"><ValuationLab ticker={ticker} /></div>
-                                </ProtectedComponent>
-                            )}
-                            {activeTab === 'comparison' && (
-                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Premium Benchmarking" onUpgrade={() => handleOpenUpgrade('pro')}>
-                                    <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>
-                                </ProtectedComponent>
-                            )}
-                            {activeTab === 'projection' && (
-                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Wealth Projection" onUpgrade={() => handleOpenUpgrade('pro')}>
-                                    <div className="animate-in fade-in duration-300"><WealthProjection ticker={ticker} startYear={startYear} endDate={endDate} /></div>
-                                </ProtectedComponent>
-                            )}
-                            {activeTab === 'risk' && (
-                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Risk Analysis" onUpgrade={() => handleOpenUpgrade('pro')}>
-                                    <div className="animate-in fade-in duration-300"><RiskAnalysis stats={data.stats} /></div>
-                                </ProtectedComponent>
-                            )}
-                            {activeTab === 'dividends' && <div className="animate-in fade-in duration-300"><DividendAnalysis ticker={ticker} startYear={startYear} /></div>}
-                            {activeTab === 'patterns' && (
-                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Market Patterns (ML)" onUpgrade={() => handleOpenUpgrade('pro')}>
-                                    <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>
-                                </ProtectedComponent>
-                            )}
+                                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Risk vs Return</h3>
+                                    <ScatterPlot data={data} />
+                                </div>
+                                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Historical Heatmap</h3>
+                                    <Heatmap data={data} />
+                                </div>
+                            </div>
+                        )}
+                        {activeTab === 'report' && (
+                            <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="AI Smart Report" onUpgrade={() => handleOpenUpgrade('institutional')}>
+                                <div className="animate-in fade-in duration-300"><SmartReport ticker={ticker} data={data} profile={profileData} /></div>
+                            </ProtectedComponent>
+                        )}
+                        {activeTab === 'valuation' && (
+                            <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Valuation Lab" onUpgrade={() => handleOpenUpgrade('institutional')}>
+                                <div className="animate-in fade-in duration-300"><ValuationLab ticker={ticker} /></div>
+                            </ProtectedComponent>
+                        )}
+                        {activeTab === 'comparison' && (
+                            <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Premium Benchmarking" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>
+                            </ProtectedComponent>
+                        )}
+                        {activeTab === 'projection' && (
+                            <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Wealth Projection" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                <div className="animate-in fade-in duration-300"><WealthProjection ticker={ticker} startYear={startYear} endDate={endDate} /></div>
+                            </ProtectedComponent>
+                        )}
+                        {activeTab === 'risk' && (
+                            <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Risk Analysis" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                <div className="animate-in fade-in duration-300"><RiskAnalysis stats={data.stats} /></div>
+                            </ProtectedComponent>
+                        )}
+                        {activeTab === 'dividends' && <div className="animate-in fade-in duration-300"><DividendAnalysis ticker={ticker} startYear={startYear} /></div>}
+                        {activeTab === 'patterns' && (
+                            <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Market Patterns (ML)" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>
+                            </ProtectedComponent>
+                        )}
 
-                            {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                        {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
 
-                            {/* Terminal Tab */}
-                            {activeTab === 'terminal' && (
-                                <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Market Terminal" onUpgrade={() => handleOpenUpgrade('institutional')}>
-                                    <div className="animate-in fade-in duration-300">
-                                        <h3 className="text-xl font-serif font-bold mb-6 text-navy">Market Terminal</h3>
-                                        <div className="grid grid-cols-12 gap-6 h-[70vh]">
-                                            <div className="col-span-12 lg:col-span-3 h-full">
-                                                <NewsFeed news={news} onRead={handleReadNews} />
-                                            </div>
-                                            <div className="col-span-12 lg:col-span-7 h-full">
-                                                <KeyStats stats={fundamentals} />
-                                            </div>
-                                            <div className="col-span-12 lg:col-span-2 h-full">
-                                                <EarningsCalendar events={calendar} />
-                                            </div>
+                        {/* Terminal Tab */}
+                        {activeTab === 'terminal' && (
+                            <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Market Terminal" onUpgrade={() => handleOpenUpgrade('institutional')}>
+                                <div className="animate-in fade-in duration-300">
+                                    <h3 className="text-xl font-serif font-bold mb-6 text-navy">Market Terminal</h3>
+                                    <div className="grid grid-cols-12 gap-6 h-[70vh]">
+                                        <div className="col-span-12 lg:col-span-3 h-full">
+                                            <NewsFeed news={news} onRead={handleReadNews} />
+                                        </div>
+                                        <div className="col-span-12 lg:col-span-7 h-full">
+                                            <KeyStats stats={fundamentals} />
+                                        </div>
+                                        <div className="col-span-12 lg:col-span-2 h-full">
+                                            <EarningsCalendar events={calendar} />
                                         </div>
                                     </div>
-                                </ProtectedComponent>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Read Mode Modal */}
-                {readingArticle && (
-                    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                        <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col">
-                            <div className="bg-navy p-4 flex justify-between items-center text-white">
-                                <div>
-                                    <h3 className="font-serif text-lg font-bold truncate max-w-2xl">{readingArticle.title}</h3>
-                                    <p className="text-xs text-blue-200">{readingArticle.publisher} • {readingArticle.date}</p>
                                 </div>
-                                <button onClick={closeReader} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            </div>
+                            </ProtectedComponent>
+                        )}
+                    </div>
+                    </div>
+    )
+}
 
-                            <div className="p-8 overflow-y-auto custom-scrollbar font-serif text-lg leading-relaxed text-slate-800 bg-cream">
-                                {loadingArticle ? (
-                                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                                        <div className="w-12 h-12 border-4 border-navy border-t-gold rounded-full animate-spin"></div>
-                                        <p className="text-navy font-sans text-sm tracking-wider">FETCHING CONTENT...</p>
-                                    </div>
-                                ) : (
-                                    <div className="prose max-w-none">
-                                        {articleContent ? (
-                                            articleContent.split('\n\n').map((para, i) => (
-                                                <p key={i} className="mb-4">{para}</p>
-                                            ))
-                                        ) : (
-                                            <p className="text-center italic text-slate-500">No content available.</p>
-                                        )}
+{/* Read Mode Modal */ }
+{
+    readingArticle && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-lg shadow-2xl overflow-hidden flex flex-col">
+                <div className="bg-navy p-4 flex justify-between items-center text-white">
+                    <div>
+                        <h3 className="font-serif text-lg font-bold truncate max-w-2xl">{readingArticle.title}</h3>
+                        <p className="text-xs text-blue-200">{readingArticle.publisher} • {readingArticle.date}</p>
+                    </div>
+                    <button onClick={closeReader} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
 
-                                        <div className="mt-8 pt-6 border-t border-slate-300 flex justify-center">
-                                            <a href={readingArticle.link} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-navy text-white rounded hover:bg-navy-light transition-colors font-sans text-sm">
-                                                Open Original Link
-                                            </a>
-                                        </div>
-                                    </div>
-                                )}
+                <div className="p-8 overflow-y-auto custom-scrollbar font-serif text-lg leading-relaxed text-slate-800 bg-cream">
+                    {loadingArticle ? (
+                        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                            <div className="w-12 h-12 border-4 border-navy border-t-gold rounded-full animate-spin"></div>
+                            <p className="text-navy font-sans text-sm tracking-wider">FETCHING CONTENT...</p>
+                        </div>
+                    ) : (
+                        <div className="prose max-w-none">
+                            {articleContent ? (
+                                articleContent.split('\n\n').map((para, i) => (
+                                    <p key={i} className="mb-4">{para}</p>
+                                ))
+                            ) : (
+                                <p className="text-center italic text-slate-500">No content available.</p>
+                            )}
+
+                            <div className="mt-8 pt-6 border-t border-slate-300 flex justify-center">
+                                <a href={readingArticle.link} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-navy text-white rounded hover:bg-navy-light transition-colors font-sans text-sm">
+                                    Open Original Link
+                                </a>
                             </div>
                         </div>
-                    </div>
-                )}
-            </main>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+            </main >
 
-            <PaymentModal
-                isOpen={isPaymentModalOpen}
-                onClose={() => setIsPaymentModalOpen(false)}
-                targetTier={targetUpgradeTier}
-            />
+    <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        targetTier={targetUpgradeTier}
+    />
         </div >
     );
 };
