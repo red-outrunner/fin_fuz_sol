@@ -18,7 +18,10 @@ class User(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
-    tier: str # Return tier in token response for immediate frontend use
+    tier: str
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class UserUpgrade(BaseModel):
+    tier: str

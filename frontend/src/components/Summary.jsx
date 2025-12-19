@@ -4,8 +4,11 @@ import WealthChart from './charts/WealthChart';
 import DrawdownChart from './charts/DrawdownChart';
 import AnnualReturns from './charts/AnnualReturns';
 import WealthProjection from './WealthProjection';
+import ProtectedComponent from './ProtectedComponent';
+import { useAuth } from '../context/AuthContext';
 
-const Summary = ({ data, profile }) => {
+const Summary = ({ data, profile, onUpgrade }) => {
+    const { user } = useAuth();
     const { stats, ticker } = data;
 
     return (
@@ -26,7 +29,9 @@ const Summary = ({ data, profile }) => {
             </div>
 
             <div className="mb-12">
-                <WealthProjection ticker={ticker} startYear={data.pivot_data[0]?.year} endDate={new Date().toISOString().split('T')[0]} />
+                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Wealth Projection" onUpgrade={() => onUpgrade('pro')}>
+                    <WealthProjection ticker={ticker} startYear={data.pivot_data[0]?.year} endDate={new Date().toISOString().split('T')[0]} />
+                </ProtectedComponent>
             </div>
 
             <div className="mt-12">

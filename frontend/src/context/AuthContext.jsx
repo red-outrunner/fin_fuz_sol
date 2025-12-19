@@ -78,8 +78,29 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const upgrade = async (tier) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${API_BASE_URL}/api/auth/upgrade`,
+                { tier },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            // Update local user state immediately
+            setUser(response.data);
+            return true;
+        } catch (err) {
+            console.error("Upgrade failed:", err);
+            setError("Upgrade failed. Please try again.");
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading, error }}>
+        <AuthContext.Provider value={{ user, login, register, logout, upgrade, loading, error }}>
             {children}
         </AuthContext.Provider>
     );

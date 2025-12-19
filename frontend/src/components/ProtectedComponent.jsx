@@ -6,7 +6,7 @@ const TIER_LEVELS = {
     'institutional': 2
 };
 
-const ProtectedComponent = ({ currentTier, requiredTier, children, featureName }) => {
+const ProtectedComponent = ({ currentTier, requiredTier, children, featureName, onUpgrade }) => {
     const userLevel = TIER_LEVELS[currentTier || 'free'];
     const requiredLevel = TIER_LEVELS[requiredTier];
 
@@ -40,7 +40,10 @@ const ProtectedComponent = ({ currentTier, requiredTier, children, featureName }
                 <p className="text-slate-600 mb-6 max-w-sm">
                     Upgrade to the <span className="font-bold uppercase text-navy">{requiredTier}</span> tier to access this premium feature.
                 </p>
-                <button className="bg-gold text-navy font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gold-light hover:scale-105 transition-transform">
+                <button
+                    onClick={onUpgrade}
+                    className="bg-gold text-navy font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gold-light hover:scale-105 transition-transform"
+                >
                     Upgrade Now
                 </button>
             </div>

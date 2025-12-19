@@ -83,6 +83,13 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 @app.get("/api/auth/me", response_model=schemas.User)
 def read_users_me(current_user: schemas.User = Depends(auth.get_current_active_user)):
     return current_user
+
+@app.post("/api/auth/upgrade", response_model=schemas.User)
+def upgrade_user(upgrade: schemas.UserUpgrade, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_active_user)):
+    current_user.tier = upgrade.tier
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 # ----------------------
 
 @app.get("/")

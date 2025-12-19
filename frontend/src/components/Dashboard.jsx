@@ -16,7 +16,9 @@ import DividendAnalysis from './DividendAnalysis';
 import ValuationLab from './ValuationLab';
 import SmartReport from './SmartReport';
 import WealthProjection from './WealthProjection';
-import axios from 'axios';
+import ProtectedComponent from './ProtectedComponent';
+import PaymentModal from './PaymentModal';
+import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../api';
 
 const Dashboard = () => {
@@ -29,6 +31,8 @@ const Dashboard = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('summary');
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [targetUpgradeTier, setTargetUpgradeTier] = useState('pro');
 
     const [profileData, setProfileData] = useState(null);
     const [fundamentals, setFundamentals] = useState(null);
@@ -140,6 +144,11 @@ const Dashboard = () => {
         setArticleContent(null);
     };
 
+    const handleOpenUpgrade = (tier) => {
+        setTargetUpgradeTier(tier);
+        setIsPaymentModalOpen(true);
+    };
+
     return (
         <div className="flex min-h-screen bg-cream font-sans text-navy">
             <Sidebar
@@ -211,22 +220,57 @@ const Dashboard = () => {
 
                                 {isExportMenuOpen && (
                                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-soft border border-beige-dark z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="p-2 border-b border-beige-light bg-slate-50">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Institutional Feature</p>
+                                        </div>
                                         {['excel', 'csv', 'pdf'].map((type) => (
                                             <button
                                                 key={type}
+                                                disabled={user?.tier !== 'institutional'}
                                                 onClick={() => handleExport(type)}
-                                                className="block w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-cream hover:text-navy transition-colors border-b border-beige-light last:border-0"
+                                                className={`
+                                                    block w-full text-left px-4 py-3 text-sm transition-colors border-b border-beige-light last:border-0 flex items-center justify-between
+                                                    ${user?.tier === 'institutional'
+                                                        ? 'text-slate-700 hover:bg-cream hover:text-navy cursor-pointer'
+                                                        : 'text-slate-300 cursor-not-allowed'}
+                                                `}
                                             >
-                                                Export {type.toUpperCase()}
+                                                <span>Export {type.toUpperCase()}</span>
+                                                {user?.tier !== 'institutional' && (
+                                                    <svg className="w-3 h-3 text-gold" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                )}
                                             </button>
                                         ))}
+                                        {user?.tier !== 'institutional' && (
+                                            <button
+                                                onClick={() => handleOpenUpgrade('institutional')}
+                                                className="w-full bg-gold/10 text-gold text-[10px] font-bold py-2 hover:bg-gold/20 transition-colors uppercase"
+                                            >
+                                                Upgrade to Institutional
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
+
+                            <div className="flex items-center gap-4 ml-4 pl-4 border-l border-navy/10">
+                                <div className="text-right hidden md:block">
+                                    <p className="text-xs font-bold text-navy">{user?.email}</p>
+                                    <p className="text-[10px] uppercase tracking-widest text-gold font-bold">{user?.tier} Plan</p>
+                                </div>
+                                <button
+                                    onClick={logout}
+                                    className="text-slate-400 hover:text-red-500 transition-colors"
+                                    title="Logout"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                </button>
+                            </div>
                         </header>
 
-                        <div className="min-h-[600px]">
-                            {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} /></div>}
+                            {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
                             {activeTab === 'charts' && (
                                 <div className="space-y-12 animate-in fade-in duration-300">
                                     <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
@@ -243,32 +287,58 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                             )}
-                            {activeTab === 'report' && <div className="animate-in fade-in duration-300"><SmartReport ticker={ticker} data={data} profile={profileData} /></div>}
-                            {activeTab === 'valuation' && <div className="animate-in fade-in duration-300"><ValuationLab ticker={ticker} /></div>}
-                            {activeTab === 'comparison' && <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                            {activeTab === 'projection' && <div className="animate-in fade-in duration-300"><WealthProjection ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
-                            {activeTab === 'risk' && <div className="animate-in fade-in duration-300"><RiskAnalysis stats={data.stats} /></div>}
+                            {activeTab === 'report' && (
+                                <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="AI Smart Report" onUpgrade={() => handleOpenUpgrade('institutional')}>
+                                    <div className="animate-in fade-in duration-300"><SmartReport ticker={ticker} data={data} profile={profileData} /></div>
+                                </ProtectedComponent>
+                            )}
+                            {activeTab === 'valuation' && (
+                                <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Valuation Lab" onUpgrade={() => handleOpenUpgrade('institutional')}>
+                                    <div className="animate-in fade-in duration-300"><ValuationLab ticker={ticker} /></div>
+                                </ProtectedComponent>
+                            )}
+                            {activeTab === 'comparison' && (
+                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Premium Benchmarking" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                    <div className="animate-in fade-in duration-300"><Comparison ticker={ticker} startYear={startYear} endDate={endDate} /></div>
+                                </ProtectedComponent>
+                            )}
+                            {activeTab === 'projection' && (
+                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Wealth Projection" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                    <div className="animate-in fade-in duration-300"><WealthProjection ticker={ticker} startYear={startYear} endDate={endDate} /></div>
+                                </ProtectedComponent>
+                            )}
+                            {activeTab === 'risk' && (
+                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Risk Analysis" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                    <div className="animate-in fade-in duration-300"><RiskAnalysis stats={data.stats} /></div>
+                                </ProtectedComponent>
+                            )}
                             {activeTab === 'dividends' && <div className="animate-in fade-in duration-300"><DividendAnalysis ticker={ticker} startYear={startYear} /></div>}
-                            {activeTab === 'patterns' && <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
+                            {activeTab === 'patterns' && (
+                                <ProtectedComponent currentTier={user?.tier} requiredTier="pro" featureName="Market Patterns (ML)" onUpgrade={() => handleOpenUpgrade('pro')}>
+                                    <div className="animate-in fade-in duration-300"><MLAnalysis ticker={ticker} startYear={startYear} endDate={endDate} /></div>
+                                </ProtectedComponent>
+                            )}
 
                             {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
 
                             {/* Terminal Tab */}
                             {activeTab === 'terminal' && (
-                                <div className="animate-in fade-in duration-300">
-                                    <h3 className="text-xl font-serif font-bold mb-6 text-navy">Market Terminal</h3>
-                                    <div className="grid grid-cols-12 gap-6 h-[70vh]">
-                                        <div className="col-span-12 lg:col-span-3 h-full">
-                                            <NewsFeed news={news} onRead={handleReadNews} />
-                                        </div>
-                                        <div className="col-span-12 lg:col-span-7 h-full">
-                                            <KeyStats stats={fundamentals} />
-                                        </div>
-                                        <div className="col-span-12 lg:col-span-2 h-full">
-                                            <EarningsCalendar events={calendar} />
+                                <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Market Terminal" onUpgrade={() => handleOpenUpgrade('institutional')}>
+                                    <div className="animate-in fade-in duration-300">
+                                        <h3 className="text-xl font-serif font-bold mb-6 text-navy">Market Terminal</h3>
+                                        <div className="grid grid-cols-12 gap-6 h-[70vh]">
+                                            <div className="col-span-12 lg:col-span-3 h-full">
+                                                <NewsFeed news={news} onRead={handleReadNews} />
+                                            </div>
+                                            <div className="col-span-12 lg:col-span-7 h-full">
+                                                <KeyStats stats={fundamentals} />
+                                            </div>
+                                            <div className="col-span-12 lg:col-span-2 h-full">
+                                                <EarningsCalendar events={calendar} />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </ProtectedComponent>
                             )}
                         </div>
                     </div>
@@ -316,7 +386,13 @@ const Dashboard = () => {
                     </div>
                 )}
             </main>
-        </div>
+
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                targetTier={targetUpgradeTier}
+            />
+        </div >
     );
 };
 
