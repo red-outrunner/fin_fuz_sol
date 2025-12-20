@@ -182,3 +182,8 @@ INFO:main:Fetching Dividends for ^J203.JO
 INFO:     127.0.0.1:44962 - "POST /api/dividends HTTP/1.1" 200 OK
 INFO:main:Running Wealth Projection for ^J203.JO
 INFO:     127.0.0.1:47690 - "POST /api/projection HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42962 - "OPTIONS /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42962 - "POST /api/auth/register HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42962 - "POST /api/auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42962 - "OPTIONS /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42962 - "GET /api/auth/me HTTP/1.1" 200 OK
