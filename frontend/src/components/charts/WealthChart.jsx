@@ -2,6 +2,10 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const WealthChart = ({ data }) => {
+  if (!data || !data.stats || !data.stats.wealth_index) {
+    return <div className="p-6 text-center text-slate-500 italic">No wealth data available</div>;
+  }
+
   const { stats, moving_averages } = data;
   const wealthData = stats.wealth_index;
 

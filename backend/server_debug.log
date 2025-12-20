@@ -72,3 +72,61 @@ INFO:     127.0.0.1:54926 - "POST /api/analyze HTTP/1.1" 200 OK
 INFO:     127.0.0.1:39904 - "POST /api/fundamentals HTTP/1.1" 200 OK
 INFO:     127.0.0.1:39920 - "POST /api/news HTTP/1.1" 200 OK
 INFO:     127.0.0.1:39894 - "POST /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41724 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:main:Searching for: absa
+INFO:     127.0.0.1:52404 - "POST /api/search HTTP/1.1" 200 OK
+INFO:main:Analyzing ABG.JO from 2018 to 2025-12-19
+INFO:main:Fetching Profile for ABG.JO
+INFO:main:Fetching Fundamentals for ABG.JO
+INFO:main:Fetching News for ABG.JO
+INFO:main:Fetching Calendar for ABG.JO
+INFO:     127.0.0.1:44398 - "POST /api/calendar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52404 - "POST /api/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44378 - "POST /api/fundamentals HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44370 - "POST /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44382 - "POST /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40754 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:main:Analyzing ^J203.JO from 2018 to 2025-12-19
+INFO:main:Fetching Profile for ^J203.JO
+INFO:main:Fetching Fundamentals for ^J203.JO
+INFO:main:Fetching News for ^J203.JO
+INFO:main:Fetching Calendar for ^J203.JO
+INFO:     127.0.0.1:34894 - "POST /api/analyze HTTP/1.1" 200 OK
+ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: ^J203.JO"}}}
+INFO:     127.0.0.1:34932 - "POST /api/calendar HTTP/1.1" 200 OK
+ERROR:yfinance:HTTP Error 404: {"quoteSummary":{"result":null,"error":{"code":"Not Found","description":"No fundamentals data found for symbol: ^J203.JO"}}}
+INFO:     127.0.0.1:34904 - "POST /api/fundamentals HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34900 - "POST /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34916 - "POST /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40220 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54632 - "POST /api/auth/token HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54632 - "OPTIONS /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54642 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41898 - "OPTIONS /api/search HTTP/1.1" 200 OK
+INFO:main:Searching for: absa
+INFO:     127.0.0.1:41910 - "POST /api/search HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41910 - "OPTIONS /api/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41898 - "OPTIONS /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41910 - "OPTIONS /api/fundamentals HTTP/1.1" 200 OK
+INFO:main:Fetching Profile for ABG.JO
+INFO:     127.0.0.1:47840 - "OPTIONS /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47846 - "OPTIONS /api/calendar HTTP/1.1" 200 OK
+INFO:main:Analyzing ABG.JO from 2018 to 2025-12-19
+INFO:main:Fetching Fundamentals for ABG.JO
+INFO:main:Fetching News for ABG.JO
+INFO:main:Fetching Calendar for ABG.JO
+INFO:     127.0.0.1:47832 - "POST /api/analyze HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47840 - "POST /api/calendar HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41910 - "POST /api/news HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41898 - "POST /api/fundamentals HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47860 - "POST /api/profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41830 - "OPTIONS /api/dividends HTTP/1.1" 200 OK
+INFO:main:Fetching Dividends for ABG.JO
+/home/red/Public/Projects/fin_fuz_sol/backend/analysis.py:636: FutureWarning: 'Y' is deprecated and will be removed in a future version, please use 'YE' instead.
+  annual_div = dividends.resample('Y').sum()
+INFO:     127.0.0.1:41838 - "POST /api/dividends HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60724 - "OPTIONS /api/dca HTTP/1.1" 200 OK
+INFO:main:Running DCA Simulation for ABG.JO
+INFO:     127.0.0.1:60738 - "POST /api/dca HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37376 - "OPTIONS /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37378 - "GET /api/auth/me HTTP/1.1" 200 OK

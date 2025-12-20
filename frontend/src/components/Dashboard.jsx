@@ -23,6 +23,8 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
 const Dashboard = () => {
+    const { user, logout } = useAuth();
+
     const [ticker, setTicker] = useState('^J203.JO');
     const [startYear, setStartYear] = useState(2018);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);

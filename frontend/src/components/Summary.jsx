@@ -10,9 +10,12 @@ import { useAuth } from '../context/AuthContext';
 
 const Summary = ({ data, profile, onUpgrade }) => {
     const { user } = useAuth();
-    const { stats, ticker } = data;
 
-    if (!stats) return <div className="p-12 text-center text-slate-500 italic">No summary statistics available for this period.</div>;
+    if (!data || !data.stats) {
+        return <div className="p-12 text-center text-slate-500 italic">No summary statistics available for this period.</div>;
+    }
+
+    const { stats, ticker } = data;
 
     return (
         <div className="space-y-10">
