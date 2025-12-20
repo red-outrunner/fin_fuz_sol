@@ -7,9 +7,15 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db
 import models
+import os
 
-# Secret key (in prod, use env var)
-SECRET_KEY = "fin_fuz_super_secret_key_change_me"
+# Secret key from environment variable (REQUIRED in production)
+SECRET_KEY = os.getenv("SECRET_KEY", "fin_fuz_super_secret_key_ONLY_FOR_LOCAL_DEV_CHANGE_IN_PROD")
+if SECRET_KEY == "fin_fuz_super_secret_key_ONLY_FOR_LOCAL_DEV_CHANGE_IN_PROD":
+    print("⚠️  WARNING: Using default SECRET_KEY. Set SECRET_KEY environment variable in production!")
+else:
+    print("✅ Using SECRET_KEY from environment variable")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 1 day
 
