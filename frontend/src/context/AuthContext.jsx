@@ -5,98 +5,35 @@ import { API_BASE_URL } from '../api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // Default to a logged-in "Institutional" (highest tier) user
+    const [user, setUser] = useState({
+        email: "demo@finfuzsol.com",
+        tier: "institutional", // Unlocks everything
+        is_active: true
+    });
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        // Check for existing token
-        const token = localStorage.getItem('token');
-        if (token) {
-            checkUser(token);
-        } else {
-            setLoading(false);
-        }
-    }, []);
-
-    const checkUser = async (token) => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/auth/me`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setUser({ ...response.data, token }); // user object from backend
-        } catch (err) {
-            console.error("Session expired or invalid");
-            localStorage.removeItem('token');
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // No effect needed to check token since we are bypassing auth
 
     const login = async (email, password) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const formData = new FormData();
-            formData.append('username', email); // OAuth2PasswordRequestForm expects username
-            formData.append('password', password);
-
-            const response = await axios.post(`${API_BASE_URL}/api/auth/token`, formData);
-            const { access_token, tier } = response.data;
-
-            localStorage.setItem('token', access_token);
-            // After getting token, fetch full user details or just set basic info
-            // For now, let's fetch full details to be safe
-            await checkUser(access_token);
-            return true;
-        } catch (err) {
-            setError(err.response?.data?.detail || "Login failed");
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        // Mock login - always success
+        return true;
     };
 
     const register = async (email, password) => {
-        setLoading(true);
-        setError(null);
-        try {
-            await axios.post(`${API_BASE_URL}/api/auth/register`, { email, password });
-            // Auto login after register
-            return await login(email, password);
-        } catch (err) {
-            setError(err.response?.data?.detail || "Registration failed");
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        // Mock register - always success
+        return true;
     };
 
     const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
+        // Disable logout or just do nothing
+        console.log("Logout disabled in demo mode");
     };
 
     const upgrade = async (tier) => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(
-                `${API_BASE_URL}/api/auth/upgrade`,
-                { tier },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            // Update local user state immediately
-            setUser(response.data);
-            return true;
-        } catch (err) {
-            console.error("Upgrade failed:", err);
-            setError("Upgrade failed. Please try again.");
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        setUser(prev => ({ ...prev, tier }));
+        return true;
     };
 
     return (

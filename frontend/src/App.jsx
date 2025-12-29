@@ -14,9 +14,10 @@ function App() {
         );
     }
 
-    if (!user) {
-        return <LoginPage />;
-    }
+    // Auth managed by AuthContext demo user logic now
+    // if (!user) {
+    //     return <LoginPage />;
+    // }
 
     return (
         <Dashboard />
