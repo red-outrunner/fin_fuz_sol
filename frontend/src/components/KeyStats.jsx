@@ -52,6 +52,7 @@ const KeyStats = ({ stats }) => {
                     </div>
                 </div>
 
+
                 {/* Trading / Analyst */}
                 <div>
                     <h4 className="text-xs text-purple-400 font-bold uppercase mb-2">Trading & Analysts</h4>
@@ -63,6 +64,29 @@ const KeyStats = ({ stats }) => {
                         <MetricRow label="Rec Mean (1-5)" value={momentScore(stats.trading.recommendation_mean)} />
                     </div>
                 </div>
+
+                {/* Insight & Trivia */}
+                {stats.insight && (
+                    <div className="col-span-full mt-4 pt-4 border-t border-gray-800">
+                        <h4 className="text-xs text-gold font-bold uppercase mb-2 flex items-center gap-2">
+                            <span>✨ Insight & Trivia</span>
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+                                <span className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Market Rank</span>
+                                <span className="text-sm font-bold text-gray-200">{stats.insight.rank}</span>
+                            </div>
+                            <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+                                <span className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Burger Index</span>
+                                <span className="text-sm font-bold text-gray-200">{stats.insight.burgers}</span>
+                            </div>
+                            <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+                                <span className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Market Mood</span>
+                                <span className="text-sm font-bold text-gray-200">{stats.insight.mood}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

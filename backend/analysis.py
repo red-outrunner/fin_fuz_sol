@@ -423,6 +423,64 @@ def get_company_profile(ticker: str):
         logger.error(f"Error fetching profile: {e}")
         return None
 
+
+def generate_fun_stats(info):
+    """Generates entertaining statistics and estimated rankings."""
+    try:
+        current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
+        market_cap = info.get('marketCap', 0)
+        currency = info.get('currency', 'USD')
+        
+        # 1. Market Cap Ranking (Estimated)
+        # Thresholds in Billions (USD approx)
+        rank_badge = "Unranked"
+        if market_cap > 2000_000_000_000: # 2T
+            rank_badge = "Top 5 Global 🌍"
+        elif market_cap > 1000_000_000_000: # 1T
+            rank_badge = "Top 10 Global 🏆"
+        elif market_cap > 500_000_000_000: # 500B
+            rank_badge = "Top 20 Global 🚀"
+        elif market_cap > 200_000_000_000:
+            rank_badge = "Blue Chip Titan 🏛️"
+        elif market_cap > 50_000_000_000:
+            rank_badge = "Large Cap Leader 🏢"
+        elif market_cap > 10_000_000_000:
+            rank_badge = "Mid Cap Mover 🚤"
+        elif market_cap > 2_000_000_000:
+            rank_badge = "Small Cap Challenger 🧗"
+        else:
+            rank_badge = "Micro Cap Gem 💎"
+
+        # 2. Burger Index (Big Mac Index proxy)
+        # Approx Big Mac price: $5.69 (USD)
+        burger_price = 5.69
+        burgers = 0
+        if current_price and currency == 'USD':
+             burgers = current_price / burger_price
+             
+        burger_text = f"1 Share = {int(burgers)} Big Macs 🍔" if burgers > 0 else "N/A"
+
+        # 3. Market Mood
+        beta = info.get('beta', 1)
+        mood = "Neutral 😐"
+        if beta > 1.5:
+             mood = "Wild Ride 🎢 (High Volatility)"
+        elif beta > 1.1:
+             mood = "Aggressive 🐂"
+        elif beta < 0.8:
+             mood = "Defensive 🛡️"
+        elif beta < 0:
+             mood = "Contrarian 🐻"
+             
+        return {
+            "rank_badge": rank_badge,
+            "burger_index": burger_text,
+            "market_mood": mood
+        }
+    except Exception as e:
+        logger.error(f"Error generating fun stats: {e}")
+        return {}
+
 def get_key_stats(ticker: str):
     """
     Fetches fundamental statistics for the company.
@@ -436,6 +494,8 @@ def get_key_stats(ticker: str):
             val = info.get(key)
             if val is None: return None
             return val
+
+        fun_stats = generate_fun_stats(info)
 
         stats = {
             "valuation": {
@@ -461,6 +521,11 @@ def get_key_stats(ticker: str):
                 "target_low": fmt("targetLowPrice"),
                 "target_mean": fmt("targetMeanPrice"),
                 "recommendation_mean": fmt("recommendationMean"),
+            },
+            "insight": {
+                "rank": fun_stats.get("rank_badge"),
+                "burgers": fun_stats.get("burger_index"),
+                "mood": fun_stats.get("market_mood")
             }
         }
         return clean_data(stats)
