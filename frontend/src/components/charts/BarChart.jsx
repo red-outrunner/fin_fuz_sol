@@ -11,31 +11,57 @@ const BarChart = ({ data, metric = 'Mean' }) => {
     const overallAvg = stats.overall_avg * 100;
 
     return (
-        <div className="h-96 w-full bg-white p-6 rounded-sm border border-beige shadow-sm">
+        <div className="h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart
                     data={chartData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
                 >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0EBE0" />
-                    <XAxis dataKey="name" stroke="#8C735A" tick={{ fill: '#2C3E50', fontSize: 12, fontFamily: 'Inter' }} />
-                    <YAxis label={{ value: 'Return (%)', angle: -90, position: 'insideLeft', fill: '#8C735A' }} stroke="#8C735A" tick={{ fill: '#2C3E50', fontSize: 12, fontFamily: 'Inter' }} />
-                    <Tooltip
-                        formatter={(value) => [`${value.toFixed(2)}%`, metric]}
-                        contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059', fontFamily: 'Inter' }}
-                        itemStyle={{ color: '#1A2433' }}
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(26, 36, 51, 0.05)" />
+                    <XAxis
+                        dataKey="name"
+                        stroke="rgba(26, 36, 51, 0.2)"
+                        tick={{ fill: '#1A2433', fontSize: 11, fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        dy={10}
                     />
-                    <Legend wrapperStyle={{ fontFamily: 'Inter', color: '#2C3E50' }} />
-                    <ReferenceLine y={0} stroke="#2C3E50" />
-                    <ReferenceLine y={overallAvg} stroke="#C5A059" strokeDasharray="3 3" label={{ value: 'Avg', fill: '#C5A059', fontSize: 12 }} />
-                    <Bar dataKey="value" name={`${metric} Monthly Return`}>
+                    <YAxis
+                        stroke="rgba(26, 36, 51, 0.2)"
+                        tick={{ fill: '#1A2433', fontSize: 11, fontWeight: 500 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip
+                        cursor={{ fill: 'rgba(197, 160, 89, 0.05)' }}
+                        formatter={(value) => [`${value.toFixed(2)}%`, metric === 'Mean' ? 'Average' : 'Median']}
+                        contentStyle={{
+                            backgroundColor: '#1A2433',
+                            borderColor: 'transparent',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                            padding: '12px'
+                        }}
+                        itemStyle={{ color: '#F9F7F2', fontSize: '12px', fontWeight: 600 }}
+                        labelStyle={{ color: '#C5A059', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}
+                    />
+                    <ReferenceLine y={0} stroke="rgba(26, 36, 51, 0.1)" />
+                    <ReferenceLine
+                        y={overallAvg}
+                        stroke="#C5A059"
+                        strokeDasharray="4 4"
+                        label={{ value: 'Portfolio Avg', fill: '#C5A059', fontSize: 10, fontWeight: 700, position: 'right', offset: 10 }}
+                    />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
                         {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#4A7C59' : '#8C4A4A'} />
+                            <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#C5A059' : '#1A2433'} fillOpacity={0.9} />
                         ))}
                     </Bar>
                 </RechartsBarChart>
             </ResponsiveContainer>
         </div>
+    );
     );
 };
 

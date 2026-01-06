@@ -163,7 +163,7 @@ const Dashboard = () => {
                 loading={loading}
             />
 
-            <main className="ml-80 flex-1 p-12 transition-all duration-300 ease-in-out">
+            <main className="ml-80 flex-1 p-12 transition-all duration-500 ease-in-out">
                 {error && (
                     <div className="bg-red-50 border-l-4 border-error text-error p-6 mb-8 rounded shadow-soft slide-in-from-top-2 animate-in fade-in" role="alert">
                         <div className="flex items-center gap-3">
@@ -179,32 +179,32 @@ const Dashboard = () => {
                 )}
 
                 {!data && !loading && !error && (
-                    <div className="flex flex-col items-center justify-center h-[80vh] text-slate-400 animate-in fade-in duration-700">
-                        <div className="w-24 h-24 bg-beige rounded-full flex items-center justify-center mb-6">
+                    <div className="flex flex-col items-center justify-center h-[80vh] text-slate-400 animate-fade-in">
+                        <div className="w-24 h-24 bg-white/40 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8 shadow-xl border border-white/60">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </div>
-                        <h2 className="text-4xl font-serif font-bold mb-3 text-navy">Ready to Analyze</h2>
-                        <p className="text-lg max-w-md text-center text-slate-500">
-                            Select an asset from the sidebar and configure your parameters to generate comprehensive financial insights.
+                        <h2 className="text-5xl font-serif font-bold mb-4 text-navy tracking-tight">Ready to Analyze</h2>
+                        <p className="text-lg max-w-md text-center text-slate-500 font-medium">
+                            Select an asset from the sidebar and configure your parameters to generate institutional-grade financial insights.
                         </p>
                     </div>
                 )}
 
                 {data && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <header className="flex justify-between items-center mb-10 pb-4 border-b border-navy/5">
-                            <nav className="flex space-x-2 bg-white/50 p-1 rounded-lg border border-white/40 shadow-sm backdrop-blur-sm relative z-10">
+                        <header className="flex justify-between items-center mb-12 pb-6 border-b border-navy/5">
+                            <nav className="flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all">
                                 {['summary', 'charts', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
                                         className={`
-                                            px-4 py-2 rounded-md font-medium text-xs lg:text-sm transition-all duration-300 relative overflow-hidden group whitespace-nowrap
+                                            px-5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all duration-500 relative overflow-hidden group whitespace-nowrap
                                             ${activeTab === tab
-                                                ? 'text-gold bg-navy shadow-md'
-                                                : 'text-slate-500 hover:text-navy hover:bg-slate-50'}
+                                                ? 'text-gold bg-navy shadow-lg scale-[1.02]'
+                                                : 'text-slate-500 hover:text-navy hover:bg-white/50'}
                                         `}
                                     >
                                         {tab === 'patterns' ? 'Market Patterns' : tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -215,16 +215,16 @@ const Dashboard = () => {
                             <div className="relative">
                                 <button
                                     onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                                    className="bg-white border border-beige-dark text-navy px-4 py-2 rounded-lg hover:bg-beige-light transition-all shadow-sm flex items-center gap-2 text-sm font-medium"
+                                    className="bg-white border border-white/60 text-navy px-5 py-2.5 rounded-xl hover:bg-beige-light hover:border-white transition-all shadow-sm flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider"
                                 >
-                                    <span>Download Data</span>
-                                    <svg className={`w-4 h-4 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                    <span>Download</span>
+                                    <svg className={`w-3.5 h-3.5 transition-transform duration-500 ${isExportMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
                                 </button>
 
                                 {isExportMenuOpen && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-soft border border-beige-dark z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="p-2 border-b border-beige-light bg-slate-50">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Institutional Feature</p>
+                                    <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-white/10 z-50 overflow-hidden animate-fade-in">
+                                        <div className="p-3 border-b border-slate-50 bg-slate-50/50">
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Institutional Access</p>
                                         </div>
                                         {['excel', 'csv', 'pdf'].map((type) => (
                                             <button
@@ -232,24 +232,24 @@ const Dashboard = () => {
                                                 disabled={user?.tier !== 'institutional'}
                                                 onClick={() => handleExport(type)}
                                                 className={`
-                                                    block w-full text-left px-4 py-3 text-sm transition-colors border-b border-beige-light last:border-0 flex items-center justify-between
+                                                    block w-full text-left px-5 py-4 text-xs font-bold uppercase tracking-tight transition-all border-b border-slate-50 last:border-0 flex items-center justify-between
                                                     ${user?.tier === 'institutional'
-                                                        ? 'text-slate-700 hover:bg-cream hover:text-navy cursor-pointer'
+                                                        ? 'text-slate-700 hover:bg-cream hover:text-gold cursor-pointer'
                                                         : 'text-slate-300 cursor-not-allowed'}
                                                 `}
                                             >
-                                                <span>Export {type.toUpperCase()}</span>
+                                                <span>{type.toUpperCase()} Report</span>
                                                 {user?.tier !== 'institutional' && (
-                                                    <svg className="w-3 h-3 text-gold" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                    <svg className="w-3.5 h-3.5 text-gold/40" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                                 )}
                                             </button>
                                         ))}
                                         {user?.tier !== 'institutional' && (
                                             <button
                                                 onClick={() => handleOpenUpgrade('institutional')}
-                                                className="w-full bg-gold/10 text-gold text-[10px] font-bold py-2 hover:bg-gold/20 transition-colors uppercase"
+                                                className="w-full bg-gold/5 text-gold text-[9px] font-black py-3 hover:bg-gold/10 transition-colors uppercase tracking-[0.1em]"
                                             >
-                                                Upgrade to Institutional
+                                                Unlock Full Access
                                             </button>
                                         )}
                                     </div>
@@ -275,17 +275,17 @@ const Dashboard = () => {
 
                         {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
                         {activeTab === 'charts' && (
-                            <div className="space-y-12 animate-in fade-in duration-300">
-                                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Monthly Returns</h3>
+                            <div className="space-y-12 animate-fade-in">
+                                <div className="card-premium p-8">
+                                    <h3 className="text-xl font-serif font-bold mb-8 text-navy">Monthly Returns Pattern</h3>
                                     <BarChart data={data} />
                                 </div>
-                                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Risk vs Return</h3>
+                                <div className="card-premium p-8">
+                                    <h3 className="text-xl font-serif font-bold mb-8 text-navy">Risk Spectrum (Volatility vs Return)</h3>
                                     <ScatterPlot data={data} />
                                 </div>
-                                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
-                                    <h3 className="text-lg font-serif font-bold mb-6 text-navy">Historical Heatmap</h3>
+                                <div className="card-premium p-8">
+                                    <h3 className="text-xl font-serif font-bold mb-8 text-navy">Historical Performance Matrix</h3>
                                     <Heatmap data={data} />
                                 </div>
                             </div>
