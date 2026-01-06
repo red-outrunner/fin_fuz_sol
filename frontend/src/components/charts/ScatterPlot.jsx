@@ -76,7 +76,6 @@ const ScatterPlot = ({ data }) => {
             </ResponsiveContainer>
         </div>
     );
-    );
 };
 
 export default ScatterPlot;

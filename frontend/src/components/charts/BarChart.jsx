@@ -62,7 +62,6 @@ const BarChart = ({ data, metric = 'Mean' }) => {
             </ResponsiveContainer>
         </div>
     );
-    );
 };
 
 export default BarChart;
