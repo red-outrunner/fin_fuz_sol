@@ -370,6 +370,66 @@ def export_pdf(request: AnalysisRequest):
     return StreamingResponse(buffer, headers=headers, media_type='application/pdf')
 
 
+
+@app.post("/api/export/ml")
+def export_ml(request: AnalysisRequest):
+    logger.info(f"Exporting ML Data for {request.ticker}")
+    start_date = f"{request.start_year}-01-01"
+    data = download_data(request.ticker, start_date, request.end_date)
+    
+    if data is None:
+        raise HTTPException(status_code=404, detail="Data not found")
+        
+    processed = process_data(data)
+    if processed is None:
+        raise HTTPException(status_code=500, detail="Error processing data")
+        
+    ml_results = run_ml_analysis(processed['monthly_ret'])
+    
+    if ml_results is None:
+        raise HTTPException(status_code=400, detail="Not enough data for ML analysis (need > 2 years)")
+    
+    # Construct CSV Data
+    # Align dates with results. 
+    # run_ml_analysis transforms data into windows of 12. 
+    # If len(data) = N, results have len = N - 12.
+    # The result corresponds to the *end* of the window? 
+    # Yes, typically we predict/classify the state at time T based on T-12 to T.
+    
+    dates = processed['monthly_ret'].index[12:]
+    
+    # Ensure lengths match
+    if len(dates) != len(ml_results['clusters']):
+         # Fallback if alignment is tricky, though it should match by logic in run_ml_analysis
+         logger.warning(f"Date length {len(dates)} != Result length {len(ml_results['clusters'])}")
+         # Slice dates to match results from the end
+         dates = dates[-len(ml_results['clusters']):]
+    
+    export_data = []
+    for i, date in enumerate(dates):
+        export_data.append({
+            "Date": str(date).split(" ")[0],
+            "PCA_1": ml_results['pca_components'][i][0],
+            "PCA_2": ml_results['pca_components'][i][1],
+            "Cluster": ml_results['clusters'][i],
+            "Anomaly": "Yes" if ml_results['anomalies'][i] == -1 else "No"
+        })
+        
+    df_export = pd.DataFrame(export_data)
+    
+    output = io.StringIO()
+    df_export.to_csv(output, index=False)
+    
+    mem = io.BytesIO()
+    mem.write(output.getvalue().encode())
+    mem.seek(0)
+    
+    headers = {
+        'Content-Disposition': f'attachment; filename="{request.ticker}_ml_analysis.csv"'
+    }
+    return StreamingResponse(mem, headers=headers, media_type='text/csv')
+
+
 @app.post("/api/profile")
 def company_profile(request: AnalysisRequest):
     logger.info(f"Fetching Profile for {request.ticker}")

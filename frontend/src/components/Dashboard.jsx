@@ -113,8 +113,10 @@ const Dashboard = () => {
             link.href = url;
 
             // Set filename based on type
-            const extension = type === 'excel' ? 'xlsx' : type;
-            link.setAttribute('download', `${ticker}_report.${extension}`);
+            let extension = type === 'excel' ? 'xlsx' : type;
+            if (type === 'ml') extension = 'csv';
+
+            link.setAttribute('download', `${ticker}_${type === 'ml' ? 'ml_analysis' : 'report'}.${extension}`);
 
             document.body.appendChild(link);
             link.click();
@@ -224,22 +226,23 @@ const Dashboard = () => {
                                 {isExportMenuOpen && (
                                     <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-white/10 z-50 overflow-hidden animate-fade-in">
                                         <div className="p-3 border-b border-slate-50 bg-slate-50/50">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Institutional Access</p>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Export Data</p>
                                         </div>
-                                        {['excel', 'csv', 'pdf'].map((type) => (
+                                        {['excel', 'csv', 'pdf', 'ml'].map((type) => (
                                             <button
                                                 key={type}
-                                                disabled={user?.tier !== 'institutional'}
+                                                // Disable others if not institutional, but allow ML for everyone
+                                                disabled={type !== 'ml' && user?.tier !== 'institutional'}
                                                 onClick={() => handleExport(type)}
                                                 className={`
                                                     block w-full text-left px-5 py-4 text-xs font-bold uppercase tracking-tight transition-all border-b border-slate-50 last:border-0 flex items-center justify-between
-                                                    ${user?.tier === 'institutional'
+                                                    ${(type === 'ml' || user?.tier === 'institutional')
                                                         ? 'text-slate-700 hover:bg-cream hover:text-gold cursor-pointer'
                                                         : 'text-slate-300 cursor-not-allowed'}
                                                 `}
                                             >
-                                                <span>{type.toUpperCase()} Report</span>
-                                                {user?.tier !== 'institutional' && (
+                                                <span>{type === 'ml' ? 'ML Data (CSV)' : type.toUpperCase() + ' Report'}</span>
+                                                {type !== 'ml' && user?.tier !== 'institutional' && (
                                                     <svg className="w-3.5 h-3.5 text-gold/40" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                                 )}
                                             </button>
