@@ -52,6 +52,7 @@ const Heatmap = ({ data }) => {
                         type="category"
                         dataKey="monthName"
                         allowDuplicatedCategory={false}
+                        domain={months}
                         stroke="#8C735A"
                         tick={{ fill: '#2C3E50', dy: 20 }}
                         ticks={months}
