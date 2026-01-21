@@ -19,6 +19,7 @@ export const GamificationProvider = ({ children }) => {
     const [xp, setXp] = useState(() => parseInt(localStorage.getItem('fin_xp')) || 0);
     const [level, setLevel] = useState(() => parseInt(localStorage.getItem('fin_level')) || 1);
     const [achievements, setAchievements] = useState(() => JSON.parse(localStorage.getItem('fin_achievements')) || []);
+    const [discoveredTabs, setDiscoveredTabs] = useState(() => JSON.parse(localStorage.getItem('fin_discovered_tabs')) || ['summary']);
 
     const [notification, setNotification] = useState(null); // { message, type: 'xp' | 'achievement' | 'level' }
     const [showLevelUp, setShowLevelUp] = useState(false);
@@ -27,7 +28,8 @@ export const GamificationProvider = ({ children }) => {
         localStorage.setItem('fin_xp', xp.toString());
         localStorage.setItem('fin_level', level.toString());
         localStorage.setItem('fin_achievements', JSON.stringify(achievements));
-    }, [xp, level, achievements]);
+        localStorage.setItem('fin_discovered_tabs', JSON.stringify(discoveredTabs));
+    }, [xp, level, achievements, discoveredTabs]);
 
     const getRank = () => {
         return RANKS.slice().reverse().find(rank => xp >= rank.minXp) || RANKS[0];
@@ -61,13 +63,33 @@ export const GamificationProvider = ({ children }) => {
         setTimeout(() => setNotification(null), 3000);
     };
 
+    const discoverTab = (tabName) => {
+        if (!discoveredTabs.includes(tabName)) {
+            setDiscoveredTabs(prev => [...prev, tabName]);
+            addXp(20, `Discovered ${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+        }
+    };
+
+    const unlockAchievement = (id, metadata = {}) => {
+        if (!achievements.find(a => a.id === id)) {
+            const newAchievement = { id, unlockedAt: new Date().toISOString(), ...metadata };
+            setAchievements(prev => [...prev, newAchievement]);
+            setNotification({ message: `Unlocked: ${metadata.name || id}`, type: 'achievement' });
+            addXp(100, "Achievement Unlocked");
+        }
+    };
+
     return (
         <GamificationContext.Provider value={{
             xp,
             level, // We might replace 'level' with 'rank' concept fully
             rank: getRank(),
             nextRankXp: nextRankXp(),
+            discoveredTabs,
+            achievements,
             addXp,
+            discoverTab,
+            unlockAchievement,
             notification,
             showLevelUp,
             closeLevelUp: () => setShowLevelUp(false)

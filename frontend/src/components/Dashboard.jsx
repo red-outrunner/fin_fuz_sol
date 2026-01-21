@@ -23,9 +23,13 @@ import { useGamification } from '../context/GamificationContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
+import AchievementToast from './gamification/AchievementToast';
+import LevelUpModal from './gamification/LevelUpModal';
+import AchievementsTab from './gamification/AchievementsTab';
+
 const Dashboard = () => {
     const { user, logout } = useAuth();
-    const { addXp } = useGamification();
+    const { addXp, discoverTab, unlockAchievement } = useGamification();
 
     const [ticker, setTicker] = useState('^J203.JO');
     const [startYear, setStartYear] = useState(2018);
@@ -49,6 +53,17 @@ const Dashboard = () => {
     const [readingArticle, setReadingArticle] = useState(null);
     const [articleContent, setArticleContent] = useState(null);
     const [loadingArticle, setLoadingArticle] = useState(false);
+
+    // Track tab discovery
+    React.useEffect(() => {
+        discoverTab(activeTab);
+
+        // Award specific XP for entering advanced tabs
+        if (activeTab === 'dca') addXp(10, "Strategy Analysis");
+        if (activeTab === 'valuation') addXp(15, "Deep Valuation");
+        if (activeTab === 'projection') addXp(10, "Future Planning");
+        if (activeTab === 'achievements') addXp(5, "Checking Progress");
+    }, [activeTab]);
 
     const handleAnalyze = async () => {
         setLoading(true);
@@ -92,6 +107,7 @@ const Dashboard = () => {
             setCalendar(calRes.data);
 
             addXp(50, "Market Analysis Complete");
+            unlockAchievement('first_analysis', { name: 'Market Observer' });
         } catch (err) {
             console.error("Analysis Error:", err);
             const errorMessage = err.response?.data?.detail || err.message || 'Analysis failed. Please check the ticker and try again.';
@@ -109,15 +125,13 @@ const Dashboard = () => {
                 start_year: startYear,
                 end_date: endDate
             }, {
-                responseType: 'blob' // Important for file download
+                responseType: 'blob'
             });
 
-            // Create a URL for the blob
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
 
-            // Set filename based on type
             let extension = type === 'excel' ? 'xlsx' : type;
             if (type === 'ml') extension = 'csv';
 
@@ -128,6 +142,7 @@ const Dashboard = () => {
             link.remove();
 
             addXp(20, `Exported ${type.toUpperCase()} Report`);
+            unlockAchievement('export_master', { name: 'Data Architect' });
         } catch (err) {
             console.error("Export failed:", err);
             alert(`Export failed for ${type}`);
@@ -142,10 +157,10 @@ const Dashboard = () => {
         try {
             const res = await axios.post(`${API_BASE_URL}/api/news/read`, {
                 url: newsItem.link
-                url: newsItem.link
             });
             setArticleContent(res.data.content);
             addXp(10, "Market Research");
+            unlockAchievement('news_reader', { name: 'Knowledge Seeker' });
         } catch (err) {
             setArticleContent("Failed to load article content. Please try visiting the original link.");
         } finally {
@@ -188,7 +203,7 @@ const Dashboard = () => {
                         </svg>
                     </button>
                     <span className="font-serif font-bold text-xl text-navy">FinFusion</span>
-                    <div className="w-8"></div> {/* Spacer */}
+                    <div className="w-8"></div>
                 </div>
                 {error && (
                     <div className="bg-red-50 border-l-4 border-error text-error p-6 mb-8 rounded shadow-soft slide-in-from-top-2 animate-in fade-in" role="alert">
@@ -204,7 +219,7 @@ const Dashboard = () => {
                     </div>
                 )}
 
-                {!data && !loading && !error && (
+                {!data && !loading && !error && activeTab !== 'achievements' && (
                     <div className="flex flex-col items-center justify-center h-[80vh] text-slate-400 animate-fade-in">
                         <div className="w-24 h-24 bg-white/40 backdrop-blur-md rounded-2xl flex items-center justify-center mb-8 shadow-xl border border-white/60">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,11 +233,11 @@ const Dashboard = () => {
                     </div>
                 )}
 
-                {data && (
+                {(data || activeTab === 'achievements') && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 pb-6 border-b border-navy/5 gap-4">
                             <nav className="flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto max-w-[100vw] md:max-w-none w-full md:w-auto no-scrollbar">
-                                {['summary', 'charts', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
+                                {['summary', 'charts', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal', 'achievements'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -233,7 +248,7 @@ const Dashboard = () => {
                                                 : 'text-slate-500 hover:text-navy hover:bg-white/50'}
                                         `}
                                     >
-                                        {tab === 'patterns' ? 'Market Patterns' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                        {tab === 'achievements' ? '⭐ Achievements' : (tab === 'patterns' ? 'Market Patterns' : tab.charAt(0).toUpperCase() + tab.slice(1))}
                                     </button>
                                 ))}
                             </nav>
@@ -255,7 +270,6 @@ const Dashboard = () => {
                                         {['excel', 'csv', 'pdf', 'ml'].map((type) => (
                                             <button
                                                 key={type}
-                                                // Disable others if not institutional, but allow ML for everyone
                                                 disabled={type !== 'ml' && user?.tier !== 'institutional'}
                                                 onClick={() => handleExport(type)}
                                                 className={`
@@ -351,7 +365,6 @@ const Dashboard = () => {
 
                         {activeTab === 'dca' && <div className="animate-in fade-in duration-300"><DCASimulator ticker={ticker} startYear={startYear} endDate={endDate} /></div>}
 
-                        {/* Terminal Tab */}
                         {activeTab === 'terminal' && (
                             <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Market Terminal" onUpgrade={() => handleOpenUpgrade('institutional')}>
                                 <div className="animate-in fade-in duration-300">
@@ -370,6 +383,8 @@ const Dashboard = () => {
                                 </div>
                             </ProtectedComponent>
                         )}
+
+                        {activeTab === 'achievements' && <AchievementsTab />}
                     </div>
                 )}
 
