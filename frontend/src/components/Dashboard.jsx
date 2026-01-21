@@ -36,6 +36,7 @@ const Dashboard = () => {
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [targetUpgradeTier, setTargetUpgradeTier] = useState('pro');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const [profileData, setProfileData] = useState(null);
     const [fundamentals, setFundamentals] = useState(null);
@@ -163,9 +164,24 @@ const Dashboard = () => {
                 inflationAdjusted={inflationAdjusted} setInflationAdjusted={setInflationAdjusted}
                 onAnalyze={handleAnalyze}
                 loading={loading}
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
             />
 
-            <main className="ml-80 flex-1 p-12 transition-all duration-500 ease-in-out">
+            <main className="md:ml-80 ml-0 flex-1 p-4 md:p-12 transition-all duration-500 ease-in-out">
+                {/* Mobile Header */}
+                <div className="md:hidden flex items-center justify-between mb-8">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="p-2 -ml-2 text-navy hover:bg-navy/5 rounded-lg transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <span className="font-serif font-bold text-xl text-navy">FinFusion</span>
+                    <div className="w-8"></div> {/* Spacer */}
+                </div>
                 {error && (
                     <div className="bg-red-50 border-l-4 border-error text-error p-6 mb-8 rounded shadow-soft slide-in-from-top-2 animate-in fade-in" role="alert">
                         <div className="flex items-center gap-3">
@@ -187,7 +203,7 @@ const Dashboard = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </div>
-                        <h2 className="text-5xl font-serif font-bold mb-4 text-navy tracking-tight">Ready to Analyze</h2>
+                        <h2 className="text-3xl md:text-5xl font-serif font-bold mb-4 text-navy tracking-tight">Ready to Analyze</h2>
                         <p className="text-lg max-w-md text-center text-slate-500 font-medium">
                             Select an asset from the sidebar and configure your parameters to generate institutional-grade financial insights.
                         </p>
@@ -196,8 +212,8 @@ const Dashboard = () => {
 
                 {data && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <header className="flex justify-between items-center mb-12 pb-6 border-b border-navy/5">
-                            <nav className="flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all">
+                        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 pb-6 border-b border-navy/5 gap-4">
+                            <nav className="flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto max-w-[100vw] md:max-w-none w-full md:w-auto no-scrollbar">
                                 {['summary', 'charts', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
@@ -279,15 +295,15 @@ const Dashboard = () => {
                         {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
                         {activeTab === 'charts' && (
                             <div className="space-y-12 animate-fade-in">
-                                <div className="card-premium p-8">
+                                <div className="card-premium p-4 md:p-8">
                                     <h3 className="text-xl font-serif font-bold mb-8 text-navy">Monthly Returns Pattern</h3>
                                     <BarChart data={data} />
                                 </div>
-                                <div className="card-premium p-8">
+                                <div className="card-premium p-4 md:p-8">
                                     <h3 className="text-xl font-serif font-bold mb-8 text-navy">Risk Spectrum (Volatility vs Return)</h3>
                                     <ScatterPlot data={data} />
                                 </div>
-                                <div className="card-premium p-8">
+                                <div className="card-premium p-4 md:p-8">
                                     <h3 className="text-xl font-serif font-bold mb-8 text-navy">Historical Performance Matrix</h3>
                                     <Heatmap data={data} />
                                 </div>
@@ -332,14 +348,14 @@ const Dashboard = () => {
                             <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Market Terminal" onUpgrade={() => handleOpenUpgrade('institutional')}>
                                 <div className="animate-in fade-in duration-300">
                                     <h3 className="text-xl font-serif font-bold mb-6 text-navy">Market Terminal</h3>
-                                    <div className="grid grid-cols-12 gap-6 h-[70vh]">
-                                        <div className="col-span-12 lg:col-span-3 h-full">
+                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[70vh]">
+                                        <div className="lg:col-span-3 h-96 lg:h-full">
                                             <NewsFeed news={news} onRead={handleReadNews} />
                                         </div>
-                                        <div className="col-span-12 lg:col-span-7 h-full">
+                                        <div className="lg:col-span-7 h-auto lg:h-full">
                                             <KeyStats stats={fundamentals} />
                                         </div>
-                                        <div className="col-span-12 lg:col-span-2 h-full">
+                                        <div className="lg:col-span-2 h-auto lg:h-full">
                                             <EarningsCalendar events={calendar} />
                                         </div>
                                     </div>
