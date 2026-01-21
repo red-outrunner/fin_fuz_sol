@@ -2,9 +2,13 @@ import React from 'react'
 import Dashboard from './components/Dashboard'
 import LoginPage from './components/LoginPage'
 import { useAuth } from './context/AuthContext'
+import { useGamification } from './context/GamificationContext'
+import AchievementToast from './components/gamification/AchievementToast'
+import LevelUpModal from './components/gamification/LevelUpModal'
 
 function App() {
     const { user, loading } = useAuth();
+    const { notification, showLevelUp, closeLevelUp, rank } = useGamification();
 
     if (loading) {
         return (
@@ -20,7 +24,11 @@ function App() {
     // }
 
     return (
-        <Dashboard />
+        <>
+            <Dashboard />
+            <AchievementToast notification={notification} />
+            <LevelUpModal isOpen={showLevelUp} onClose={closeLevelUp} rank={rank} />
+        </>
     )
 }
 

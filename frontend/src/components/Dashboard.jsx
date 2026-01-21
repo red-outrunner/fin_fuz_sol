@@ -19,11 +19,13 @@ import WealthProjection from './WealthProjection';
 import ProtectedComponent from './ProtectedComponent';
 import PaymentModal from './PaymentModal';
 import { useAuth } from '../context/AuthContext';
+import { useGamification } from '../context/GamificationContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
+    const { addXp } = useGamification();
 
     const [ticker, setTicker] = useState('^J203.JO');
     const [startYear, setStartYear] = useState(2018);
@@ -88,6 +90,8 @@ const Dashboard = () => {
             setFundamentals(fundRes.data);
             setNews(newsRes.data);
             setCalendar(calRes.data);
+
+            addXp(50, "Market Analysis Complete");
         } catch (err) {
             console.error("Analysis Error:", err);
             const errorMessage = err.response?.data?.detail || err.message || 'Analysis failed. Please check the ticker and try again.';
@@ -122,6 +126,8 @@ const Dashboard = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
+
+            addXp(20, `Exported ${type.toUpperCase()} Report`);
         } catch (err) {
             console.error("Export failed:", err);
             alert(`Export failed for ${type}`);
@@ -136,8 +142,10 @@ const Dashboard = () => {
         try {
             const res = await axios.post(`${API_BASE_URL}/api/news/read`, {
                 url: newsItem.link
+                url: newsItem.link
             });
             setArticleContent(res.data.content);
+            addXp(10, "Market Research");
         } catch (err) {
             setArticleContent("Failed to load article content. Please try visiting the original link.");
         } finally {

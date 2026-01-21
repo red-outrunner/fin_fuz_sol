@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import { useGamification } from '../context/GamificationContext';
 
 const Sidebar = ({
     ticker, setTicker,
@@ -11,6 +12,8 @@ const Sidebar = ({
     onAnalyze, loading,
     isOpen, onClose
 }) => {
+    const { xp, level, rank, nextRankXp } = useGamification();
+
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -114,6 +117,40 @@ const Sidebar = ({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
+                </div>
+
+                {/* Gamification Profile Card */}
+                <div className="mx-6 p-4 rounded-xl bg-white/5 border border-white/10 mt-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-40 transition-opacity">
+                        <span className="text-4xl">🏆</span>
+                    </div>
+                    <div className="relative z-10">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className={`text-xs font-bold uppercase tracking-widest ${rank.color}`}>{rank.name}</span>
+                            <div className="flex items-center gap-1 text-orange-400" title="Daily Streak">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 fill-current animate-pulse" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.45-.412-1.725a1 1 0 00-1.846-.465c-.744 1.635-.909 3.018-.755 4.19C4.303 13.923 5.485 16 7.5 16s3.882-1.574 4.152-4.145c.063-.591-.031-1.25-.18-1.928a31.54 31.54 0 00-.53-2.34c.158-.293.414-.62.827-1.114.717-.86.29-2.181-.762-2.927z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-[10px] font-bold">12</span>
+                            </div>
+                        </div>
+                        <div className="flex items-end gap-1 mb-2">
+                            <span className="text-2xl font-serif font-bold text-white">{xp}</span>
+                            <span className="text-[10px] text-slate-400 font-bold mb-1">XP</span>
+                        </div>
+
+                        {/* XP Bar */}
+                        <div className="w-full bg-navy-dark rounded-full h-1.5 overflow-hidden">
+                            <div
+                                className="bg-gold h-full rounded-full transition-all duration-1000 ease-out"
+                                style={{ width: `${Math.min((xp / nextRankXp) * 100, 100)}%` }}
+                            ></div>
+                        </div>
+                        <div className="flex justify-between mt-1.5">
+                            <span className="text-[9px] text-slate-500">Level {level}</span>
+                            <span className="text-[9px] text-slate-500">{nextRankXp} XP to next</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex-1 px-6 py-8 space-y-10">
