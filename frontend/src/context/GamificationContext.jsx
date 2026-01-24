@@ -21,8 +21,23 @@ export const GamificationProvider = ({ children }) => {
     const [achievements, setAchievements] = useState(() => JSON.parse(localStorage.getItem('fin_achievements')) || []);
     const [discoveredTabs, setDiscoveredTabs] = useState(() => JSON.parse(localStorage.getItem('fin_discovered_tabs')) || ['summary']);
 
-    const [notification, setNotification] = useState(null); // { message, type: 'xp' | 'achievement' | 'level' }
+    const [prevRankName, setPrevRankName] = useState(() => {
+        const initialXp = parseInt(localStorage.getItem('fin_xp')) || 0;
+        const initialRank = RANKS.slice().reverse().find(rank => initialXp >= rank.minXp) || RANKS[0];
+        return initialRank.name;
+    });
+
+    const [notification, setNotification] = useState(null);
     const [showLevelUp, setShowLevelUp] = useState(false);
+
+    useEffect(() => {
+        const currentRank = getRank();
+        if (currentRank.name !== prevRankName) {
+            setShowLevelUp(true);
+            setNotification({ message: `Rank Up! You are now a ${currentRank.name}`, type: 'level' });
+            setPrevRankName(currentRank.name);
+        }
+    }, [xp]);
 
     useEffect(() => {
         localStorage.setItem('fin_xp', xp.toString());
@@ -37,29 +52,12 @@ export const GamificationProvider = ({ children }) => {
 
     const nextRankXp = () => {
         const next = RANKS.find(rank => rank.minXp > xp);
-        return next ? next.minXp : xp * 1.5; // Cap or infinite scale
+        return next ? next.minXp : xp * 1.5;
     };
 
     const addXp = (amount, reason) => {
-        setXp(prev => {
-            const newXp = prev + amount;
-
-            // Check Rank Up
-            const currentRankIndex = RANKS.findIndex(r => r.name === getRank().name);
-            const newRankIndex = RANKS.findLastIndex(r => newXp >= r.minXp);
-
-            if (newRankIndex > currentRankIndex) {
-                // Trigger Level/Rank Up
-                setShowLevelUp(true);
-                setNotification({ message: `Rank Up! You are now a ${RANKS[newRankIndex].name}`, type: 'level' });
-            } else {
-                setNotification({ message: `+${amount} XP: ${reason}`, type: 'xp' });
-            }
-
-            return newXp;
-        });
-
-        // Auto-hide notification
+        setXp(prev => prev + amount);
+        setNotification({ message: `+${amount} XP: ${reason}`, type: 'xp' });
         setTimeout(() => setNotification(null), 3000);
     };
 
