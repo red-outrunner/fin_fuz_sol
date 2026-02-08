@@ -876,3 +876,91 @@ def get_financials(ticker: str):
     except Exception as e:
         logger.error(f"Error fetching financials for {ticker}: {e}")
         return None
+
+def calculate_financial_freedom(data, monthly_income_goal):
+    """
+    Calculates the number of shares and investment required to generate a target monthly income.
+    Assumes dividend yield based on the last year's payout.
+    """
+    try:
+        # Get last price
+        if "Close" in data.columns:
+            current_price = data["Close"].iloc[-1]
+        elif "Adj Close" in data.columns:
+            current_price = data["Adj Close"].iloc[-1]
+        else:
+            return None
+
+        # Calculate approximate dividend yield (using a robust heuristic if actual div data is missing)
+        # Ideally, we should fetch actual dividends. 
+        # For this MVP, we will assume a "Yield" based on standard sector averages if not found, 
+        # or calculate it if the dataframe contains 'Dividends' column.
+        
+        annual_yield = 0.0
+        
+        if "Dividends" in data.columns:
+            # Sum last 12 months of dividends
+            last_year = data.index.max() - pd.DateOffset(years=1)
+            dividends_12m = data[data.index > last_year]["Dividends"].sum()
+            if current_price > 0:
+                annual_yield = dividends_12m / current_price
+        
+        # Fallback if no dividends found (or it's 0) - maybe user selected a non-paying stock
+        # We return the data assuming calculated yield. If 0, frontend should warn.
+        
+        estimated_annual_income_needed = monthly_income_goal * 12
+        
+        if annual_yield > 0:
+            investment_needed = estimated_annual_income_needed / annual_yield
+            shares_needed = int(investment_needed / current_price)
+        else:
+            investment_needed = 0
+            shares_needed = 0
+
+        return {
+            "current_price": current_price,
+            "annual_yield": annual_yield,
+            "shares_needed": shares_needed,
+            "investment_needed": investment_needed,
+            "monthly_income_goal": monthly_income_goal
+        }
+    except Exception as e:
+        logger.error(f"Error calculating financial freedom: {e}")
+        return None
+
+def get_jse_peers(ticker):
+    """
+    Returns a list of valid JSE competitor tickers based on the input ticker's sector.
+    This is a simplified lookup for the MVP.
+    """
+    # Normalize ticker
+    ticker = ticker.upper().strip()
+    
+    # Simple Sector Map for common JSE stocks
+    sector_map = {
+        "BANKS": ["SBK.JO", "FSR.JO", "NED.JO", "ABG.JO", "CPI.JO"],
+        "RETAIL": ["SHP.JO", "PIK.JO", "WHL.JO", "SPP.JO", "MRP.JO"],
+        "MINING": ["ANG.JO", "SOL.JO", "IMP.JO", "SSW.JO", "GFI.JO", "BHP.JO"],
+        "TECH/PROSUS": ["NPN.JO", "PRX.JO"],
+        "TELCO": ["MTN.JO", "VOD.JO", "TKG.JO"],
+        "INSURANCE": ["SLM.JO", "OMU.JO", "DSY.JO"],
+        "PROPERTY": ["GRT.JO", "NEP.JO", "RDF.JO"]
+    }
+    
+    # Find which list the ticker belongs to
+    found_peers = []
+    
+    for sector, members in sector_map.items():
+        if ticker in members:
+            # Return all members except the ticker itself, limit to top 3
+            peers = [m for m in members if m != ticker]
+            found_peers = peers[:3]
+            break
+            
+    # Default fallback if not found in map (Generic Top 40)
+    if not found_peers:
+        # Avoid self-reference in fallback
+        defaults = ["STX40.JO", "NPN.JO", "SBK.JO"]
+        found_peers = [d for d in defaults if d != ticker]
+        
+    return found_peers
