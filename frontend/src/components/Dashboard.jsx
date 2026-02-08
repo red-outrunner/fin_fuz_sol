@@ -43,6 +43,7 @@ const Dashboard = () => {
     const [fundamentals, setFundamentals] = useState(null);
     const [news, setNews] = useState(null);
     const [calendar, setCalendar] = useState(null);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Read Mode State
     const [readingArticle, setReadingArticle] = useState(null);
@@ -165,9 +166,23 @@ const Dashboard = () => {
                 inflationAdjusted={inflationAdjusted} setInflationAdjusted={setInflationAdjusted}
                 onAnalyze={handleAnalyze}
                 loading={loading}
+                isOpen={sidebarOpen}
+                setIsOpen={setSidebarOpen}
             />
 
-            <main className="ml-80 flex-1 p-12 transition-all duration-500 ease-in-out">
+            <main className="flex-1 lg:ml-80 p-6 md:p-12 transition-all duration-500 ease-in-out">
+                {/* Mobile Header */}
+                <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-navy/5">
+                    <h1 className="text-2xl font-serif font-bold text-gold tracking-tight">FinFusion</h1>
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="p-2 text-navy hover:text-gold transition-colors"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                </div>
                 {error && (
                     <div className="bg-red-50 border-l-4 border-error text-error p-6 mb-8 rounded shadow-soft slide-in-from-top-2 animate-in fade-in" role="alert">
                         <div className="flex items-center gap-3">
