@@ -16,31 +16,35 @@ const KPICards = ({ stats }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6 mb-16">
       {metrics.map((metric, index) => {
         const Icon = metric.icon;
         return (
           <div
             key={index}
-            className="card-premium p-7 group"
+            className="card-premium p-6 group relative overflow-hidden"
           >
-            <div className="flex flex-col h-full justify-between">
+            {/* Subtle Texture Overlay could go here */}
+            <div className="flex flex-col h-full justify-between relative z-10">
               <div>
                 <div className="flex justify-between items-start mb-6">
-                  <div className={`p-2 rounded-lg transition-colors duration-500 ${metric.isNegative ? 'bg-red-50 text-red-500' : 'bg-gold/5 text-gold'}`}>
-                    <Icon size={18} strokeWidth={2} />
+                  <div className={`transition-colors duration-500 ${metric.isNegative ? 'text-red-800' : 'text-gold'}`}>
+                    <Icon size={16} strokeWidth={1.5} />
                   </div>
                   {metric.isPremium && !isPro && (
-                    <span className="text-[9px] bg-navy text-gold font-bold px-2 py-0.5 rounded-full leading-none uppercase tracking-tighter">Pro</span>
+                    <span className="text-[8px] bg-navy text-gold font-bold px-2 py-0.5 rounded-none leading-none uppercase tracking-widest border border-gold/20">Pro</span>
                   )}
                 </div>
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2 group-hover:text-navy transition-colors">{metric.label}</h3>
-                <p className={`text-3xl font-serif font-bold tracking-tight mb-1 ${metric.isNegative ? 'text-red-600' : 'text-navy'} ${metric.isPremium && !isPro ? 'blur-md select-none opacity-40' : ''}`}>
+                <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.25em] mb-3 group-hover:text-navy transition-colors">{metric.label}</h3>
+                <p className={`text-2xl md:text-3xl font-serif font-bold tracking-tight mb-1 ${metric.isNegative ? 'text-red-900' : 'text-navy'} ${metric.isPremium && !isPro ? 'blur-lg select-none opacity-20' : ''}`}>
                   {metric.isPremium && !isPro ? '00.00%' : metric.value}
                 </p>
               </div>
-              <p className="text-[11px] text-slate-500 font-medium leading-relaxed border-t border-navy/5 pt-4 mt-4">{metric.desc}</p>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed mt-6 italic opacity-0 group-hover:opacity-100 transition-opacity duration-500">{metric.desc}</p>
             </div>
+
+            {/* Border Accent */}
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gold/0 group-hover:bg-gold/20 transition-all duration-700" />
           </div>
         );
       })}

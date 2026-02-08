@@ -78,7 +78,6 @@ const Sidebar = ({
     };
 
     return (
-    return (
         <>
             {/* Mobile Overlay */}
             {isOpen && (
