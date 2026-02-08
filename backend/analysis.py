@@ -13,9 +13,18 @@ from bs4 import BeautifulSoup
 import re
 import urllib.parse
 
+import os
+import json
+import hashlib
+import time
+import concurrent.futures
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+CACHE_DIR = "cache_v2_8_1"
+os.makedirs(CACHE_DIR, exist_ok=True)
 
 def clean_data(data):
     """Recursively replace NaN and Infinity with None for JSON serialization."""
@@ -35,8 +44,25 @@ def clean_data(data):
         return clean_data(data.to_dict(orient='records'))
     return data
 
+def _get_cache_path(ticker, start_date, end_date):
+    """Generates a unique cache filename based on request parameters."""
+    raw = f"{ticker}_{start_date}_{end_date}"
+    hashed = hashlib.md5(raw.encode()).hexdigest()
+    return os.path.join(CACHE_DIR, f"{hashed}.pkl")
+
 def download_data(ticker: str, start_date: str, end_date: str):
-    """Downloads data from yfinance using Ticker object for better isolation."""
+    """Downloads data from yfinance with disk caching."""
+    cache_path = _get_cache_path(ticker, start_date, end_date)
+    
+    # Check Cache
+    if os.path.exists(cache_path):
+        try:
+            # Check if cache is older than 24 hours
+            if time.time() - os.path.getmtime(cache_path) < 86400:
+                return pd.read_pickle(cache_path)
+        except Exception as e:
+            logger.warning(f"Cache read error: {e}")
+
     try:
         # Use Ticker object to avoid shared state/caching issues with yf.download in threads
         ticker_obj = yf.Ticker(ticker)
@@ -45,13 +71,37 @@ def download_data(ticker: str, start_date: str, end_date: str):
         if data is None or data.empty:
             return None
             
-        # Ensure index is datetime (sometimes yfinance returns string index if data is weird)
+        # Ensure index is datetime
         data.index = pd.to_datetime(data.index)
+        
+        # Save to Cache
+        try:
+            data.to_pickle(cache_path)
+        except Exception as e:
+            logger.warning(f"Cache write error: {e}")
         
         return data
     except Exception as e:
         logger.error(f"Error downloading data for {ticker}: {e}")
         return None
+
+def fetch_multiple_tickers(tickers: list, start_date: str, end_date: str):
+    """Fetches data for multiple tickers in parallel."""
+    results = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_ticker = {
+            executor.submit(download_data, ticker, start_date, end_date): ticker 
+            for ticker in tickers
+        }
+        for future in concurrent.futures.as_completed(future_to_ticker):
+            ticker = future_to_ticker[future]
+            try:
+                data = future.result()
+                if data is not None:
+                    results[ticker] = data
+            except Exception as e:
+                logger.error(f"Parallel fetch error for {ticker}: {e}")
+    return results
 
 def process_data(data: pd.DataFrame):
     """Processes raw data into monthly returns and pivot tables."""
