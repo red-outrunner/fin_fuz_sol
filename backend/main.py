@@ -12,7 +12,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers
 import models, schemas, auth, database
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -49,6 +49,11 @@ class ComparisonRequest(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str
+
+class FreedomRequest(BaseModel):
+    ticker: str
+    monthly_income_goal: float
+
 
 # --- Auth Endpoints ---
 @app.post("/api/auth/register", response_model=schemas.User)
@@ -258,6 +263,34 @@ def get_correlation(request: ComparisonRequest):
         "matrix": matrix_data,
         "tickers": list(corr_matrix.columns)
     })
+
+@app.post("/api/freedom")
+def freedom_calculator(request: FreedomRequest):
+    logger.info(f"Calculating Financial Freedom for {request.ticker} with goal {request.monthly_income_goal}")
+    
+    # We need recent data to get price and dividends
+    # Fetch last 2 years to be safe for dividend calc
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    start_year = int(end_date.split("-")[0]) - 2
+    start_date = f"{start_year}-01-01"
+    
+    data = download_data(request.ticker, start_date, end_date)
+    
+    if data is None:
+        raise HTTPException(status_code=404, detail="Data not found")
+        
+    result = calculate_financial_freedom(data, request.monthly_income_goal)
+    
+    if result is None:
+        raise HTTPException(status_code=500, detail="Error calculating freedom metrics")
+        
+    return clean_data(result)
+
+@app.post("/api/peers")
+def get_peers(request: AnalysisRequest):
+    logger.info(f"Fetching peers for {request.ticker}")
+    peers = get_jse_peers(request.ticker)
+    return {"peers": peers}
 
 @app.post("/api/export/excel")
 def export_excel(request: AnalysisRequest):
