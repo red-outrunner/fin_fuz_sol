@@ -12,7 +12,7 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers
 import models, schemas, auth, database
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -199,8 +199,10 @@ def compare_tickers(request: ComparisonRequest):
     
     results = {}
     
-    for ticker in request.tickers:
-        data = download_data(ticker, start_date, request.end_date)
+    # NEW: Parallel Fetch
+    fetched_data = fetch_multiple_tickers(request.tickers, start_date, request.end_date)
+    
+    for ticker, data in fetched_data.items():
         if data is not None:
             processed = process_data(data)
             if processed:
@@ -219,12 +221,13 @@ def get_correlation(request: ComparisonRequest):
     start_date = f"{request.start_year}-01-01"
     
     # We need a common index to calculate correlation correctly
-    # Strategy: Download all, merge on Date (monthly)
     
     all_series = {}
     
-    for ticker in request.tickers:
-        data = download_data(ticker, start_date, request.end_date)
+    # NEW: Parallel Fetch
+    fetched_data = fetch_multiple_tickers(request.tickers, start_date, request.end_date)
+    
+    for ticker, data in fetched_data.items():
         if data is not None:
             processed = process_data(data)
             if processed:
