@@ -16,6 +16,8 @@ import DividendAnalysis from './DividendAnalysis';
 import ValuationLab from './ValuationLab';
 import SmartReport from './SmartReport';
 import WealthProjection from './WealthProjection';
+import FreedomCalculator from './FreedomCalculator';
+import PeerBenchmarking from './PeerBenchmarking';
 import ProtectedComponent from './ProtectedComponent';
 import PaymentModal from './PaymentModal';
 import { useAuth } from '../context/AuthContext';
@@ -197,8 +199,8 @@ const Dashboard = () => {
                 {data && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <header className="flex justify-between items-center mb-12 pb-6 border-b border-navy/5">
-                            <nav className="flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all">
-                                {['summary', 'charts', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
+                            <nav className="flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto">
+                                {['summary', 'charts', 'freedom', 'peers', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -209,7 +211,7 @@ const Dashboard = () => {
                                                 : 'text-slate-500 hover:text-navy hover:bg-white/50'}
                                         `}
                                     >
-                                        {tab === 'patterns' ? 'Market Patterns' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                        {tab === 'patterns' ? 'Market Patterns' : tab === 'freedom' ? 'Freedom Calc' : tab === 'peers' ? 'Peer Battle' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                                     </button>
                                 ))}
                             </nav>
@@ -293,6 +295,8 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         )}
+                        {activeTab === 'freedom' && <div className="animate-in fade-in duration-300"><FreedomCalculator ticker={ticker} /></div>}
+                        {activeTab === 'peers' && <div className="animate-in fade-in duration-300"><PeerBenchmarking ticker={ticker} startYear={startYear} /></div>}
                         {activeTab === 'report' && (
                             <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="AI Smart Report" onUpgrade={() => handleOpenUpgrade('institutional')}>
                                 <div className="animate-in fade-in duration-300"><SmartReport ticker={ticker} data={data} profile={profileData} /></div>
