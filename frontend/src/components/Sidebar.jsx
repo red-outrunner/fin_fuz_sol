@@ -91,10 +91,9 @@ const Sidebar = ({
                 w-80 h-screen fixed left-0 top-0 overflow-y-auto z-50 font-sans glass-dark text-cream flex flex-col shadow-2xl border-r border-white/5 transition-all duration-500 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
-                {/* Header */}
                 <div className="p-10 pb-8 border-b border-white/5">
                     <h1 className="text-3xl font-serif font-bold text-gold tracking-tight">
-                        FinFusion
+                        Fuzile Solutions
                     </h1>
                     <p className="text-[10px] text-slate-500 uppercase font-medium tracking-[0.2em] mt-2">Global Wealth Intelligence</p>
                 </div>
