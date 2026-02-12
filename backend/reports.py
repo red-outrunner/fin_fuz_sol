@@ -13,7 +13,7 @@ from datetime import datetime
 # Set Matplotlib Style for "Old Money" / Scientific Look
 plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['font.family'] = 'serif'
-plt.rcParams['font.serif'] = ['Times New Roman']
+plt.rcParams['font.serif'] = ['Times New Roman', 'DejaVu Serif', 'Liberation Serif', 'serif']
 plt.rcParams['axes.titlesize'] = 14
 plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['xtick.labelsize'] = 8
@@ -47,7 +47,7 @@ class PDFReportGenerator:
         self.styles.add(ParagraphStyle(
             name='OldMoneyTitle',
             parent=self.styles['Heading1'],
-            fontName='Times-Bold',
+            fontName='Helvetica-Bold',
             fontSize=24,
             textColor=colors.HexColor(COLOR_NAVY),
             spaceAfter=20,
@@ -56,7 +56,7 @@ class PDFReportGenerator:
         self.styles.add(ParagraphStyle(
             name='OldMoneySubtitle',
             parent=self.styles['Heading2'],
-            fontName='Times-Roman',
+            fontName='Helvetica',
             fontSize=14,
             textColor=colors.HexColor(COLOR_GOLD),
             spaceAfter=20,
@@ -65,7 +65,7 @@ class PDFReportGenerator:
         self.styles.add(ParagraphStyle(
             name='SectionHeader',
             parent=self.styles['Heading2'],
-            fontName='Times-Bold',
+            fontName='Helvetica-Bold',
             fontSize=16,
             textColor=colors.HexColor(COLOR_NAVY),
             spaceBefore=15,
@@ -78,7 +78,7 @@ class PDFReportGenerator:
         self.styles.add(ParagraphStyle(
             name='ReportBodyText',
             parent=self.styles['Normal'],
-            fontName='Times-Roman',
+            fontName='Helvetica',
             fontSize=10,
             textColor=colors.HexColor(COLOR_TEXT),
             leading=14,
@@ -87,7 +87,7 @@ class PDFReportGenerator:
         self.styles.add(ParagraphStyle(
             name='Disclaimer',
             parent=self.styles['Normal'],
-            fontName='Times-Italic',
+            fontName='Helvetica-Oblique',
             fontSize=8,
             textColor=colors.grey,
             alignment=1
@@ -97,11 +97,11 @@ class PDFReportGenerator:
         canvas.saveState()
         
         # Header
-        canvas.setFont('Times-Bold', 12)
+        canvas.setFont('Helvetica-Bold', 12)
         canvas.setFillColor(colors.HexColor(COLOR_NAVY))
         canvas.drawString(50, letter[1] - 40, "Fuzile Solutions")
         
-        canvas.setFont('Times-Italic', 9)
+        canvas.setFont('Helvetica-Oblique', 9)
         canvas.setFillColor(colors.HexColor(COLOR_GOLD))
         canvas.drawString(50, letter[1] - 52, "Global Wealth Intelligence")
         
@@ -116,7 +116,7 @@ class PDFReportGenerator:
         canvas.restoreState()
 
         # Footer
-        canvas.setFont('Times-Roman', 9)
+        canvas.setFont('Helvetica', 9)
         canvas.setFillColor(colors.grey)
         canvas.drawString(50, 40, f"Generated on {datetime.now().strftime('%Y-%m-%d')}")
         canvas.drawRightString(letter[0] - 50, 40, f"Page {doc.page}")
@@ -153,11 +153,11 @@ class PDFReportGenerator:
             ('BACKGROUND', (0, 0), (1, 0), colors.HexColor(COLOR_NAVY)),
             ('TEXTCOLOR', (0, 0), (1, 0), colors.HexColor(COLOR_CREAM)),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Times-Bold'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
             ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-            ('FONTNAME', (0, 1), (-1, -1), 'Times-Roman'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
         ]))
         self.elements.append(t)
         self.elements.append(Spacer(1, 12))
@@ -327,32 +327,40 @@ class PDFReportGenerator:
             return
             
         self.elements.append(Paragraph("Wealth Projection (Monte Carlo)", self.styles['SectionHeader']))
-        self.elements.append(Paragraph("Probabilistic future wealth scenarios based on historical volatility.", self.styles['ReportBodyText']))
+        self.elements.append(Paragraph("Probabilistic future wealth scenarios based on historical volatility (10-Year Projection).", self.styles['ReportBodyText']))
         
-        # Data is a list of dicts from analysis.py: [{'date':..., 'p10':..., 'p50':..., 'p90':...}]
-        df = pd.DataFrame(monte_carlo_data)
+        # Extract final values from the simulation
+        final_state = monte_carlo_data[-1]
         
-        steps = range(len(df))
+        # Create a summary table instead of a chart
+        data = [
+            ["Scenario", "Description", "Projected Value (Relative to 10k)"],
+            ["Conservative", "Bottom 10% Outcome (Bear Case)", f"{final_state['p10']:,.2f}"],
+            ["Median", "Most Likely Outcome (Base Case)", f"{final_state['p50']:,.2f}"],
+            ["Optimistic", "Top 10% Outcome (Bull Case)", f"{final_state['p90']:,.2f}"]
+        ]
         
-        fig, ax = plt.subplots(figsize=(10, 6))
+        t = Table(data, colWidths=[1.5*inch, 2.5*inch, 2*inch], hAlign='LEFT')
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(COLOR_NAVY)),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor(COLOR_CREAM)),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('ROWBACKGROUNDS', (1, 0), (-1, -1), [colors.whitesmoke, colors.HexColor("#F1F5F9")]),
+        ]))
         
-        # Convert to arrays/series for filling
-        p10 = df['p10']
-        p50 = df['p50']
-        p90 = df['p90']
+        self.elements.append(t)
+        self.elements.append(Spacer(1, 12))
         
-        ax.plot(steps, p50, color=COLOR_NAVY, linewidth=2, label='Median Case')
-        ax.plot(steps, p90, color='green', linestyle=':', label='Bulls Case (90th %)')
-        ax.plot(steps, p10, color='red', linestyle=':', label='Bear Case (10th %)')
-        ax.fill_between(steps, p10, p90, color=COLOR_GOLD, alpha=0.1)
-        
-        ax.set_title("10-Year Wealth Projection Cone", fontweight='bold')
-        ax.set_xlabel("Months into Future")
-        ax.set_ylabel("Projected Value")
-        ax.legend()
-        
-        img = self._fig_to_image(fig)
-        self.elements.append(img)
+        self.elements.append(Paragraph(
+            f"Based on historical volatility, there is a 90% probability that the portfolio value will exceed {final_state['p10']:,.2f} "
+            f"and a 10% probability it could reach {final_state['p90']:,.2f} or higher after 10 years.",
+            self.styles['ReportBodyText']
+        ))
         self.elements.append(Spacer(1, 12))
 
     def build_pdf(self):
