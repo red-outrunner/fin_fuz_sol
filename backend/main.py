@@ -14,6 +14,7 @@ from datetime import datetime
 import logging
 from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers
 import models, schemas, auth, database
+from reports import PDFReportGenerator
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from fastapi import Depends, status
@@ -366,42 +367,53 @@ def export_pdf(request: AnalysisRequest):
         
     stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'])
     
+    # --- Generate Additional Data for Report ---
+    
+    # 1. Peers Analysis
+    peers = get_jse_peers(request.ticker)
+    peer_data_map = {}
+    if peers:
+        # Limit to top 5 peers for report clarity
+        top_peers = peers[:5]
+        fetched_peers = fetch_multiple_tickers(top_peers, start_date, request.end_date)
+        for p_ticker, p_data in fetched_peers.items():
+            if p_data is not None:
+                p_processed = process_data(p_data)
+                if p_processed:
+                    # Store mean monthly returns for chart
+                    peer_data_map[p_ticker] = p_processed['pivot'].mean().to_list()
+
+    # 2. Monte Carlo
+    monte_carlo = run_monte_carlo(processed['monthly_ret'])
+    
+    # 3. DCA Analysis (Default: R1000/month)
+    dca_results = calculate_dca(processed['monthly_ret'], 1000.0)
+    
+    # --- Build PDF ---
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    elements = []
+    report = PDFReportGenerator(buffer, request.ticker, request.start_year, request.end_date)
     
-    styles = getSampleStyleSheet()
-    elements.append(Paragraph(f"Analysis Report for {request.ticker}", styles['Title']))
-    elements.append(Paragraph(f"Period: {request.start_year} to {request.end_date}", styles['Normal']))
-    elements.append(Spacer(1, 12))
+    report.add_title_page()
+    report.add_executive_summary(stats)
+    report.add_wealth_chart(processed)
+    report.add_drawdown_chart(processed)
+    report.add_monthly_table(processed)
     
-    # Summary Metrics Table
-    if stats:
-        data_table = [
-            ["Metric", "Value"],
-            ["CAGR", f"{stats['cagr']:.2%}" if stats['cagr'] else "N/A"],
-            ["Volatility", f"{stats['volatility']:.2%}" if stats['volatility'] else "N/A"],
-            ["Sharpe Ratio", f"{stats['sharpe_ratio']:.2f}" if stats['sharpe_ratio'] else "N/A"],
-            ["Max Drawdown", f"{stats['max_drawdown']:.2%}" if stats['max_drawdown'] else "N/A"],
-        ]
+    if peer_data_map:
+        report.add_peer_battle(peer_data_map)
         
-        t = Table(data_table)
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-        elements.append(t)
+    if monte_carlo:
+        report.add_monte_carlo(monte_carlo)
         
-    doc.build(elements)
+    if dca_results:
+        report.add_dca_analysis(dca_results)
+        
+    report.build_pdf()
+    
     buffer.seek(0)
     
     headers = {
-        'Content-Disposition': f'attachment; filename="{request.ticker}_report.pdf"'
+        'Content-Disposition': f'attachment; filename="{request.ticker}_Fuzile_Report.pdf"'
     }
     return StreamingResponse(buffer, headers=headers, media_type='application/pdf')
 
