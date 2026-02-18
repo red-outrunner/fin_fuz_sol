@@ -1,0 +1,53 @@
+GLOBAL INDEX ANALYZER (FUZILE) - FEATURE LIST AND USAGE GUIDE
+
+1. DASHBOARD & SEARCH
+   - Feature: Search for stock tickers globally (specialized for JSE).
+   - Usage: Enter a ticker symbol in the search bar to load the analysis dashboard.
+   - Purpose: Central hub for all stock-specific analytics.
+
+2. CORE FINANCIAL ANALYSIS
+   - Feature: Key Stats & Company Profile.
+   - Usage: View market cap, P/E ratio, dividend yield, and basic business info on the main dashboard.
+   - Feature: Monthly Returns Heatmap.
+   - Usage: Visualize performance patterns across different months and years.
+   - Feature: Price Charts (SMA).
+   - Usage: Interactive charts with 5-day and 20-day Simple Moving Averages.
+
+3. VALUATION LAB
+   - Feature: Interactive Discounted Cash Flow (DCF).
+   - Usage: Adjust growth rates, discount rates, and terminal values to estimate intrinsic stock value.
+   - Purpose: Determine if a stock is over or undervalued based on cash flow projections.
+
+4. SMART REPORTS
+   - Feature: PDF Generation.
+   - Usage: Click "Generate Report" to receive a comprehensive PDF document including executive summaries, wealth charts, drawdown analysis, and peer benchmarking.
+   - Feature: Excel/CSV Export.
+   - Usage: Download raw monthly data or summary statistics for external analysis.
+
+5. ADVANCED ANALYTICS (ML & QUANT)
+   - Feature: ML Analysis.
+   - Usage: Run cluster analysis and anomaly detection to identify unusual price actions.
+   - Feature: Wealth Projection (Monte Carlo).
+   - Usage: Simulates 1000+ portfolio paths based on historical volatility to predict future value range.
+   - Feature: Risk Analysis (Drawdown).
+   - Usage: Measure maximum historical peak-to-trough losses.
+
+6. INVESTOR TOOLS
+   - Feature: DCA Simulator.
+   - Usage: Calculate the returns of a "Dollar Cost Averaging" strategy given a monthly contribution amount.
+   - Feature: Financial Freedom Calculator.
+   - Usage: Determine how many shares of a stock you need to own to meet a specific monthly dividend income goal.
+   - Feature: Peer Benchmarking.
+   - Usage: Compare the target stock's performance and fundamentals against its industry competitors.
+
+7. NEWS & CALENDAR
+   - Feature: Real-time News Feed.
+   - Usage: Read the latest headlines and full article content directly within the app.
+   - Feature: Earnings Calendar.
+   - Usage: Track upcoming financial result announcements and corporate actions.
+
+8. GAMIFICATION & RANKING
+   - Feature: XP Rewards.
+   - Usage: Earn experience points for interacting with different analysis tools.
+   - Feature: Company Rankings.
+   - Usage: View how a company ranks by market cap within its exchange.
