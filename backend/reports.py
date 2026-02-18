@@ -318,7 +318,7 @@ class PDFReportGenerator:
         
         # Stats
         summary = dca_results['summary']
-        text = f"Total Invested: {summary['total_invested']:,.2f} | Final Value: {summary['final_value']:,.2f} | Profit: {summary['profit']:,.2f} ({summary['return_pct']:.2%})"
+        text = f"Total Invested: {summary['total_invested']:,.2f} | Final Value: {summary['final_value']:,.2f} | Profit: {summary['total_profit']:,.2f} ({summary['roi']:.2%})"
         self.elements.append(Paragraph(text, self.styles['ReportBodyText']))
         self.elements.append(PageBreak())
 
