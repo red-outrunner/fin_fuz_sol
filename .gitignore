@@ -39,3 +39,7 @@ server_debug.log
 # OS
 .DS_Store
 Thumbs.db
+
+# virtual environments
+.venv/
+venv/
