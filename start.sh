@@ -15,7 +15,7 @@ trap cleanup SIGINT
 echo "Starting Backend..."
 if [ -d "backend" ]; then
     cd backend
-    uvicorn main:app --reload &
+    python3 -m uvicorn main:app --reload &
     BACKEND_PID=$!
     cd ..
 else
