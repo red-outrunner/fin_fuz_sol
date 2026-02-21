@@ -163,11 +163,36 @@ class PDFReportGenerator:
         self.elements.append(Spacer(1, 12))
 
     def _fig_to_image(self, fig):
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=300, bbox_inches='tight')
-        buf.seek(0)
+        import tempfile
+        import os
+        from svglib.svglib import svg2rlg
+        
+        with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as f:
+            temp_name = f.name
+            
+        fig.savefig(temp_name, format='svg', bbox_inches='tight')
         plt.close(fig)
-        return Image(buf, width=6*inch, height=3.5*inch)
+        
+        drawing = svg2rlg(temp_name)
+        os.remove(temp_name)
+        
+        if drawing is None:
+            from reportlab.platypus import Spacer
+            return Spacer(1, 3.5*inch)
+            
+        # Scale to fit comfortably
+        target_width = 6 * inch
+        target_height = 3.5 * inch
+        
+        scale_x = target_width / max(drawing.width, 1)
+        scale_y = target_height / max(drawing.height, 1)
+        scale = min(scale_x, scale_y)
+        
+        drawing.width = drawing.width * scale
+        drawing.height = drawing.height * scale
+        drawing.scale(scale, scale)
+        
+        return drawing
 
     def add_wealth_chart(self, processed_data):
         self.elements.append(Paragraph("Wealth Accumulation", self.styles['SectionHeader']))
