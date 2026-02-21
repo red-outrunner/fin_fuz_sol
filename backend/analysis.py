@@ -34,7 +34,14 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 def clean_data(data):
     """Recursively replace NaN and Infinity with None for JSON serialization."""
     if isinstance(data, dict):
-        return {k: clean_data(v) for k, v in data.items()}
+        cleaned = {}
+        for k, v in data.items():
+            if isinstance(k, (np.integer, np.int64, np.int32)):
+                k = str(int(k))
+            elif isinstance(k, pd.Timestamp) or isinstance(k, np.datetime64):
+                k = str(k)
+            cleaned[k] = clean_data(v)
+        return cleaned
     elif isinstance(data, list):
         return [clean_data(v) for v in data]
     elif isinstance(data, (float, np.float64, np.float32)):
@@ -198,6 +205,10 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, inflati
         sharpe_ratio = core_math.calculate_sharpe(cagr, volatility, risk_free_rate)
         sortino_ratio = core_math.calculate_sortino(monthly_ret, cagr, risk_free_rate)
         max_drawdown = core_math.calculate_max_drawdown(monthly_ret)
+        
+        cumulative_returns = (1 + monthly_ret).cumprod()
+        peak = cumulative_returns.expanding(min_periods=1).max()
+        drawdown = (cumulative_returns / peak) - 1
 
         # 5. Wealth Index (Growth of 10,000)
         wealth_index = 10000 * (1 + calc_series).cumprod()
