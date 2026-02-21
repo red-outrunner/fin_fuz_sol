@@ -39,6 +39,11 @@ import concurrent.futures
 import logging
 import time
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import core_math
+
 # Try importing pmdarima, with fallback if it fails
 try:
     from pmdarima import auto_arima
@@ -545,10 +550,14 @@ class JSEAnalyzer:
 
                 if self.data is None or self.data.empty:
                     raise ValueError("No data returned from Yahoo Finance. Check ticker symbol or internet connection.")
+                
+                self.data = core_math.validate_and_clean_data(self.data)
 
                 price_col = self.get_price_column(self.data)
                 self.monthly = self.data[price_col].resample('ME').last()
                 self.monthly_ret = self.monthly.pct_change().dropna()
+                
+                self.monthly_ret = core_math.apply_outlier_filtering(self.monthly_ret)
 
                 if isinstance(self.monthly_ret, pd.DataFrame):
                     if self.monthly_ret.empty:
@@ -634,10 +643,14 @@ class JSEAnalyzer:
             if data is None or data.empty:
                 self.logger.warning(f"No data returned for ticker {ticker}.")
                 return None
+                
+            data = core_math.validate_and_clean_data(data)
 
             price_col = self.get_price_column(data)
             monthly = data[price_col].resample('ME').last()
             monthly_ret = monthly.pct_change().dropna()
+            
+            monthly_ret = core_math.apply_outlier_filtering(monthly_ret)
 
             if isinstance(monthly_ret, pd.DataFrame):
                 monthly_ret = monthly_ret.iloc[:, 0]
@@ -939,7 +952,16 @@ class JSEAnalyzer:
         try:
             for widget in self.ml_frame.winfo_children():
                 widget.destroy()
-            # ... ML analysis logic ...
+            ml_results = core_math.run_ml_clusters(self.monthly_ret)
+            if ml_results is None:
+                self.logger.warning("Not enough data to run ML analysis.")
+                messagebox.showwarning("Warning", "Need at least 24 months of data for ML analysis.")
+                return
+            
+            # For MVP, simply show that the text / stats were generated.
+            label = ttk.Label(self.ml_frame, text=f"ML Analysis Results: Found {len(set(ml_results['clusters']))} clusters.", font=("Arial", 12))
+            label.pack(pady=20)
+            
             self.status_var.set("🤖 Advanced ML analysis completed")
             self.logger.info("ML analysis completed successfully.")
         except Exception as e:
