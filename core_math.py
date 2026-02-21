@@ -90,9 +90,20 @@ def calculate_sharpe(cagr: float, volatility: float, risk_free_rate: float) -> f
     return (cagr - risk_free_rate) / volatility
 
 def calculate_sortino(monthly_ret: pd.Series, cagr: float, risk_free_rate: float) -> float:
-    negative_returns = monthly_ret[monthly_ret < 0]
-    if len(negative_returns) == 0: return 0.0
-    downside_dev = negative_returns.std() * np.sqrt(12)
+    if monthly_ret.empty: return 0.0
+    
+    # Calculate the target return (monthly risk-free rate)
+    target_monthly = risk_free_rate / 12.0
+    
+    # Identify deviations below the target return
+    downside_diff = np.minimum(monthly_ret - target_monthly, 0)
+    
+    # Square the deviations, average them, and take the square root
+    downside_dev_monthly = np.sqrt(np.mean(downside_diff ** 2))
+    
+    # Annualize the downside deviation
+    downside_dev = downside_dev_monthly * np.sqrt(12)
+    
     return (cagr - risk_free_rate) / downside_dev if downside_dev > 0 else 0.0
 
 def calculate_max_drawdown(monthly_ret: pd.Series) -> float:
