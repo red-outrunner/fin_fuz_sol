@@ -64,13 +64,31 @@ def get_risk_free_rate(ticker: str) -> float:
     else:
          return 0.042 # US 10Y approx 4.2%
 
+def get_equity_risk_premium(ticker: str) -> float:
+    """
+    Dynamic Equity Risk Premium (ERP) mapping based on country suffix.
+    """
+    ticker_upper = ticker.upper()
+    if ticker_upper.endswith('.JO'):
+         return 0.075  # South Africa ~ 7.5%
+    elif ticker_upper.endswith('.AX'):
+         return 0.05   # Australia ~ 5%
+    elif ticker_upper.endswith('.L'):
+         return 0.055  # UK ~ 5.5%
+    elif ticker_upper.endswith('.DE'):
+         return 0.055  # Germany ~ 5.5%
+    elif ticker_upper.endswith('.SS') or ticker_upper.endswith('.HK'):
+         return 0.06   # China/HK ~ 6%
+    else:
+         return 0.045  # Default Global/US ~ 4.5%
+
 def calculate_wacc(ticker: str, beta: float) -> float:
     """
     Multi-Factor Discount Rate calculation.
     WACC = Rf + Beta * ERP(Equity Risk Premium) + Size Premium
     """
     rf = get_risk_free_rate(ticker)
-    erp = 0.05  # Standard ERP
+    erp = get_equity_risk_premium(ticker)
     size_premium = 0.01 
     beta_val = beta if (beta is not None and beta > 0) else 1.0
     return rf + (beta_val * erp) + size_premium
