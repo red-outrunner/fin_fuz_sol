@@ -33,18 +33,16 @@ def validate_and_clean_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 def apply_outlier_filtering(monthly_ret: pd.Series) -> pd.Series:
-    """Uses IsolationForest to flag and impute severe outliers before summary stats."""
+    """Uses Winsorization (1st and 99th percentiles) to cap severe outliers strictly for plotting/visual smoothing."""
     if len(monthly_ret) < 12:
         return monthly_ret
         
-    iso = IsolationForest(contamination=0.01, random_state=42)
-    # Fit and predict on the returns reshaped to 2D array
-    anomalies = iso.fit_predict(monthly_ret.values.reshape(-1, 1))
+    p01 = np.percentile(monthly_ret, 1)
+    p99 = np.percentile(monthly_ret, 99)
     
     clean_series = monthly_ret.copy()
-    # Replace outliers (-1) with median to smooth severe spikes or drops
-    median_val = clean_series.median()
-    clean_series[anomalies == -1] = median_val
+    clean_series = np.clip(clean_series, p01, p99)
+    
     return clean_series
 
 def get_risk_free_rate(ticker: str) -> float:

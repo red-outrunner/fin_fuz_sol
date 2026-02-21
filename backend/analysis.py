@@ -153,15 +153,31 @@ def process_data(data: pd.DataFrame):
         # Do NOT replace NaN with None here, as it converts to object dtype and breaks stats calculation
         # pivot = pivot.where(pd.notnull(pivot), None)
         
+        raw_monthly_ret = monthly_ret.copy()
+        raw_df = df.copy()
+        raw_pivot = pivot.copy()
+        
+        # Apply winsorization for plotting series
+        winsorized_ret = core_math.apply_outlier_filtering(monthly_ret)
+        win_df = winsorized_ret.to_frame(name='ret')
+        win_df['year'] = win_df.index.year
+        win_df['month'] = win_df.index.month
+        winsorized_pivot = win_df.pivot_table(index='year', columns='month', values='ret')
+        
+        for i in range(1, 13):
+            if i not in winsorized_pivot.columns:
+                winsorized_pivot[i] = np.nan
+
         # Calculate Moving Averages (on monthly close prices)
-        # We use the monthly series which is already resampled
         ma_12 = monthly.rolling(window=12).mean()
         ma_60 = monthly.rolling(window=60).mean()
 
         return {
-            "monthly_ret": monthly_ret,
-            "pivot": pivot,
-            "df": df,
+            "monthly_ret": raw_monthly_ret,
+            "pivot": raw_pivot,
+            "df": raw_df,
+            "winsorized_ret": winsorized_ret,
+            "winsorized_pivot": winsorized_pivot,
             "prices": monthly,
             "ma_12": ma_12,
             "ma_60": ma_60
@@ -171,9 +187,8 @@ def process_data(data: pd.DataFrame):
         return None
 
 def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, inflation_rate: float = 0.0):
-    """Calculates summary statistics."""
+    """Calculates summary statistics using raw returns (fat tail risk intact)."""
     try:
-        monthly_ret = core_math.apply_outlier_filtering(monthly_ret)
 
         # Adjust for inflation if needed
         # inflation_rate is annual percentage (e.g. 0.05 for 5%)

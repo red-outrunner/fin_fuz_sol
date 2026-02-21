@@ -125,14 +125,15 @@ def analyze_ticker(request: AnalysisRequest):
     stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'])
     
     # Prepare pivot data for JSON (reset index to make year a column)
-    pivot_reset = processed['pivot'].reset_index()
+    # Use the winsorized pivot for UI heatmaps/bar charts
+    pivot_reset = processed['winsorized_pivot'].reset_index()
     pivot_data = pivot_reset.to_dict(orient='records')
     
     response_data = {
         "ticker": request.ticker,
         "stats": stats,
         "pivot_data": pivot_data,
-        "monthly_returns": processed['monthly_ret'].to_dict(), # Date -> Return
+        "monthly_returns": processed['winsorized_ret'].to_dict(), # Date -> Return (winsorized for charts)
         "moving_averages": {
             "ma_12": processed['ma_12'].where(pd.notnull(processed['ma_12']), None).to_dict(),
             "ma_60": processed['ma_60'].where(pd.notnull(processed['ma_60']), None).to_dict(),
