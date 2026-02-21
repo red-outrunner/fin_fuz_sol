@@ -20,6 +20,11 @@ import time
 import concurrent.futures
 
 # Setup logging
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import core_math
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -106,6 +111,8 @@ def fetch_multiple_tickers(tickers: list, start_date: str, end_date: str):
 def process_data(data: pd.DataFrame):
     """Processes raw data into monthly returns and pivot tables."""
     try:
+        data = core_math.validate_and_clean_data(data)
+        
         # Determine price column
         if "Adj Close" in data.columns:
             price_col = "Adj Close"
@@ -159,6 +166,8 @@ def process_data(data: pd.DataFrame):
 def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, inflation_rate: float = 0.0):
     """Calculates summary statistics."""
     try:
+        monthly_ret = core_math.apply_outlier_filtering(monthly_ret)
+
         # Adjust for inflation if needed
         # inflation_rate is annual percentage (e.g. 0.05 for 5%)
         # Convert to monthly inflation
@@ -182,29 +191,13 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, inflati
                       7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
 
         # Advanced Metrics Calculation
-        # 1. CAGR
-        total_return = (1 + monthly_ret).prod() - 1
-        n_years = len(monthly_ret) / 12
-        cagr = (1 + total_return) ** (1 / n_years) - 1 if n_years > 0 else 0
-
-        # 2. Volatility (Annualized)
-        volatility = monthly_ret.std() * np.sqrt(12)
-
-        # 3. Sharpe Ratio (Assume Rf=0.02 for simplicity)
-        risk_free_rate = 0.02
-        sharpe_ratio = (cagr - risk_free_rate) / volatility if volatility != 0 else 0
+        cagr = core_math.calculate_cagr(monthly_ret)
+        volatility = core_math.calculate_volatility(monthly_ret)
         
-        # 3.5 Sortino Ratio
-        # Downside deviation: std dev of negative returns only
-        negative_returns = monthly_ret[monthly_ret < 0]
-        downside_deviation = negative_returns.std() * np.sqrt(12)
-        sortino_ratio = (cagr - risk_free_rate) / downside_deviation if downside_deviation != 0 else 0
-
-        # 4. Max Drawdown
-        cumulative_returns = (1 + monthly_ret).cumprod()
-        peak = cumulative_returns.expanding(min_periods=1).max()
-        drawdown = (cumulative_returns / peak) - 1
-        max_drawdown = drawdown.min()
+        risk_free_rate = 0.04
+        sharpe_ratio = core_math.calculate_sharpe(cagr, volatility, risk_free_rate)
+        sortino_ratio = core_math.calculate_sortino(monthly_ret, cagr, risk_free_rate)
+        max_drawdown = core_math.calculate_max_drawdown(monthly_ret)
 
         # 5. Wealth Index (Growth of 10,000)
         wealth_index = 10000 * (1 + calc_series).cumprod()
@@ -246,36 +239,7 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, inflati
 def run_ml_analysis(monthly_ret: pd.Series):
     """Runs PCA, GMM, and Isolation Forest."""
     try:
-        data = monthly_ret.values
-        X = []
-        # Create sequences of 12 months
-        if len(data) < 24: # Need at least some data
-            return None
-            
-        for i in range(12, len(data)):
-            X.append(data[i-12:i])
-        X = np.array(X)
-        
-        if len(X) == 0:
-            return None
-
-        # PCA
-        pca = PCA(n_components=2)
-        X_pca = pca.fit_transform(X)
-        
-        # GMM
-        gmm = GaussianMixture(n_components=3, random_state=42)
-        labels = gmm.fit_predict(X_pca)
-        
-        # Isolation Forest
-        iso = IsolationForest(contamination=0.05, random_state=42)
-        anomalies = iso.fit_predict(X_pca)
-        
-        return {
-            "pca_components": X_pca.tolist(),
-            "clusters": labels.tolist(),
-            "anomalies": anomalies.tolist()
-        }
+        return core_math.run_ml_clusters(monthly_ret)
     except Exception as e:
         logger.error(f"Error in ML analysis: {e}")
         return None
@@ -300,58 +264,9 @@ def run_anova_test(pivot: pd.DataFrame):
 def calculate_dca(monthly_ret: pd.Series, monthly_contribution: float):
     """
     Simulates Dollar Cost Averaging.
-    Returns:
-        dca_data: List of dicts with date, total_invested, portfolio_value
-        summary: Dict with final stats
     """
     try:
-        if monthly_ret.empty:
-            return None
-            
-        dates = monthly_ret.index
-        values = []
-        
-        total_invested = 0
-        current_holdings = 0 # In dollars initially? No, we need to track value.
-        # Simpler approach: 
-        # Month 0: Invest $X. 
-        # Month 1: (Old Value * (1+Ret)) + $X
-        
-        current_value = 0
-        
-        # We need a starting point before the first return?
-        # Typically DCA implies buying at the *start* or *end* of the period.
-        # Let's assume we contribute at the start of each month (before that month's return).
-        
-        data_points = []
-        
-        for date, ret in monthly_ret.items():
-            # Contribute
-            total_invested += monthly_contribution
-            current_value += monthly_contribution
-            
-            # Grow
-            current_value *= (1 + ret)
-            
-            # Store
-            data_points.append({
-                "date": str(date).split(" ")[0],
-                "invested": total_invested,
-                "value": current_value
-            })
-            
-        total_profit = current_value - total_invested
-        roi = (total_profit / total_invested) if total_invested > 0 else 0
-        
-        return {
-            "dca_series": data_points,
-            "summary": {
-                "total_invested": total_invested,
-                "final_value": current_value,
-                "total_profit": total_profit,
-                "roi": roi
-            }
-        }
+        return core_math.calculate_dca(monthly_ret, monthly_contribution)
     except Exception as e:
         logger.error(f"Error calculating DCA: {e}")
         return None
@@ -363,52 +278,9 @@ def calculate_correlation(pivot: pd.DataFrame):
 def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000):
     """
     Runs Monte Carlo simulation for future wealth projection.
-    Returns: 10th, 50th, 90th percentile paths.
     """
     try:
-        if monthly_ret.empty or len(monthly_ret) < 12:
-            return None
-
-        # Calculate parameters from history
-        mu = monthly_ret.mean()
-        sigma = monthly_ret.std()
-        
-        last_val = 10000 # Start projection at 10k or just relative 1.0
-        months = years * 12
-        
-        # Simulation
-        # Result shape: (months, n_sims)
-        # Generate random returns: normal distribution
-        sim_rets = np.random.normal(mu, sigma, (months, n_sims))
-        
-        # Calculate cumulative paths
-        # (1 + r).cumprod()
-        sim_growth = (1 + sim_rets).cumprod(axis=0)
-        sim_paths = last_val * sim_growth
-        
-        # Insert start value
-        sim_paths = np.vstack([np.full((1, n_sims), last_val), sim_paths])
-        
-        # Calculate percentiles at each time step
-        p10 = np.percentile(sim_paths, 10, axis=1)
-        p50 = np.percentile(sim_paths, 50, axis=1)
-        p90 = np.percentile(sim_paths, 90, axis=1)
-        
-        # Format for chart
-        # We need dates. Start from "Today" + 1 month
-        start_date = pd.Timestamp.now()
-        dates = [start_date + pd.DateOffset(months=i) for i in range(months + 1)]
-        
-        projection_data = []
-        for i in range(len(dates)):
-            projection_data.append({
-                "date": str(dates[i]).split(" ")[0],
-                "p10": p10[i],
-                "p50": p50[i],
-                "p90": p90[i]
-            })
-            
-        return projection_data
+        return core_math.run_monte_carlo(monthly_ret, years, n_sims, method='gbm')
     except Exception as e:
         logger.error(f"Error in Monte Carlo: {e}")
         return None
@@ -852,19 +724,9 @@ def get_financials(ticker: str):
         # 3. Beta
         beta = info.get("beta")
         
-        # 4. WACC components (Simplified)
-        # We need Risk Free Rate (assume 4%), Market Risk Premium (assume 5%)
-        # Cost of Equity = Rf + Beta * (Rm - Rf)
-        # Cost of Debt = (Interest Expense / Total Debt) * (1 - Tax Rate) -> Hard to get accurately automatically
-        # For MVP, we will let user edit the Discount Rate, but calculate a suggested one mostly based on Equity
+        # 4. WACC components
+        suggested_discount_rate = core_math.calculate_wacc(ticker, beta)
         
-        risk_free = 0.04
-        market_premium = 0.05
-        suggested_discount_rate = 0.10 # Default
-        
-        if beta:
-             suggested_discount_rate = risk_free + beta * market_premium
-             
         return {
             "fcf": fcf,
             "shares_outstanding": shares,
