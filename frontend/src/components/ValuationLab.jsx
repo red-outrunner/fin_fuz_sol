@@ -11,6 +11,7 @@ const ValuationLab = ({ ticker }) => {
     const [growthRate1to5, setGrowthRate1to5] = useState(0.10); // 10%
     const [growthRateTerminal, setGrowthRateTerminal] = useState(0.02); // 2%
     const [discountRate, setDiscountRate] = useState(0.10); // 10%
+    const [scenarioWeight, setScenarioWeight] = useState(50); // 50 = Base Scenario
 
     const [fairValue, setFairValue] = useState(0);
 
@@ -43,27 +44,42 @@ const ValuationLab = ({ ticker }) => {
         const fcf0 = financials.fcf;
         const shares = financials.shares_outstanding;
 
-        // Simple 2-Stage DCF
-        // Stage 1: Next 5 Years
-        let futureCashFlows = 0;
-        let lastFCF = fcf0;
+        // Simple 2-Stage DCF function
+        const calcDCF = (growthRate) => {
+            let futureCashFlows = 0;
+            let lastFCF = fcf0;
 
-        for (let i = 1; i <= 5; i++) {
-            lastFCF = lastFCF * (1 + growthRate1to5);
-            futureCashFlows += lastFCF / Math.pow(1 + discountRate, i);
+            for (let i = 1; i <= 5; i++) {
+                lastFCF = lastFCF * (1 + growthRate);
+                futureCashFlows += lastFCF / Math.pow(1 + discountRate, i);
+            }
+
+            // TV = (Final FCF * (1 + g)) / (WACC - g)
+            const terminalValue = (lastFCF * (1 + growthRateTerminal)) / (discountRate - growthRateTerminal);
+            const presentTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
+
+            return (futureCashFlows + presentTerminalValue) / shares;
         }
 
-        // Stage 2: Terminal Value
-        // TV = (Final FCF * (1 + g)) / (WACC - g)
-        const terminalValue = (lastFCF * (1 + growthRateTerminal)) / (discountRate - growthRateTerminal);
-        const presentTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
+        const baseValue = calcDCF(growthRate1to5);
+        const bullValue = calcDCF(growthRate1to5 + 0.02);
+        const bearValue = calcDCF(growthRate1to5 - 0.02);
 
-        const totalEquityValue = futureCashFlows + presentTerminalValue;
-        const calculatedFairValue = totalEquityValue / shares;
+        // Blend scenarios based on slider (0 = 100% Bear, 50 = 100% Base, 100 = 100% Bull)
+        let calculatedFairValue;
+        if (scenarioWeight < 50) {
+            const bearWeight = (50 - scenarioWeight) / 50;
+            const baseWeight = 1 - bearWeight;
+            calculatedFairValue = (bearValue * bearWeight) + (baseValue * baseWeight);
+        } else {
+            const bullWeight = (scenarioWeight - 50) / 50;
+            const baseWeight = 1 - bullWeight;
+            calculatedFairValue = (bullValue * bullWeight) + (baseValue * baseWeight);
+        }
 
         setFairValue(calculatedFairValue);
 
-    }, [financials, growthRate1to5, growthRateTerminal, discountRate]);
+    }, [financials, growthRate1to5, growthRateTerminal, discountRate, scenarioWeight]);
 
     if (loading) return <div className="p-12 text-center text-gold font-bold animate-pulse">Loading Valuation Data...</div>;
     if (!financials) return <div className="p-12 text-center text-slate-400">Valuation data unavailable for {ticker}.</div>;
@@ -126,6 +142,26 @@ const ValuationLab = ({ ticker }) => {
                                     onChange={(e) => setDiscountRate(parseFloat(e.target.value))}
                                     className="w-full accent-gold h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                                 />
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100">
+                                <div className="flex justify-between mb-2">
+                                    <label className="text-xs font-bold text-slate-500">Scenario Weighting</label>
+                                    <span className="text-xs font-mono text-navy">
+                                        {scenarioWeight < 50 ? 'Bearish' : scenarioWeight > 50 ? 'Bullish' : 'Base'}
+                                    </span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="100" step="1"
+                                    value={scenarioWeight}
+                                    onChange={(e) => setScenarioWeight(parseFloat(e.target.value))}
+                                    className="w-full accent-gold h-1 bg-gradient-to-r from-red-400 via-slate-300 to-green-400 rounded-lg appearance-none cursor-pointer"
+                                />
+                                <div className="flex justify-between text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">
+                                    <span className="text-red-500">Bear (-2%)</span>
+                                    <span>Base</span>
+                                    <span className="text-green-500">Bull (+2%)</span>
+                                </div>
                             </div>
                         </div>
                     </div>
