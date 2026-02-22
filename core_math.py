@@ -30,6 +30,14 @@ def validate_and_clean_data(data: pd.DataFrame) -> pd.DataFrame:
     if data.empty:
         raise DataQualityError("Data consists entirely of NaNs after cleaning.")
         
+    # Check for excessive gaps in time (e.g., from long trading halts or dropped NaN blocks)
+    # We expect daily data, so a gap of 10+ calendar days is irregular and dangerous for pct_change
+    time_deltas = data.index.to_series().diff()
+    if not time_deltas.empty and pd.notna(time_deltas.max()):
+        max_gap_days = time_deltas.max().days
+        if max_gap_days > 10:
+            raise DataQualityError(f"Data quality failure: Time gap of {max_gap_days} days detected. Data is corrupted by trading halts or excessive missing values.")
+            
     return data
 
 def apply_outlier_filtering(monthly_ret: pd.Series) -> pd.Series:
