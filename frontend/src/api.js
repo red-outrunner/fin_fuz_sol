@@ -23,7 +23,13 @@ const getBaseUrl = () => {
     // Development fallback
     const localUrl = 'http://localhost:8000';
     console.log('🔧 Using local development API:', localUrl);
-    console.warn('⚠️  VITE_API_BASE_URL not set - assuming local development');
+    
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        console.error('🚨 CRITICAL ERROR: VITE_API_BASE_URL is not set in your production environment! The app will attempt to use localhost and fail with a Network Error. Please configure it in Netlify.');
+        alert('API Configuration Error: VITE_API_BASE_URL is missing in your deployment. Please ensure you have set it in your environment variables.');
+    } else {
+        console.warn('⚠️  VITE_API_BASE_URL not set - assuming local development');
+    }
 
     return localUrl;
 };
