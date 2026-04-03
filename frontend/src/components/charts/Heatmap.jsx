@@ -42,7 +42,7 @@ const Heatmap = ({ data }) => {
     };
 
     return (
-        <div className="h-[600px] w-full overflow-y-auto bg-white p-6 rounded-sm border border-beige shadow-sm">
+        <div className="h-[400px] md:h-[600px] w-full overflow-y-auto overflow-x-hidden bg-white p-2 md:p-6 rounded-sm border border-beige shadow-sm">
             <ResponsiveContainer width="100%" height={Math.max(400, heatmapData.length / 12 * 40)}>
                 <ScatterChart
                     margin={{ top: 20, right: 20, bottom: 60, left: 20 }}

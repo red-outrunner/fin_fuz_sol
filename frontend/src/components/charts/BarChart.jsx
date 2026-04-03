@@ -11,7 +11,7 @@ const BarChart = ({ data, metric = 'Mean' }) => {
     const overallAvg = stats.overall_avg * 100;
 
     return (
-        <div className="h-96 w-full">
+        <div className="h-72 md:h-96 w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart
                     data={chartData}

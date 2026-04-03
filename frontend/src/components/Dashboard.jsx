@@ -213,8 +213,27 @@ const Dashboard = () => {
 
                 {data && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <header className="flex justify-between items-center mb-12 pb-6 border-b border-navy/5">
-                            <nav className="flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto">
+                        <header className="flex flex-col xl:flex-row xl:justify-between xl:items-center mb-12 pb-6 border-b border-navy/5 gap-4">
+                            {/* Mobile Dropdown */}
+                            <div className="w-full xl:hidden relative z-20">
+                                <select 
+                                    value={activeTab} 
+                                    onChange={(e) => setActiveTab(e.target.value)}
+                                    className="w-full bg-white/40 p-3.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-md text-navy font-bold text-sm uppercase tracking-wider appearance-none focus:outline-none focus:ring-2 focus:ring-gold"
+                                >
+                                    {['summary', 'charts', 'freedom', 'peers', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
+                                        <option key={tab} value={tab}>
+                                            {tab === 'patterns' ? 'Market Patterns' : tab === 'freedom' ? 'Freedom Calc' : tab === 'peers' ? 'Peer Battle' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-navy">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                </div>
+                            </div>
+
+                            {/* Desktop Nav */}
+                            <nav className="hidden xl:flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto w-full xl:w-auto">
                                 {['summary', 'charts', 'freedom', 'peers', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
@@ -231,82 +250,95 @@ const Dashboard = () => {
                                 ))}
                             </nav>
 
-                            <div className="relative">
-                                <button
-                                    onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                                    className="bg-white border border-white/60 text-navy px-5 py-2.5 rounded-xl hover:bg-beige-light hover:border-white transition-all shadow-sm flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider"
-                                >
-                                    <span>Download</span>
-                                    <svg className={`w-3.5 h-3.5 transition-transform duration-500 ${isExportMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
-                                </button>
+                            <div className="flex justify-between items-center w-full xl:w-auto mt-2 xl:mt-0">
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                                        className="bg-white border border-white/60 text-navy px-5 py-2.5 rounded-xl hover:bg-beige-light hover:border-white transition-all shadow-sm flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider"
+                                    >
+                                        <span>Download</span>
+                                        <svg className={`w-3.5 h-3.5 transition-transform duration-500 ${isExportMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
+                                    </button>
 
-                                {isExportMenuOpen && (
-                                    <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-white/10 z-50 overflow-hidden animate-fade-in">
-                                        <div className="p-3 border-b border-slate-50 bg-slate-50/50">
-                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Export Data</p>
+                                    {isExportMenuOpen && (
+                                        <div className="absolute left-0 xl:right-0 xl:left-auto mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-white/10 z-50 overflow-hidden animate-fade-in">
+                                            <div className="p-3 border-b border-slate-50 bg-slate-50/50">
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Export Data</p>
+                                            </div>
+                                            {['excel', 'csv', 'pdf', 'ml'].map((type) => (
+                                                <button
+                                                    key={type}
+                                                    disabled={type !== 'ml' && user?.tier !== 'institutional'}
+                                                    onClick={() => handleExport(type)}
+                                                    className={`
+                                                        block w-full text-left px-5 py-4 text-xs font-bold uppercase tracking-tight transition-all border-b border-slate-50 last:border-0 flex items-center justify-between
+                                                        ${(type === 'ml' || user?.tier === 'institutional')
+                                                            ? 'text-slate-700 hover:bg-cream hover:text-gold cursor-pointer'
+                                                            : 'text-slate-300 cursor-not-allowed'}
+                                                    `}
+                                                >
+                                                    <span>{type === 'ml' ? 'ML Data (CSV)' : type.toUpperCase() + ' Report'}</span>
+                                                    {type !== 'ml' && user?.tier !== 'institutional' && (
+                                                        <svg className="w-3.5 h-3.5 text-gold/40" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                                    )}
+                                                </button>
+                                            ))}
+                                            {user?.tier !== 'institutional' && (
+                                                <button
+                                                    onClick={() => handleOpenUpgrade('institutional')}
+                                                    className="w-full bg-gold/5 text-gold text-[9px] font-black py-3 hover:bg-gold/10 transition-colors uppercase tracking-[0.1em]"
+                                                >
+                                                    Unlock Full Access
+                                                </button>
+                                            )}
                                         </div>
-                                        {['excel', 'csv', 'pdf', 'ml'].map((type) => (
-                                            <button
-                                                key={type}
-                                                // Disable others if not institutional, but allow ML for everyone
-                                                disabled={type !== 'ml' && user?.tier !== 'institutional'}
-                                                onClick={() => handleExport(type)}
-                                                className={`
-                                                    block w-full text-left px-5 py-4 text-xs font-bold uppercase tracking-tight transition-all border-b border-slate-50 last:border-0 flex items-center justify-between
-                                                    ${(type === 'ml' || user?.tier === 'institutional')
-                                                        ? 'text-slate-700 hover:bg-cream hover:text-gold cursor-pointer'
-                                                        : 'text-slate-300 cursor-not-allowed'}
-                                                `}
-                                            >
-                                                <span>{type === 'ml' ? 'ML Data (CSV)' : type.toUpperCase() + ' Report'}</span>
-                                                {type !== 'ml' && user?.tier !== 'institutional' && (
-                                                    <svg className="w-3.5 h-3.5 text-gold/40" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
-                                                )}
-                                            </button>
-                                        ))}
-                                        {user?.tier !== 'institutional' && (
-                                            <button
-                                                onClick={() => handleOpenUpgrade('institutional')}
-                                                className="w-full bg-gold/5 text-gold text-[9px] font-black py-3 hover:bg-gold/10 transition-colors uppercase tracking-[0.1em]"
-                                            >
-                                                Unlock Full Access
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-4 ml-4 pl-4 border-l border-navy/10">
-                                <div className="text-right hidden md:block">
-                                    <p className="text-xs font-bold text-navy">{user?.email}</p>
-                                    <p className="text-[10px] uppercase tracking-widest text-gold font-bold">{user?.tier} Plan</p>
+                                    )}
                                 </div>
-                                <button
-                                    onClick={logout}
-                                    className="text-slate-400 hover:text-red-500 transition-colors"
-                                    title="Logout"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                    </svg>
-                                </button>
+
+                                <div className="flex items-center gap-4 ml-4 pl-4 border-l border-navy/10">
+                                    <div className="text-right hidden md:block">
+                                        <p className="text-xs font-bold text-navy">{user?.email}</p>
+                                        <p className="text-[10px] uppercase tracking-widest text-gold font-bold">{user?.tier} Plan</p>
+                                    </div>
+                                    <button
+                                        onClick={logout}
+                                        className="text-slate-400 hover:text-red-500 transition-colors"
+                                        title="Logout"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </header>
 
                         {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
                         {activeTab === 'charts' && (
-                            <div className="space-y-12 animate-fade-in">
-                                <div className="card-premium p-8">
-                                    <h3 className="text-xl font-serif font-bold mb-8 text-navy">Monthly Returns Pattern</h3>
-                                    <BarChart data={data} />
+                            <div className="space-y-6 md:space-y-12 animate-fade-in w-full max-w-full overflow-hidden">
+                                <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
+                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Monthly Returns Pattern</h3>
+                                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
+                                        <div className="min-w-[450px] w-full">
+                                            <BarChart data={data} />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="card-premium p-8">
-                                    <h3 className="text-xl font-serif font-bold mb-8 text-navy">Risk Spectrum (Volatility vs Return)</h3>
-                                    <ScatterPlot data={data} />
+                                <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
+                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Risk Spectrum (Volatility vs Return)</h3>
+                                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
+                                        <div className="min-w-[450px] w-full">
+                                            <ScatterPlot data={data} />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="card-premium p-8">
-                                    <h3 className="text-xl font-serif font-bold mb-8 text-navy">Historical Performance Matrix</h3>
-                                    <Heatmap data={data} />
+                                <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
+                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Historical Performance Matrix</h3>
+                                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
+                                        <div className="min-w-[600px] w-full">
+                                            <Heatmap data={data} />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
