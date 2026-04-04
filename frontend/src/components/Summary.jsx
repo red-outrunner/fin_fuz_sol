@@ -30,22 +30,34 @@ const Summary = ({ data, profile, onUpgrade }) => {
             <KPICards stats={stats} />
 
             <div className="grid grid-cols-1 gap-12">
-                <div className="card-premium p-6 md:p-8">
+                <div className="card-premium p-6 md:p-8 overflow-hidden w-full max-w-full">
                     <h3 className="text-xl font-serif font-bold mb-8 text-navy flex items-center gap-3">
                         <span className="w-8 h-px bg-gold/30"></span>
                         Wealth Growth (R10,000)
                     </h3>
-                    <WealthChart data={data} />
+                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
+                        <div className="min-w-[450px] w-full">
+                            <WealthChart data={data} />
+                        </div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="card-premium p-6 md:p-8">
+                    <div className="card-premium p-6 md:p-8 overflow-hidden w-full max-w-full">
                         <h3 className="text-lg font-serif font-bold mb-6 text-navy">Drawdown Analytics</h3>
-                        <DrawdownChart data={stats.drawdown_series} />
+                        <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
+                            <div className="min-w-[450px] w-full">
+                                <DrawdownChart data={stats.drawdown_series} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="card-premium p-6 md:p-8">
+                    <div className="card-premium p-6 md:p-8 overflow-hidden w-full max-w-full">
                         <h3 className="text-lg font-serif font-bold mb-6 text-navy">Annual Yield Variance</h3>
-                        <AnnualReturns data={stats.annual_returns} />
+                        <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
+                            <div className="min-w-[450px] w-full">
+                                <AnnualReturns data={stats.annual_returns} />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

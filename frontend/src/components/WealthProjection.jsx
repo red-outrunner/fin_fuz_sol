@@ -86,75 +86,77 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                     </div>
                 </div>
 
-                <div className="h-96 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={projectionData}>
-                            <defs>
-                                <linearGradient id="colorP90" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#8C735A" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#8C735A" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="colorP50" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#1A2433" stopOpacity={0.5} />
-                                    <stop offset="95%" stopColor="#1A2433" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="colorP10" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2} />
-                                    <stop offset="95%" stopColor="#94A3B8" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                            <XAxis
-                                dataKey="date"
-                                stroke="#94A3B8"
-                                tick={{ fontSize: 12 }}
-                                tickFormatter={(val) => val.substring(0, 4)}
-                                minTickGap={30}
-                            />
-                            <YAxis
-                                stroke="#94A3B8"
-                                tick={{ fontSize: 12 }}
-                                tickFormatter={(val) => `R${val / 1000}k`}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0' }}
-                                formatter={(value, name) => [
-                                    new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value),
-                                    name === 'p90' ? '90th Percentile' : name === 'p50' ? 'Median Outcome' : '10th Percentile'
-                                ]}
-                                labelStyle={{ color: '#1A2433', fontWeight: 'bold' }}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="p90"
-                                stroke="#8C735A"
-                                strokeWidth={1}
-                                strokeDasharray="5 5"
-                                fillOpacity={1}
-                                fill="url(#colorP90)"
-                                name="p90"
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="p50"
-                                stroke="#1A2433"
-                                strokeWidth={3}
-                                fillOpacity={1}
-                                fill="url(#colorP50)"
-                                name="p50"
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="p10"
-                                stroke="#94A3B8"
-                                strokeWidth={1}
-                                strokeDasharray="5 5"
-                                fillOpacity={1}
-                                fill="url(#colorP10)"
-                                name="p10"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                <div className="overflow-x-auto overflow-y-hidden w-full pb-2 mt-8">
+                    <div className="min-w-[600px] w-full h-96">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={projectionData}>
+                                <defs>
+                                    <linearGradient id="colorP90" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#8C735A" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#8C735A" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorP50" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#1A2433" stopOpacity={0.5} />
+                                        <stop offset="95%" stopColor="#1A2433" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorP10" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor="#94A3B8" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                <XAxis
+                                    dataKey="date"
+                                    stroke="#94A3B8"
+                                    tick={{ fontSize: 12 }}
+                                    tickFormatter={(val) => val.substring(0, 4)}
+                                    minTickGap={30}
+                                />
+                                <YAxis
+                                    stroke="#94A3B8"
+                                    tick={{ fontSize: 12 }}
+                                    tickFormatter={(val) => `R${val / 1000}k`}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0' }}
+                                    formatter={(value, name) => [
+                                        new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value),
+                                        name === 'p90' ? '90th Percentile' : name === 'p50' ? 'Median Outcome' : '10th Percentile'
+                                    ]}
+                                    labelStyle={{ color: '#1A2433', fontWeight: 'bold' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="p90"
+                                    stroke="#8C735A"
+                                    strokeWidth={1}
+                                    strokeDasharray="5 5"
+                                    fillOpacity={1}
+                                    fill="url(#colorP90)"
+                                    name="p90"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="p50"
+                                    stroke="#1A2433"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorP50)"
+                                    name="p50"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="p10"
+                                    stroke="#94A3B8"
+                                    strokeWidth={1}
+                                    strokeDasharray="5 5"
+                                    fillOpacity={1}
+                                    fill="url(#colorP10)"
+                                    name="p10"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
 
                 <p className="text-[10px] text-slate-400 mt-4 text-center italic">

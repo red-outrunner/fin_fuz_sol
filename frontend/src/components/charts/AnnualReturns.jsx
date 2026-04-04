@@ -7,10 +7,7 @@ const AnnualReturns = ({ data }) => {
     if (!data) return null;
 
     return (
-        <div className="bg-white p-6 rounded-sm border border-beige shadow-sm">
-            <h3 className="text-xl font-serif font-bold text-navy mb-2">Annual Returns</h3>
-            <p className="text-sm text-slate-500 mb-6 font-sans">Year-by-year performance breakdown.</p>
-
+        <div className="w-full">
             <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data}>

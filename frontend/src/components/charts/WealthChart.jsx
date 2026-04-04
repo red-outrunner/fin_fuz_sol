@@ -41,7 +41,7 @@ const WealthChart = ({ data }) => {
   const finalData = React.useMemo(() => calculateSMA(dataWithSMA12, 60), [dataWithSMA12]);
 
   return (
-    <div className="w-full bg-white p-6 rounded-sm border border-beige shadow-sm">
+    <div className="w-full">
       <div className="flex justify-end gap-4 mb-4">
         <label className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500 cursor-pointer hover:text-navy">
           <input type="checkbox" checked={showSMA12} onChange={e => setShowSMA12(e.target.checked)} className="accent-gold" />

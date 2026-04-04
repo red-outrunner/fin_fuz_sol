@@ -7,10 +7,7 @@ const DrawdownChart = ({ data }) => {
     if (!data) return null;
 
     return (
-        <div className="bg-white p-6 rounded-sm border border-beige shadow-sm">
-            <h3 className="text-xl font-serif font-bold text-navy mb-2">Underwater Chart (Drawdowns)</h3>
-            <p className="text-sm text-slate-500 mb-6 font-sans">Visualizes the magnitude and duration of losses from peak.</p>
-
+        <div className="w-full">
             <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data}>
