@@ -86,8 +86,8 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto overflow-y-hidden w-full pb-2 mt-8">
-                    <div className="min-w-[600px] w-full h-96">
+                <div className="overflow-hidden w-full pb-2 mt-8">
+                    <div className="w-full h-96">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={projectionData}>
                                 <defs>

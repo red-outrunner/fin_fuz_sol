@@ -35,8 +35,8 @@ const Summary = ({ data, profile, onUpgrade }) => {
                         <span className="w-8 h-px bg-gold/30"></span>
                         Wealth Growth (R10,000)
                     </h3>
-                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
-                        <div className="min-w-[450px] w-full">
+                    <div className="overflow-hidden w-full pb-2">
+                        <div className="w-full">
                             <WealthChart data={data} />
                         </div>
                     </div>
@@ -45,16 +45,16 @@ const Summary = ({ data, profile, onUpgrade }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="card-premium p-6 md:p-8 overflow-hidden w-full max-w-full">
                         <h3 className="text-lg font-serif font-bold mb-6 text-navy">Drawdown Analytics</h3>
-                        <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
-                            <div className="min-w-[450px] w-full">
+                        <div className="overflow-hidden w-full pb-2">
+                            <div className="w-full">
                                 <DrawdownChart data={stats.drawdown_series} />
                             </div>
                         </div>
                     </div>
                     <div className="card-premium p-6 md:p-8 overflow-hidden w-full max-w-full">
                         <h3 className="text-lg font-serif font-bold mb-6 text-navy">Annual Yield Variance</h3>
-                        <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
-                            <div className="min-w-[450px] w-full">
+                        <div className="overflow-hidden w-full pb-2">
+                            <div className="w-full">
                                 <AnnualReturns data={stats.annual_returns} />
                             </div>
                         </div>

@@ -318,24 +318,24 @@ const Dashboard = () => {
                             <div className="space-y-6 md:space-y-12 animate-fade-in w-full max-w-full overflow-hidden">
                                 <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
                                     <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Monthly Returns Pattern</h3>
-                                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
-                                        <div className="min-w-[450px] w-full">
+                                    <div className="overflow-hidden w-full pb-2">
+                                        <div className="w-full">
                                             <BarChart data={data} />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
                                     <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Risk Spectrum (Volatility vs Return)</h3>
-                                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
-                                        <div className="min-w-[450px] w-full">
+                                    <div className="overflow-hidden w-full pb-2">
+                                        <div className="w-full">
                                             <ScatterPlot data={data} />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
                                     <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Historical Performance Matrix</h3>
-                                    <div className="overflow-x-auto overflow-y-hidden w-full pb-2">
-                                        <div className="min-w-[600px] w-full">
+                                    <div className="overflow-hidden w-full pb-2">
+                                        <div className="w-full">
                                             <Heatmap data={data} />
                                         </div>
                                     </div>
