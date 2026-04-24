@@ -35,7 +35,7 @@ const Summary = ({ data, profile, onUpgrade }) => {
                         <span className="w-8 h-px bg-gold/30"></span>
                         Wealth Growth (R10,000)
                     </h3>
-                    <div className="overflow-hidden w-full pb-2">
+                    <div className="overflow-hidden w-full max-w-full pb-2" style={{minWidth: 0}}>
                         <div className="w-full">
                             <WealthChart data={data} />
                         </div>
