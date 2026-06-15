@@ -55,7 +55,7 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
 
             {/* Section 1: Market Cycles */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                <div className="lg:col-span-2 bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/50">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-serif font-bold text-navy">Market Patterns & Cycles</h3>
                         <span className="text-xs font-bold text-gold uppercase tracking-wider bg-navy/5 px-2 py-1 rounded">AI Pattern Recognition</span>
@@ -109,7 +109,7 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
 
             {/* Section 2: Anomaly Detection */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-soft border border-beige-dark/50">
+                <div className="lg:col-span-2 bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/50">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-serif font-bold text-navy">Crash & Anomaly Detection</h3>
                         <span className="text-xs font-bold text-error/80 uppercase tracking-wider bg-red-50 px-2 py-1 rounded">Risk Radar</span>

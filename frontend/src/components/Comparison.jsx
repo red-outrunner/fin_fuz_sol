@@ -217,7 +217,7 @@ const Comparison = ({ ticker, startYear, endDate }) => {
             )}
 
             {/* Seasonality Chart */}
-            <div className="h-96 w-full bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 mt-12">
+            <div className="h-96 w-full bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 mt-12">
                 <h3 className="text-lg font-serif font-bold text-navy mb-6">Seasonal Returns (Monthly Avg)</h3>
                 <ResponsiveContainer width="100%" height="90%">
                     <LineChart data={chartData}>

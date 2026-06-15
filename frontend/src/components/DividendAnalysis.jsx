@@ -95,7 +95,7 @@ const DividendAnalysis = ({ ticker, startYear }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Annual Payments */}
-                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 h-80">
+                <div className="bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 h-80">
                     <h3 className="text-lg font-serif font-bold text-navy mb-6">Annual Dividends</h3>
                     <ResponsiveContainer width="100%" height="85%">
                         <BarChart data={data.annual}>
@@ -112,7 +112,7 @@ const DividendAnalysis = ({ ticker, startYear }) => {
                 </div>
 
                 {/* Growth Rate */}
-                <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 h-80">
+                <div className="bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 h-80">
                     <h3 className="text-lg font-serif font-bold text-navy mb-6">Dividend Growth Rate</h3>
                     <ResponsiveContainer width="100%" height="85%">
                         <LineChart data={data.annual}>

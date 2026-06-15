@@ -84,7 +84,7 @@ const RiskAnalysis = ({ stats }) => {
             </div>
 
             {/* Drawdown Chart */}
-            <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 h-96">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 h-96">
                 <h3 className="text-lg font-serif font-bold text-navy mb-6">Historical Drawdown</h3>
                 <ResponsiveContainer width="100%" height="85%">
                     <AreaChart data={drawdownData}>
