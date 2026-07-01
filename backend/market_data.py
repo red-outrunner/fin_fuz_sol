@@ -129,15 +129,39 @@ def get_dividend_yield(ticker: str) -> float:
 # (The PIC — Public Investment Corporation — is genuinely the largest holder of most
 # JSE blue chips as SA's state pension-fund manager.)
 JSE_MAJOR_SHAREHOLDERS = {
-    "NPN.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.19,  "as_of": "2025"},
-    "PRX.JO": {"name": "Naspers",                             "percent": 0.57,  "as_of": "2024"},
-    "VOD.JO": {"name": "Vodafone Group",                      "percent": 0.651, "as_of": "2024"},
+    # Banks / financials
     "SBK.JO": {"name": "ICBC (Ind. & Comm. Bank of China)",   "percent": 0.196, "as_of": "2024"},
     "FSR.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.16,  "as_of": "2024"},
     "NED.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.147, "as_of": "2025"},
     "ABG.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.14,  "as_of": "2025"},
+    "CPI.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.16,  "as_of": "2025"},
+    "INL.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.17,  "as_of": "2025"},
+    # Insurers
+    "SLM.JO": {"name": "Ubuntu-Botho Investments",           "percent": 0.14,  "as_of": "2025"},
+    "OMU.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.19,  "as_of": "2025"},
+    "DSY.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.13,  "as_of": "2025"},
+    # Tech / media / telco
+    "NPN.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.19,  "as_of": "2025"},
+    "PRX.JO": {"name": "Naspers",                             "percent": 0.57,  "as_of": "2024"},
+    "MTN.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.20,  "as_of": "2025"},
+    "VOD.JO": {"name": "Vodafone Group",                      "percent": 0.651, "as_of": "2024"},
+    "MCG.JO": {"name": "Canal+ (Vivendi)",                    "percent": 0.94,  "as_of": "2025"},
+    # Resources
     "SOL.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.171, "as_of": "2024"},
+    "ANG.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.15,  "as_of": "2025"},
+    "IMP.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.20,  "as_of": "2025"},
+    "VAL.JO": {"name": "Anglo American",                      "percent": 0.199, "as_of": "2025"},
+    # Retail
     "SHP.JO": {"name": "Public Investment Corporation (PIC)", "percent": None,  "as_of": "2025"},
+    # Rupert-family investment holdings
+    "REM.JO": {"name": "Rupert family (Remgro control structure)", "percent": None,  "as_of": "2025"},
+    "RNI.JO": {"name": "Anton Rupert Trust (Rupert family)",  "percent": 0.249, "as_of": "2025"},
+    # NOTE: Remaining JSE Top 40 names return N/A on purpose — either widely-held
+    # multinationals with no single dominant holder (Anglo American AGL, BHP BHG,
+    # AB InBev ANH, British American Tobacco BTI, Glencore GLN, Mondi MNP, Investec
+    # PLC INP) or ones a single largest shareholder couldn't be reliably sourced for
+    # yet (GFI, EXX, NPH, WHL, MRP, CLS, APN, BVT, BID, GRT, NRP, RMH). Add them here
+    # (with a source + as_of) as accurate data is confirmed rather than guessing.
 }
 
 
