@@ -9,3 +9,4 @@ class User(Base):
     hashed_password = Column(String)
     tier = Column(String, default="free") # free, pro, institutional
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False) # admin: full access to all tools

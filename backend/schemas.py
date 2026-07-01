@@ -11,6 +11,7 @@ class User(UserBase):
     id: int
     is_active: bool
     tier: str
+    is_admin: Optional[bool] = False
 
     class Config:
         orm_mode = True

@@ -27,8 +27,13 @@ coverage.xml
 
 # project specific
 cache_v2_8_1/
+cache_v3/
 users.db
 server_debug.log
+# ephemeral test databases
+_pytest.db
+_ci.db
+*_test.db
 
 # IDEs
 .vscode/

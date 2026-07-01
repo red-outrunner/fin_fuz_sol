@@ -8,11 +8,28 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 import os
+import secrets
 
-# Secret key from environment variable (REQUIRED in production)
-SECRET_KEY = os.getenv("SECRET_KEY", "fin_fuz_super_secret_key_ONLY_FOR_LOCAL_DEV_CHANGE_IN_PROD")
-if SECRET_KEY == "fin_fuz_super_secret_key_ONLY_FOR_LOCAL_DEV_CHANGE_IN_PROD":
-    print("⚠️  WARNING: Using default SECRET_KEY. Set SECRET_KEY environment variable in production!")
+# Secret key from environment variable (REQUIRED in production).
+# We never ship a hardcoded secret: a committed default would let anyone reading
+# the repo forge valid JWTs. In production (ENVIRONMENT=production) a missing
+# SECRET_KEY is a hard failure. In development we generate a random ephemeral key
+# so there is no secret in source control (tokens just won't survive a restart).
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    if ENVIRONMENT == "production":
+        raise RuntimeError(
+            "SECRET_KEY environment variable is not set. Refusing to start in "
+            "production without a secret key (JWTs would be forgeable). Set "
+            "SECRET_KEY to a strong random value (e.g. `openssl rand -hex 32`)."
+        )
+    SECRET_KEY = secrets.token_hex(32)
+    print(
+        "⚠️  WARNING: SECRET_KEY not set; generated an ephemeral development key. "
+        "Tokens will be invalidated on restart. Set SECRET_KEY for stable sessions."
+    )
 else:
     print("✅ Using SECRET_KEY from environment variable")
 

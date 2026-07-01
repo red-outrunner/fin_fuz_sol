@@ -12,27 +12,81 @@ from typing import List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers
-import models, schemas, auth, database
+import os
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers, get_dividend_yield
 from reports import PDFReportGenerator
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
-from fastapi import Depends, status
 
-# Initialise DB
-models.Base.metadata.create_all(bind=database.engine)
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+# Structured logging. Level is configurable via LOG_LEVEL (default INFO). force=True
+# so this format wins over any basicConfig already applied by an imported module.
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.INFO),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    force=True,
+)
 logger = logging.getLogger(__name__)
+
+# Optional error tracking. Activates ONLY when SENTRY_DSN is set AND sentry-sdk is
+# installed; otherwise it is a silent no-op, so local/dev runs need nothing extra.
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            environment=os.getenv("ENVIRONMENT", "development"),
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.0")),
+            send_default_pii=False,
+        )
+        logger.info("Sentry error tracking enabled.")
+    except ImportError:
+        logger.warning("SENTRY_DSN is set but sentry-sdk is not installed; error tracking disabled.")
+    except Exception as e:
+        logger.warning(f"Sentry initialization failed: {e}")
 
 app = FastAPI(title="Global Index Analyzer API", version="3.0.0")
 
+# Rate limiting (IP-based) to protect the upstream yfinance / DuckDuckGo scrapers
+# from getting throttled/banned and to stop the heavy ML/Monte-Carlo endpoints from
+# being a free DoS vector. Limits are configurable via env:
+#   RATE_LIMIT          - default per-IP limit applied to all routes (e.g. "60/minute")
+#   RATE_LIMIT_BURST    - secondary longer-window cap (e.g. "1000/hour")
+# NOTE: storage is in-memory (per-process). For multi-worker production set
+# RATE_LIMIT_STORAGE_URI to a shared backend such as redis://...
+_default_limit = os.getenv("RATE_LIMIT", "60/minute")
+_burst_limit = os.getenv("RATE_LIMIT_BURST", "1000/hour")
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=[_default_limit, _burst_limit],
+    storage_uri=os.getenv("RATE_LIMIT_STORAGE_URI", "memory://"),
+)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 # CORS Setup
+# Pin to explicit frontend origins. allow_origins=["*"] together with
+# allow_credentials=True is rejected by browsers and is insecure, so we read an
+# explicit allowlist from the ALLOWED_ORIGINS env var (comma-separated) and fall
+# back to local dev origins. In production set e.g.:
+#   ALLOWED_ORIGINS="https://your-app.netlify.app,https://www.yourdomain.com"
+_DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", _DEFAULT_ORIGINS).split(",")
+    if origin.strip()
+]
+logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For development, allow all. In production, specify frontend URL.
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +97,7 @@ class AnalysisRequest(BaseModel):
     ticker: str
     start_year: int
     end_date: str
+    inflation_rate: Optional[float] = 0.0
 class ComparisonRequest(BaseModel):
     tickers: List[str]
     start_year: int
@@ -55,48 +110,6 @@ class FreedomRequest(BaseModel):
     ticker: str
     monthly_income_goal: float
 
-
-# --- Auth Endpoints ---
-@app.post("/api/auth/register", response_model=schemas.User)
-def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    hashed_password = auth.get_password_hash(user.password)
-    # Automatically assign "pro" tier for demonstration, or default to "free"
-    # Using "free" as default, but let's make the FIRST user admin/institutional? No, keep simple.
-    db_user = models.User(email=user.email, hashed_password=hashed_password, tier="free")
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-@app.post("/api/auth/token", response_model=schemas.Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not auth.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = auth.timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = auth.create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer", "tier": user.tier}
-
-@app.get("/api/auth/me", response_model=schemas.User)
-def read_users_me(current_user: schemas.User = Depends(auth.get_current_active_user)):
-    return current_user
-
-@app.post("/api/auth/upgrade", response_model=schemas.User)
-def upgrade_user(upgrade: schemas.UserUpgrade, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_active_user)):
-    current_user.tier = upgrade.tier
-    db.commit()
-    db.refresh(current_user)
-    return current_user
-# ----------------------
 
 @app.get("/")
 def read_root():
@@ -122,7 +135,7 @@ def analyze_ticker(request: AnalysisRequest):
     if processed is None:
         raise HTTPException(status_code=500, detail="Error processing data")
     
-    stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'])
+    stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'], ticker=request.ticker, inflation_rate=request.inflation_rate)
     
     # Prepare pivot data for JSON (reset index to make year a column)
     # Use the winsorized pivot for UI heatmaps/bar charts
@@ -176,8 +189,10 @@ def get_wealth_projection(request: AnalysisRequest):
     if processed is None:
         raise HTTPException(status_code=500, detail="Error processing data")
         
-    projection = run_monte_carlo(processed['monthly_ret'])
-    
+    # Reinvest dividends into the projected total return.
+    dividend_yield = get_dividend_yield(request.ticker)
+    projection = run_monte_carlo(processed['monthly_ret'], dividend_yield=dividend_yield)
+
     if projection is None:
         raise HTTPException(status_code=400, detail="Not enough data for projection")
         
@@ -314,7 +329,7 @@ def export_excel(request: AnalysisRequest):
         processed['pivot'].to_excel(writer, sheet_name='Yearly Pivot')
         
         # Add summary stats if desired
-        stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'])
+        stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'], ticker=request.ticker, inflation_rate=request.inflation_rate)
         if stats:
             # Flatten stats for dataframe
             flat_stats = {k: v for k, v in stats.items() if isinstance(v, (int, float, str))}
@@ -366,7 +381,7 @@ def export_pdf(request: AnalysisRequest):
     if processed is None:
         raise HTTPException(status_code=500, detail="Error processing data")
         
-    stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'])
+    stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'], ticker=request.ticker, inflation_rate=request.inflation_rate)
     
     # --- Generate Additional Data for Report ---
     
@@ -384,8 +399,8 @@ def export_pdf(request: AnalysisRequest):
                     # Store mean monthly returns for chart
                     peer_data_map[p_ticker] = p_processed['pivot'].mean().to_list()
 
-    # 2. Monte Carlo
-    monte_carlo = run_monte_carlo(processed['monthly_ret'])
+    # 2. Monte Carlo (dividends reinvested into total return)
+    monte_carlo = run_monte_carlo(processed['monthly_ret'], dividend_yield=get_dividend_yield(request.ticker))
     
     # 3. DCA Analysis (Default: R1000/month)
     dca_results = calculate_dca(processed['monthly_ret'], 1000.0)

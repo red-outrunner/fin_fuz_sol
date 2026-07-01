@@ -20,7 +20,7 @@ const LoginPage = () => {
         <div className="min-h-screen bg-cream flex items-center justify-center p-4">
             <div className="bg-white p-8 rounded-lg shadow-xl border border-beige-dark/20 w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-serif font-bold text-navy mb-2">fin_fuz_sol</h1>
+                    <h1 className="text-3xl font-serif font-bold text-navy mb-2">Fuzile Solutions</h1>
                     <p className="text-slate-500 text-sm">{isLogin ? 'Sign in to access premium analytics' : 'Create an account to start investing'}</p>
                 </div>
 

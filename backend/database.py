@@ -11,22 +11,23 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
-    # Production: Use Neon PostgreSQL (or any PostgreSQL database)
-    # Neon provides URLs in format: postgresql://user:pass@host/db
-    # Some providers use 'postgres://' which SQLAlchemy 1.4+ doesn't support
+    # Some providers (e.g. Heroku/Neon) emit 'postgres://' which SQLAlchemy 1.4+
+    # doesn't accept; normalize to 'postgresql://'.
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    
-    engine = create_engine(DATABASE_URL)
-    print("🚀 Using PostgreSQL database (production)")
 else:
-    # Local development: Use SQLite
+    # Local development / tests: default to SQLite.
     DATABASE_URL = "sqlite:///./users.db"
-    engine = create_engine(
-        DATABASE_URL, 
-        connect_args={"check_same_thread": False}  # Only needed for SQLite
-    )
-    print("🔧 Using SQLite database (local development)")
+
+# Branch on the actual URL scheme, not merely on whether DATABASE_URL was set — a
+# SQLite URL passed via env (CI/tests) still needs check_same_thread=False, and the
+# log message should reflect the real backend.
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    print("🔧 Using SQLite database")
+else:
+    engine = create_engine(DATABASE_URL)
+    print("🚀 Using PostgreSQL database")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

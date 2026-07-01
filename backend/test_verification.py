@@ -3,9 +3,10 @@ import sys
 import os
 import pandas as pd
 import time
+import pytest
 
-# Add backend to path
-sys.path.append('/home/red/Public/Projects/fin_fuz_sol/backend')
+# Make this test file runnable from anywhere (portable, not a hardcoded path).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from analysis import calculate_financial_freedom, get_jse_peers, fetch_multiple_tickers, download_data
 
@@ -22,7 +23,7 @@ def test_peers():
 def test_freedom():
     print("\nTesting Financial Freedom Calculator...")
     # Mock Data
-    dates = pd.date_range(start='2023-01-01', periods=12, freq='M')
+    dates = pd.date_range(start='2023-01-01', periods=12, freq='ME')
     data = pd.DataFrame({
         'Close': [100] * 12,
         'Dividends': [1.0] * 12 # 12.0 total dividend, 12% yield
@@ -40,6 +41,7 @@ def test_freedom():
     assert result['shares_needed'] == 100
     assert result['investment_needed'] == 10000.0
 
+@pytest.mark.network
 def test_parallel_fetch():
     print("\nTesting Parallel Fetch...")
     tickers = ["SBK.JO", "FSR.JO", "NED.JO", "ABG.JO"]

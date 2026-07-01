@@ -25,7 +25,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
 const Dashboard = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
 
     const [ticker, setTicker] = useState('^J203.JO');
     const [startYear, setStartYear] = useState(2018);
@@ -233,13 +233,13 @@ const Dashboard = () => {
                             </div>
 
                             {/* Desktop Nav */}
-                            <nav className="hidden xl:flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto w-full xl:w-auto">
+                            <nav className="hidden xl:flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto w-full xl:flex-1 xl:min-w-0">
                                 {['summary', 'charts', 'freedom', 'peers', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
                                         className={`
-                                            px-5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all duration-500 relative overflow-hidden group whitespace-nowrap
+                                            shrink-0 px-5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all duration-500 relative overflow-hidden group whitespace-nowrap
                                             ${activeTab === tab
                                                 ? 'text-gold bg-navy shadow-lg scale-[1.02]'
                                                 : 'text-slate-500 hover:text-navy hover:bg-white/50'}
@@ -293,22 +293,6 @@ const Dashboard = () => {
                                             )}
                                         </div>
                                     )}
-                                </div>
-
-                                <div className="flex items-center gap-4 ml-4 pl-4 border-l border-navy/10">
-                                    <div className="text-right hidden md:block">
-                                        <p className="text-xs font-bold text-navy">{user?.email}</p>
-                                        <p className="text-[10px] uppercase tracking-widest text-gold font-bold">{user?.tier} Plan</p>
-                                    </div>
-                                    <button
-                                        onClick={logout}
-                                        className="text-slate-400 hover:text-red-500 transition-colors"
-                                        title="Logout"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
                         </header>

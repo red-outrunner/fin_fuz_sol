@@ -63,6 +63,21 @@ The application is built with a decoupled architecture:
    npm run dev
    ```
 
+## 🗄️ Database Migrations (Alembic)
+
+Schema changes are versioned with [Alembic](https://alembic.sqlalchemy.org/). Run commands from the `backend/` directory; the database URL is taken from `DATABASE_URL` (falls back to local SQLite).
+
+```bash
+cd backend
+alembic upgrade head                          # apply all migrations
+alembic revision --autogenerate -m "message"  # create a migration from model changes
+alembic downgrade -1                           # roll back one migration
+```
+
+Production applies migrations automatically (`render.yaml` runs `alembic upgrade head` before starting the server).
+
+> If you have an existing dev database that was created by the app's `create_all` safety net (so it has the `users` table but no `alembic_version`), baseline it once with `alembic stamp head` before applying new migrations — or just delete `users.db` and run `alembic upgrade head`.
+
 ## 🌐 Deployment
 
 The project includes configurations for:

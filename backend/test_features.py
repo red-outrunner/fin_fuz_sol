@@ -7,11 +7,11 @@ import numpy as np
 client = TestClient(app)
 
 def get_mock_dividends():
-    dates = pd.date_range(start="2020-01-01", end="2023-12-31", freq="Q")
+    dates = pd.date_range(start="2020-01-01", end="2023-12-31", freq="QE")
     s = pd.Series([0.5] * len(dates), index=dates)
     return s
 
-@patch("analysis.yf.Ticker")
+@patch("market_data.yf.Ticker")
 def test_dividends_endpoint(mock_ticker):
     # Setup mock
     mock_instance = mock_ticker.return_value

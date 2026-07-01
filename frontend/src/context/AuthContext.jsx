@@ -1,46 +1,24 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../api';
+import React, { createContext, useContext } from 'react';
 
 const AuthContext = createContext(null);
 
+// Auth, tiers and usernames have been removed — the app is fully open with no login.
+// This stub keeps the useAuth() API intact for existing components without any login
+// screen or backend auth calls. A fixed "institutional" tier makes every legacy tier
+// check pass, so all tools are unlocked for everyone.
+const OPEN_USER = { tier: 'institutional', is_admin: true, is_active: true };
+
 export const AuthProvider = ({ children }) => {
-    // Default to a logged-in "Institutional" (highest tier) user
-    const [user, setUser] = useState({
-        email: "demo@finfuzsol.com",
-        tier: "institutional", // Unlocks everything
-        is_active: true
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-
-    // No effect needed to check token since we are bypassing auth
-
-    const login = async (email, password) => {
-        // Mock login - always success
-        return true;
+    const value = {
+        user: OPEN_USER,
+        loading: false,
+        error: null,
+        login: async () => true,
+        register: async () => true,
+        logout: () => {},
+        upgrade: async () => true,
     };
-
-    const register = async (email, password) => {
-        // Mock register - always success
-        return true;
-    };
-
-    const logout = () => {
-        // Disable logout or just do nothing
-        console.log("Logout disabled in demo mode");
-    };
-
-    const upgrade = async (tier) => {
-        setUser(prev => ({ ...prev, tier }));
-        return true;
-    };
-
-    return (
-        <AuthContext.Provider value={{ user, login, register, logout, upgrade, loading, error }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);

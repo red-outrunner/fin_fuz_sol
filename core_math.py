@@ -181,17 +181,26 @@ def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000,
     monthly_yield = dividend_yield / 12.0
     
     if method == 'gbm':
-        # GBM: dS = mu*S*dt + sigma*S*dW
-        mu = monthly_ret.mean() + monthly_yield
-        sigma = monthly_ret.std()
-        
+        # Discrete GBM modelled directly in LOG-return space. Monthly log returns are
+        # treated as Normal(mu_log, sigma_log^2), so mu_log is already the expected log
+        # return and NO separate -0.5*sigma^2 correction is applied. (That correction
+        # only converts an arithmetic-return drift into a log drift; the previous code
+        # mixed the arithmetic mean of simple returns WITH that correction, which is
+        # internally inconsistent and biases the projection.)
+        log_ret = np.log1p(monthly_ret.values)
+        mu_log = np.mean(log_ret)
+        sigma_log = np.std(log_ret)
+
+        # Dividends reinvested: add monthly dividend growth in log space.
+        div_drift = np.log1p(monthly_yield)
+        drift = mu_log + div_drift
+
         sim_paths = np.zeros((months + 1, n_sims))
         sim_paths[0] = last_val
-        
+
         for t in range(1, months + 1):
-            # GBM ensuring price cannot go below zero mathematically since exp() is positive
-            drift = (mu - 0.5 * sigma**2)
-            shock = sigma * np.random.normal(0, 1, n_sims)
+            # exp() keeps every path strictly positive.
+            shock = sigma_log * np.random.normal(0, 1, n_sims)
             sim_paths[t] = sim_paths[t-1] * np.exp(drift + shock)
         
     elif method == 'bootstrap':

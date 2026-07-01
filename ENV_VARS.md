@@ -44,6 +44,27 @@ Value: <any random 32+ character string>
 
 ---
 
+## 3️⃣ Optional / Advanced Backend Variables
+
+All optional — the app runs with sensible defaults if these are unset.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `ENVIRONMENT` | `development` | Set to `production` to make a missing `SECRET_KEY` a hard startup failure. |
+| `ALLOWED_ORIGINS` | local dev origins | Comma-separated list of frontend origins allowed by CORS, e.g. `https://your-app.netlify.app`. **Set this in production** or the deployed frontend's requests will be blocked. |
+| `LOG_LEVEL` | `INFO` | Logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`). |
+| `SENTRY_DSN` | _(unset)_ | Enables Sentry error tracking when set. No-op if unset or `sentry-sdk` isn't installed. Get the DSN from your [Sentry](https://sentry.io) project. |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.0` | Fraction of requests traced for performance monitoring (0.0–1.0). Only relevant when `SENTRY_DSN` is set. |
+| `RATE_LIMIT` | `60/minute` | Per-IP request limit applied to all routes. |
+| `RATE_LIMIT_BURST` | `1000/hour` | Secondary longer-window per-IP cap. |
+| `RATE_LIMIT_STORAGE_URI` | `memory://` | Set to `redis://...` for shared rate-limit state across multiple workers/instances. |
+| `ADMIN_EMAIL` | `test@gmail.com` | Email of the auto-seeded admin account (full access to all tools). |
+| `ADMIN_PASSWORD` | `12345678` | Password for the seeded admin. **Change both of these in production** — the defaults are for local/dev only. |
+| `CACHE_DIR` | `cache_v3` | Directory for the parquet market-data cache. |
+| `CACHE_TTL_SECONDS` | `86400` | How long (seconds) a cached price series is considered fresh. |
+
+---
+
 ## Complete Deployment Guide
 
 For detailed step-by-step instructions, see:
