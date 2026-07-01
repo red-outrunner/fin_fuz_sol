@@ -71,15 +71,17 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS Setup
-# Pin to explicit frontend origins. allow_origins=["*"] together with
-# allow_credentials=True is rejected by browsers and is insecure, so we read an
-# explicit allowlist from the ALLOWED_ORIGINS env var (comma-separated) and fall
-# back to local dev origins. In production set e.g.:
+# This API is fully open: no auth, no cookies, no credentials of any kind. So we
+# default to allowing every origin ("*"), which means the deployed frontend works
+# out of the box regardless of its URL. To lock it down to specific origins later,
+# set ALLOWED_ORIGINS (comma-separated), e.g.:
 #   ALLOWED_ORIGINS="https://your-app.netlify.app,https://www.yourdomain.com"
-_DEFAULT_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+# IMPORTANT: allow_credentials MUST stay False while origins can be "*" — browsers
+# reject "*" together with credentials (that mismatch is what made preflight
+# OPTIONS return 400). We send no cookies, so credentials=False is correct.
 ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.getenv("ALLOWED_ORIGINS", _DEFAULT_ORIGINS).split(",")
+    for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",")
     if origin.strip()
 ]
 logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
@@ -87,7 +89,7 @@ logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
