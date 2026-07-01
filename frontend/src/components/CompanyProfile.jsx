@@ -35,8 +35,13 @@ const CompanyProfile = ({ profile }) => {
                     <div className="text-right">
                         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Held</h3>
                         <div className="text-2xl font-bold text-gold font-serif">
-                            {(parseFloat(biggest_shareholder.percent) * 100).toFixed(2)}%
+                            {biggest_shareholder.percent != null && !isNaN(parseFloat(biggest_shareholder.percent))
+                                ? `${(parseFloat(biggest_shareholder.percent) * 100).toFixed(2)}%`
+                                : '—'}
                         </div>
+                        {biggest_shareholder.as_of && (
+                            <p className="text-[10px] text-slate-400">as of {biggest_shareholder.as_of}</p>
+                        )}
                     </div>
                 </div>
             )}

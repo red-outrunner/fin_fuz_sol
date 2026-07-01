@@ -121,6 +121,60 @@ def get_dividend_yield(ticker: str) -> float:
         return 0.0
 
 
+# Largest-shareholder data for major JSE stocks, compiled from company annual reports /
+# investor-relations disclosures. yfinance only exposes US SEC 13F filings, which for
+# JSE tickers surface tiny foreign funds (e.g. a US EM index fund at ~1%) rather than
+# the real largest holders — so we use this curated table for .JO names instead.
+# Percentages are approximate and dated; refresh from the latest annual reports.
+# (The PIC — Public Investment Corporation — is genuinely the largest holder of most
+# JSE blue chips as SA's state pension-fund manager.)
+JSE_MAJOR_SHAREHOLDERS = {
+    "NPN.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.19,  "as_of": "2025"},
+    "PRX.JO": {"name": "Naspers",                             "percent": 0.57,  "as_of": "2024"},
+    "VOD.JO": {"name": "Vodafone Group",                      "percent": 0.651, "as_of": "2024"},
+    "SBK.JO": {"name": "ICBC (Ind. & Comm. Bank of China)",   "percent": 0.196, "as_of": "2024"},
+    "FSR.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.16,  "as_of": "2024"},
+    "NED.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.147, "as_of": "2025"},
+    "ABG.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.14,  "as_of": "2025"},
+    "SOL.JO": {"name": "Public Investment Corporation (PIC)", "percent": 0.171, "as_of": "2024"},
+    "SHP.JO": {"name": "Public Investment Corporation (PIC)", "percent": None,  "as_of": "2025"},
+}
+
+
+def get_biggest_shareholder(ticker: str, t):
+    """Returns the largest shareholder, or None when we lack trustworthy data (so we
+    never display a false name).
+
+    - JSE (.JO): use the curated table (yfinance's US-13F data is wrong for the JSE).
+    - US-listed (no exchange suffix): yfinance institutional_holders IS real 13F data.
+    - Any other non-US ticker: return None ('not available') rather than 13F junk.
+    """
+    tk = (ticker or "").upper().strip()
+
+    curated = JSE_MAJOR_SHAREHOLDERS.get(tk)
+    if curated:
+        return {"name": curated["name"], "percent": curated.get("percent"),
+                "as_of": curated.get("as_of"), "source": "Company reports"}
+
+    # institutional_holders is US SEC 13F data — only reliable for US tickers.
+    if "." not in tk and not tk.startswith("^"):
+        try:
+            ih = t.institutional_holders
+            if ih is not None and not ih.empty and "Holder" in ih.columns:
+                top = ih.iloc[0]
+                pct = top.get("pctHeld")
+                return {
+                    "name": str(top["Holder"]),
+                    "percent": float(pct) if pd.notna(pct) else None,
+                    "as_of": None,
+                    "source": "SEC 13F",
+                }
+        except Exception as e:
+            logger.warning(f"institutional_holders unavailable for {tk}: {e}")
+
+    return None
+
+
 def get_company_profile(ticker: str):
     """
     Fetches company profile: major shareholder and sentiment.
@@ -129,28 +183,8 @@ def get_company_profile(ticker: str):
     try:
         t = yf.Ticker(ticker)
 
-        # 1. Biggest Shareholder
-        biggest_holder = None
-        try:
-             # institutional_holders returns a DataFrame
-             ih = t.institutional_holders
-             if ih is not None and not ih.empty:
-                 # Usually columns are "Holder", "Shares", "Date Reported", "% Out", "Value"
-                 # Sort by "% Out" or "Shares" just to be safe, though usually sorted by default
-                 # yfinance column names can vary slightly by version, but 'Holder' is standard
-                 # Let's take the first row
-                 top_row = ih.iloc[0]
-                 # specific handling for different column names
-                 holder_name = top_row.get(0, top_row.iloc[0]) if isinstance(top_row.keys()[0], int) else top_row.get('Holder', top_row.get('Holder Name'))
-                 pct_held = top_row.get(3, top_row.iloc[3]) if isinstance(top_row.keys()[0], int) else top_row.get('% Out', top_row.get('% Held'))
-
-                 biggest_holder = {
-                     "name": str(holder_name),
-                     "percent": str(pct_held) # keep as string (e.g. 0.08 or '8%') or float
-                 }
-        except Exception as e:
-            # logger.warning(f"Could not fetch holders for {ticker}: {e}")
-            pass
+        # 1. Biggest Shareholder — curated JSE data + real US 13F; None when unreliable.
+        biggest_holder = get_biggest_shareholder(ticker, t)
 
         # 2. Sentiment / Recommendation
         sentiment = None
