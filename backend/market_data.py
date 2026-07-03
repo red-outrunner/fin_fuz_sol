@@ -266,9 +266,21 @@ def generate_fun_stats(info):
         currency = info.get('currency', 'USD')
 
         # 1. Market Cap Ranking (Estimated)
-        # Thresholds in Billions (USD approx)
+        # yfinance reports JSE market caps in RAND, so ZAR/ZAc listings get
+        # JSE-scale badges; the USD thresholds would wildly overrank them.
         rank_badge = "Unranked"
-        if market_cap > 2000_000_000_000: # 2T
+        if currency in ('ZAR', 'ZAc'):
+            if market_cap > 500_000_000_000:  # R500B+
+                rank_badge = "JSE Giant 🦁 (Top 10)"
+            elif market_cap > 100_000_000_000:
+                rank_badge = "JSE Top 40 Heavyweight 🏋️"
+            elif market_cap > 20_000_000_000:
+                rank_badge = "JSE Large Cap 🏢"
+            elif market_cap > 5_000_000_000:
+                rank_badge = "JSE Mid Cap 🚤"
+            elif market_cap > 0:
+                rank_badge = "JSE Small Cap 🧗"
+        elif market_cap > 2000_000_000_000: # 2T (USD thresholds)
             rank_badge = "Top 5 Global 🌍"
         elif market_cap > 1000_000_000_000: # 1T
             rank_badge = "Top 10 Global 🏆"
@@ -282,7 +294,7 @@ def generate_fun_stats(info):
             rank_badge = "Mid Cap Mover 🚤"
         elif market_cap > 2_000_000_000:
             rank_badge = "Small Cap Challenger 🧗"
-        else:
+        elif market_cap > 0:
             rank_badge = "Micro Cap Gem 💎"
 
         # 2. Meal Index (Big Mac Index proxy)
