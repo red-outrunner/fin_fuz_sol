@@ -15,7 +15,23 @@ trap cleanup SIGINT
 echo "Starting Backend..."
 if [ -d "backend" ]; then
     cd backend
-    python3 -m uvicorn main:app --reload &
+    # Use the project venv explicitly — a bare `python3` has none of the backend
+    # packages, dies instantly in the background, and the error scrolls away.
+    if [ -x "venv/bin/python" ]; then
+        PY="venv/bin/python"
+    elif [ -x ".venv/bin/python" ]; then
+        PY=".venv/bin/python"
+    else
+        echo "ERROR: no venv found in backend/. Create it with:"
+        echo "  cd backend && uv venv --python 3.11 venv && uv pip install -r requirements.txt -p venv/bin/python"
+        exit 1
+    fi
+    if ! "$PY" -c "import uvicorn" 2>/dev/null; then
+        echo "ERROR: uvicorn is not installed in backend/$PY. Install deps with:"
+        echo "  cd backend && uv pip install -r requirements.txt -p venv/bin/python"
+        exit 1
+    fi
+    "$PY" -m uvicorn main:app --reload &
     BACKEND_PID=$!
     cd ..
 else
