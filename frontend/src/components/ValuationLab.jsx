@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { TrendingUp, DollarSign, Activity } from 'lucide-react';
+import InfoTip from './InfoTip';
 
 const ValuationLab = ({ ticker }) => {
     const [financials, setFinancials] = useState(null);
@@ -90,7 +91,15 @@ const ValuationLab = ({ ticker }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="border-b border-navy/5 pb-6">
-                <h2 className="text-3xl font-serif font-bold text-navy title-font">Valuation Lab</h2>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                    Valuation Lab
+                    <InfoTip align="left" title="Valuation Lab">
+                        Estimates what one share is really worth (its "fair value") from the
+                        company's cash flows, using a DCF model. Move the sliders to test your
+                        own growth guesses. If fair value is higher than today's price, the
+                        stock may be cheap; if lower, you may be overpaying.
+                    </InfoTip>
+                </h2>
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm max-w-2xl">
                     Interactive Discounted Cash Flow (DCF) model. Adjust the assumptions to determine the intrinsic fair value.

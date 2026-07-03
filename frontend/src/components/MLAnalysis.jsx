@@ -2,6 +2,41 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import InfoTip from './InfoTip';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// "2020-03" -> "Mar 2020"
+const formatMonth = (ym) => {
+    if (!ym) return null;
+    const [y, m] = ym.split('-');
+    return `${MONTHS[parseInt(m, 10) - 1]} ${y}`;
+};
+
+const COLORS = ['#1A2433', '#C5A059', '#4A7C59', '#8C735A']; // Navy, Gold, Green, Bronze
+const COLOR_NAMES = ['Navy', 'Gold', 'Green', 'Bronze'];
+
+// Shared tooltip: names the month instead of raw x/y values.
+const PatternTooltip = ({ active, payload }) => {
+    if (!(active && payload && payload.length)) return null;
+    const d = payload[0].payload;
+    return (
+        <div className="bg-[#1A2433] p-4 rounded-xl shadow-2xl animate-fade-in">
+            <p className="text-[#C5A059] text-[10px] font-bold uppercase tracking-widest mb-2 pb-2 border-b border-white/10">
+                {d.month}
+            </p>
+            <div className="space-y-1.5 text-xs">
+                <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: COLORS[d.cluster % COLORS.length] }} />
+                    <span className="text-slate-300">Regime: <span className="text-[#F9F7F2] font-bold">{COLOR_NAMES[d.cluster % COLOR_NAMES.length]} group</span></span>
+                </div>
+                <p className={d.isAnomaly ? 'text-red-400 font-bold' : 'text-slate-400'}>
+                    {d.isAnomaly ? '⚠ Abnormal month (anomaly)' : 'Normal month'}
+                </p>
+            </div>
+        </div>
+    );
+};
 
 const MLAnalysis = ({ ticker, startYear, endDate }) => {
     const [mlData, setMlData] = useState(null);
@@ -39,15 +74,32 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
         x: point[0],
         y: point[1],
         cluster: mlData.clusters[idx],
-        isAnomaly: mlData.anomalies[idx] === -1
+        isAnomaly: mlData.anomalies[idx] === -1,
+        month: mlData.dates ? formatMonth(mlData.dates[idx]) : `Month ${idx + 1}`
     }));
 
-    const COLORS = ['#1A2433', '#C5A059', '#4A7C59', '#8C735A']; // Navy, Gold, Green, Bronze
+    // Facts for the plain-words translations below each chart.
+    const firstMonth = clusterData[0]?.month;
+    const lastPoint = clusterData[clusterData.length - 1];
+    const clusterCounts = {};
+    clusterData.forEach(p => { clusterCounts[p.cluster] = (clusterCounts[p.cluster] || 0) + 1; });
+    const regimeCount = Object.keys(clusterCounts).length;
+    const anomalyMonths = clusterData.filter(p => p.isAnomaly).map(p => p.month);
+    const lastAnomaly = anomalyMonths[anomalyMonths.length - 1];
+    const recentAnomaly = clusterData.slice(-6).some(p => p.isAnomaly);
 
     return (
         <div className="space-y-12 animate-in fade-in duration-500">
             <div className="border-b border-navy/5 pb-6">
-                <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4 mb-2">Machine Learning Insights</h2>
+                <h2 className="text-2xl font-serif font-bold text-navy border-l-4 border-gold pl-4 mb-2 flex items-center gap-3">
+                    Machine Learning Insights
+                    <InfoTip title="Market Patterns (ML)">
+                        This tool reads years of monthly price moves and does two jobs:
+                        (1) it groups similar months into "regimes" so you can see what kind of
+                        market you are in now, and (2) it flags rare, abnormal months — the kind
+                        that often come with crashes or panics — so you can manage risk early.
+                    </InfoTip>
+                </h2>
                 <p className="text-slate-500 text-sm pl-5 max-w-3xl">
                     Our algorithms analyze decades of price movements to identify hidden patterns and risks that traditional metrics might miss.
                 </p>
@@ -57,21 +109,24 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-2 bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/50">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-serif font-bold text-navy">Market Patterns & Cycles</h3>
+                        <h3 className="text-lg font-serif font-bold text-navy flex items-center gap-2">
+                            Market Patterns &amp; Cycles
+                            <InfoTip title="Market Patterns & Cycles">
+                                Every dot is one month (hover it to see which one). The AI places months
+                                that behaved alike close together and gives them the same colour.
+                                Tight groups = a steady, predictable market. Dots drifting away from
+                                the groups = the market is changing its behaviour.
+                            </InfoTip>
+                        </h3>
                         <span className="text-xs font-bold text-gold uppercase tracking-wider bg-navy/5 px-2 py-1 rounded">AI Pattern Recognition</span>
                     </div>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
-                                <XAxis type="number" dataKey="x" name="Market Factor 1" stroke="#8C735A" tick={false} axisLine={false} />
-                                <YAxis type="number" dataKey="y" name="Market Factor 2" stroke="#8C735A" tick={false} axisLine={false} />
-                                <Tooltip
-                                    cursor={{ strokeDasharray: '3 3' }}
-                                    contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0', borderRadius: '4px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    formatter={() => ""}
-                                    labelFormatter={() => "Market State"}
-                                />
+                                <XAxis type="number" dataKey="x" stroke="#8C735A" tick={false} axisLine={false} label={{ value: 'Months that behaved alike sit close together', position: 'insideBottom', fill: '#8C735A', fontSize: 11 }} />
+                                <YAxis type="number" dataKey="y" stroke="#8C735A" tick={false} axisLine={false} />
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<PatternTooltip />} />
                                 <Scatter name="Market States" data={clusterData} fill="#8884d8">
                                     {clusterData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[entry.cluster % COLORS.length]} />
@@ -79,6 +134,21 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
                                 </Scatter>
                             </ScatterChart>
                         </ResponsiveContainer>
+                    </div>
+
+                    {/* Plain-words translation */}
+                    <div className="mt-4 pt-4 border-t border-beige-light text-sm text-slate-600 leading-relaxed">
+                        <span className="text-[10px] font-bold text-gold uppercase tracking-widest block mb-1">In plain words</span>
+                        <p>
+                            Each dot is one month, from {firstMonth} to {lastPoint?.month}. The AI sorted these{' '}
+                            {clusterData.length} months into {regimeCount} groups of look-alike behaviour.
+                            The newest month ({lastPoint?.month}) sits in the{' '}
+                            <span className="font-bold" style={{ color: COLORS[lastPoint?.cluster % COLORS.length] }}>
+                                {COLOR_NAMES[lastPoint?.cluster % COLOR_NAMES.length]} group
+                            </span>
+                            , so right now the market is acting like the other months in that group.
+                            Hover any dot to see its month name.
+                        </p>
                     </div>
                 </div>
 
@@ -111,27 +181,71 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-2 bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/50">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-serif font-bold text-navy">Crash & Anomaly Detection</h3>
+                        <h3 className="text-lg font-serif font-bold text-navy flex items-center gap-2">
+                            Crash &amp; Anomaly Detection
+                            <InfoTip title="Crash & Anomaly Detection">
+                                The AI marks months that did not act like the rest — usually crashes,
+                                panics or wild rallies — as big red dots. Grey dots are normal months.
+                                Many red dots close to today is a warning to check your risk.
+                            </InfoTip>
+                        </h3>
                         <span className="text-xs font-bold text-error/80 uppercase tracking-wider bg-red-50 px-2 py-1 rounded">Risk Radar</span>
                     </div>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
-                                <XAxis type="number" dataKey="x" stroke="#8C735A" tick={false} axisLine={false} />
+                                <XAxis type="number" dataKey="x" stroke="#8C735A" tick={false} axisLine={false} label={{ value: 'Red = month that broke the normal pattern', position: 'insideBottom', fill: '#8C735A', fontSize: 11 }} />
                                 <YAxis type="number" dataKey="y" stroke="#8C735A" tick={false} axisLine={false} />
-                                <Tooltip
-                                    cursor={{ strokeDasharray: '3 3' }}
-                                    contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0', borderRadius: '4px' }}
-                                    formatter={() => ""}
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<PatternTooltip />} />
+                                {/* Anomalies get a bigger dot + dark ring, so they stand out by size and shape too (not colour alone). */}
+                                <Scatter
+                                    name="Anomalies"
+                                    data={clusterData}
+                                    shape={(props) => (
+                                        <circle
+                                            cx={props.cx}
+                                            cy={props.cy}
+                                            r={props.payload.isAnomaly ? 6 : 3.5}
+                                            fill={props.payload.isAnomaly ? '#EF4444' : '#CBD5E1'}
+                                            fillOpacity={props.payload.isAnomaly ? 1 : 0.5}
+                                            stroke={props.payload.isAnomaly ? '#1A2433' : 'none'}
+                                            strokeWidth={props.payload.isAnomaly ? 1.5 : 0}
+                                        />
+                                    )}
                                 />
-                                <Scatter name="Anomalies" data={clusterData} fill="#8884d8">
-                                    {clusterData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.isAnomaly ? '#EF4444' : '#CBD5E1'} opacity={entry.isAnomaly ? 1 : 0.5} />
-                                    ))}
-                                </Scatter>
                             </ScatterChart>
                         </ResponsiveContainer>
+                    </div>
+
+                    {/* Plain-words translation, with the anomaly months named */}
+                    <div className="mt-4 pt-4 border-t border-beige-light text-sm text-slate-600 leading-relaxed">
+                        <span className="text-[10px] font-bold text-error uppercase tracking-widest block mb-1">In plain words</span>
+                        {anomalyMonths.length > 0 ? (
+                            <>
+                                <p>
+                                    Out of {clusterData.length} months, the AI found{' '}
+                                    <span className="font-bold text-error">{anomalyMonths.length} abnormal month{anomalyMonths.length > 1 ? 's' : ''}</span>{' '}
+                                    (the big red dots) — months where the market broke its usual pattern:
+                                </p>
+                                <p className="my-2 flex flex-wrap gap-1.5">
+                                    {anomalyMonths.map((m) => (
+                                        <span key={m} className="bg-red-50 text-error border border-red-100 rounded px-2 py-0.5 text-xs font-bold">{m}</span>
+                                    ))}
+                                </p>
+                                <p>
+                                    The most recent one was <span className="font-bold">{lastAnomaly}</span>.{' '}
+                                    {recentAnomaly
+                                        ? 'That is inside the last 6 months — be careful: history says stress like this often comes before sharp drops.'
+                                        : 'That is a while back, so the market has been behaving normally lately.'}
+                                </p>
+                            </>
+                        ) : (
+                            <p>
+                                Good news: across all {clusterData.length} months, the AI found no abnormal months.
+                                The market behaved within its normal pattern for this whole period.
+                            </p>
+                        )}
                     </div>
                 </div>
 

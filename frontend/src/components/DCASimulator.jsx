@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
+import InfoTip from './InfoTip';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
@@ -37,6 +38,12 @@ const DCASimulator = ({ ticker, startYear, endDate }) => {
                     <h3 className="text-xl font-serif font-bold text-navy flex items-center gap-2 mb-2">
                         <TrendingUp className="w-6 h-6 text-gold" />
                         DCA Simulator
+                        <InfoTip align="left" title="DCA Simulator">
+                            DCA = investing the same amount every month, rain or shine. Type an
+                            amount and see what that habit would have grown into with this asset.
+                            The green line is your money's value; the grey dashed line is what
+                            you put in. The gap between them is your profit.
+                        </InfoTip>
                     </h3>
                     <p className="text-slate-500 text-sm">Visualize the power of consistent monthly investing</p>
                 </div>

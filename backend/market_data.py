@@ -285,14 +285,25 @@ def generate_fun_stats(info):
         else:
             rank_badge = "Micro Cap Gem 💎"
 
-        # 2. Burger Index (Big Mac Index proxy)
-        # Approx Big Mac price: $5.69 (USD)
-        burger_price = 5.69
-        burgers = 0
+        # 2. Meal Index (Big Mac Index proxy)
+        # USD stocks: Big Mac (~$5.69). JSE stocks are priced in ZAc (cents) or
+        # ZAR, where the local staple benchmark is the KFC Streetwise 2 (~R45).
+        meal_label = "Burger Index"
+        meal_text = "N/A"
         if current_price and currency == 'USD':
-             burgers = current_price / burger_price
-
-        burger_text = f"1 Share = {int(burgers)} Big Macs 🍔" if burgers > 0 else "N/A"
+            meals = current_price / 5.69
+            if meals >= 1:
+                meal_text = f"1 Share = {int(meals)} Big Macs 🍔"
+            else:
+                meal_text = f"1 Big Mac = {round(5.69 / current_price)} Shares 🍔"
+        elif current_price and currency in ('ZAR', 'ZAc'):
+            meal_label = "Streetwise Index"
+            price_zar = current_price / 100 if currency == 'ZAc' else current_price
+            meals = price_zar / 44.90
+            if meals >= 1:
+                meal_text = f"1 Share = {int(meals)} Streetwise 2s 🍗"
+            else:
+                meal_text = f"1 Streetwise 2 = {round(44.90 / price_zar)} Shares 🍗"
 
         # 3. Market Mood
         beta = info.get('beta', 1)
@@ -308,7 +319,8 @@ def generate_fun_stats(info):
 
         return {
             "rank_badge": rank_badge,
-            "burger_index": burger_text,
+            "burger_index": meal_text,
+            "burger_label": meal_label,
             "market_mood": mood
         }
     except Exception as e:
@@ -360,6 +372,7 @@ def get_key_stats(ticker: str):
             "insight": {
                 "rank": fun_stats.get("rank_badge"),
                 "burgers": fun_stats.get("burger_index"),
+                "burgers_label": fun_stats.get("burger_label"),
                 "mood": fun_stats.get("market_mood")
             }
         }

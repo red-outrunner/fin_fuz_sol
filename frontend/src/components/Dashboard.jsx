@@ -11,6 +11,7 @@ import NewsFeed from './NewsFeed';
 import KeyStats from './KeyStats';
 import EarningsCalendar from './EarningsCalendar';
 
+import InfoTip from './InfoTip';
 import RiskAnalysis from './RiskAnalysis';
 import DividendAnalysis from './DividendAnalysis';
 import ValuationLab from './ValuationLab';
@@ -301,7 +302,15 @@ const Dashboard = () => {
                         {activeTab === 'charts' && (
                             <div className="space-y-6 md:space-y-12 animate-fade-in w-full max-w-full overflow-hidden">
                                 <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
-                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Monthly Returns Pattern</h3>
+                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy flex items-center gap-2">
+                                        Monthly Returns Pattern
+                                        <InfoTip title="Monthly Returns Pattern">
+                                            Shows the average return for each month of the year (all years mixed
+                                            together). Gold bars = months that usually go up, navy bars = months
+                                            that usually go down. Use it to spot strong and weak seasons — e.g.
+                                            good months to add money, or weak months to expect dips.
+                                        </InfoTip>
+                                    </h3>
                                     <div className="overflow-hidden w-full pb-2">
                                         <div className="w-full">
                                             <BarChart data={data} />
@@ -309,7 +318,16 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
-                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Risk Spectrum (Volatility vs Return)</h3>
+                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy flex items-center gap-2">
+                                        Risk Spectrum (Volatility vs Return)
+                                        <InfoTip title="Risk Spectrum">
+                                            Each dot is a month of the year. Up = better average return.
+                                            Right = bigger swings (more risk). The best months sit top-left:
+                                            good reward for little risk. Hover a dot to see the month's name,
+                                            return, risk and win rate. Helps you judge if a month's gains are
+                                            worth its bumps.
+                                        </InfoTip>
+                                    </h3>
                                     <div className="overflow-hidden w-full pb-2">
                                         <div className="w-full">
                                             <ScatterPlot data={data} />
@@ -317,7 +335,15 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
-                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy">Historical Performance Matrix</h3>
+                                    <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy flex items-center gap-2">
+                                        Historical Performance Matrix
+                                        <InfoTip title="Historical Performance Matrix">
+                                            Every cell is one real month: green = up, red = down, darker =
+                                            bigger move. Read a row to relive a year; read a column to see if
+                                            a month repeats its behaviour. Great for spotting long winning or
+                                            losing streaks at a glance.
+                                        </InfoTip>
+                                    </h3>
                                     <div className="overflow-hidden w-full pb-2">
                                         <div className="w-full">
                                             <Heatmap data={data} />
@@ -366,7 +392,15 @@ const Dashboard = () => {
                         {activeTab === 'terminal' && (
                             <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Market Terminal" onUpgrade={() => handleOpenUpgrade('institutional')}>
                                 <div className="animate-in fade-in duration-300">
-                                    <h3 className="text-xl font-serif font-bold mb-6 text-navy">Market Terminal</h3>
+                                    <h3 className="text-xl font-serif font-bold mb-6 text-navy flex items-center gap-2">
+                                        Market Terminal
+                                        <InfoTip title="Market Terminal">
+                                            Your trading-floor view: latest news on the left, the company's
+                                            key numbers in the middle, and coming events (like earnings dates)
+                                            on the right. Use it to catch news and dates that can move the
+                                            price — before they surprise you.
+                                        </InfoTip>
+                                    </h3>
                                     <div className="grid grid-cols-12 gap-6 h-[70vh]">
                                         <div className="col-span-12 lg:col-span-3 h-full">
                                             <NewsFeed news={news} onRead={handleReadNews} />

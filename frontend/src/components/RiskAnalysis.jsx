@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import InfoTip from './InfoTip';
 
 const RiskAnalysis = ({ stats }) => {
     if (!stats) return null;
@@ -57,7 +58,15 @@ const RiskAnalysis = ({ stats }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="border-b border-navy/5 pb-6">
-                <h2 className="text-3xl font-serif font-bold text-navy title-font">Risk Analysis</h2>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                    Risk Analysis
+                    <InfoTip align="left" title="Risk Analysis">
+                        Measures the pain side of investing. Sharpe and Sortino = how much reward
+                        you get for the risk you take (higher is better, above the target is
+                        good). Volatility = size of the swings. Max drawdown = the worst fall.
+                        Check this before you size your position.
+                    </InfoTip>
+                </h2>
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm max-w-2xl">
                     Evaluation of portfolio stability using annualized risk metrics.
@@ -85,7 +94,14 @@ const RiskAnalysis = ({ stats }) => {
 
             {/* Drawdown Chart */}
             <div className="bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 h-96">
-                <h3 className="text-lg font-serif font-bold text-navy mb-6">Historical Drawdown</h3>
+                <h3 className="text-lg font-serif font-bold text-navy mb-6 flex items-center gap-2">
+                    Historical Drawdown
+                    <InfoTip title="Historical Drawdown">
+                        Every dip below zero shows how far the price was under its last high.
+                        The deepest valley is the max drawdown. If a dip like that would make
+                        you sell in panic, the asset is too risky for you.
+                    </InfoTip>
+                </h3>
                 <ResponsiveContainer width="100%" height="85%">
                     <AreaChart data={drawdownData}>
                         <defs>

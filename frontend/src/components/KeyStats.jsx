@@ -1,4 +1,5 @@
 import React from 'react';
+import InfoTip from './InfoTip';
 
 const MetricRow = ({ label, value, format = 'text' }) => {
     let displayValue = value;
@@ -20,8 +21,13 @@ const KeyStats = ({ stats }) => {
 
     return (
         <div className="bg-gray-900 rounded-lg p-0 shadow-lg h-full border border-gray-800">
-            <div className="bg-gray-800 px-4 py-2 rounded-t-lg border-b border-gray-700">
+            <div className="bg-gray-800 px-4 py-2 rounded-t-lg border-b border-gray-700 flex items-center gap-2">
                 <h3 className="text-orange-400 text-sm font-semibold uppercase tracking-wider">Key Statistics</h3>
+                <InfoTip dark align="left" title="Key Statistics">
+                    The company's vital signs in one place. Valuation says if the price is cheap or dear.
+                    Financials say if the business makes real money. Trading &amp; Analysts show what the
+                    market and the pros expect next. Use it for a fast health check before you dig deeper.
+                </InfoTip>
             </div>
 
             <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -77,7 +83,14 @@ const KeyStats = ({ stats }) => {
                                 <span className="text-sm font-bold text-gray-200">{stats.insight.rank}</span>
                             </div>
                             <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
-                                <span className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Burger Index</span>
+                                <span className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                                    {stats.insight.burgers_label || 'Burger Index'}
+                                    <InfoTip dark align="left" title={stats.insight.burgers_label || 'Burger Index'}>
+                                        A fun price check. It turns one share into meals everyone knows:
+                                        Big Macs for US stocks, KFC Streetwise 2 meals for JSE stocks.
+                                        It makes the share price feel real — no maths needed.
+                                    </InfoTip>
+                                </span>
                                 <span className="text-sm font-bold text-gray-200">{stats.insight.burgers}</span>
                             </div>
                             <div className="bg-gray-800/50 p-3 rounded border border-gray-700">

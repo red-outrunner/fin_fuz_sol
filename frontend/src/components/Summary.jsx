@@ -6,6 +6,7 @@ import DrawdownChart from './charts/DrawdownChart';
 import AnnualReturns from './charts/AnnualReturns';
 import WealthProjection from './WealthProjection';
 import ProtectedComponent from './ProtectedComponent';
+import InfoTip from './InfoTip';
 import { useAuth } from '../context/AuthContext';
 
 const Summary = ({ data, profile, onUpgrade }) => {
@@ -21,7 +22,16 @@ const Summary = ({ data, profile, onUpgrade }) => {
         <div className="space-y-12 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-navy/10 pb-6 mb-8 gap-4">
                 <div>
-                    <h2 className="text-4xl font-serif font-bold text-navy tracking-tight">{ticker}</h2>
+                    <h2 className="text-4xl font-serif font-bold text-navy tracking-tight flex items-center gap-3">
+                        {ticker}
+                        <InfoTip align="left" title="Summary">
+                            The one-page health check of your pick. Top cards show growth (CAGR),
+                            bumpiness (volatility), reward-for-risk (Sharpe/Sortino) and the worst
+                            fall (max drawdown). Below: how R10,000 would have grown, how deep the
+                            dips were, and which years and months were good or bad. Start here
+                            before any other tab.
+                        </InfoTip>
+                    </h2>
                     <p className="text-xs text-gold font-bold uppercase tracking-[0.2em] mt-1">Institutional Performance Analysis</p>
                 </div>
             </div>
@@ -34,6 +44,11 @@ const Summary = ({ data, profile, onUpgrade }) => {
                     <h3 className="text-xl font-serif font-bold mb-8 text-navy flex items-center gap-3">
                         <span className="w-8 h-px bg-gold/30"></span>
                         Wealth Growth (R10,000)
+                        <InfoTip title="Wealth Growth">
+                            What R10,000 put in at the start would be worth over time. The line
+                            going up = money made. Flat or falling stretches = dead or losing
+                            years. This is the simplest "was it worth it?" picture.
+                        </InfoTip>
                     </h3>
                     <div className="overflow-hidden w-full max-w-full pb-2" style={{minWidth: 0}}>
                         <div className="w-full">
@@ -44,7 +59,14 @@ const Summary = ({ data, profile, onUpgrade }) => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="card-premium p-6 md:p-8 overflow-hidden w-full max-w-full">
-                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Drawdown Analytics</h3>
+                        <h3 className="text-lg font-serif font-bold mb-6 text-navy flex items-center gap-2">
+                            Drawdown Analytics
+                            <InfoTip title="Drawdown">
+                                How far the price fell from its last high point, over time.
+                                A -30% dip means you would have been down 30% at that moment.
+                                Use it to ask: "could I sit through that without selling?"
+                            </InfoTip>
+                        </h3>
                         <div className="overflow-hidden w-full pb-2">
                             <div className="w-full">
                                 <DrawdownChart data={stats.drawdown_series} />
@@ -52,7 +74,14 @@ const Summary = ({ data, profile, onUpgrade }) => {
                         </div>
                     </div>
                     <div className="card-premium p-6 md:p-8 overflow-hidden w-full max-w-full">
-                        <h3 className="text-lg font-serif font-bold mb-6 text-navy">Annual Yield Variance</h3>
+                        <h3 className="text-lg font-serif font-bold mb-6 text-navy flex items-center gap-2">
+                            Annual Yield Variance
+                            <InfoTip title="Annual Returns">
+                                The return for each full year. It shows how often good years and
+                                bad years come, and how big each was — so you know what a "normal"
+                                year looks like for this asset.
+                            </InfoTip>
+                        </h3>
                         <div className="overflow-hidden w-full pb-2">
                             <div className="w-full">
                                 <AnnualReturns data={stats.annual_returns} />
@@ -70,6 +99,11 @@ const Summary = ({ data, profile, onUpgrade }) => {
                 <h3 className="text-xl font-serif font-bold mb-8 text-navy flex items-center gap-3">
                     <span className="w-8 h-px bg-gold/30"></span>
                     Seasonal Performance Matrix
+                    <InfoTip title="Seasonal Matrix">
+                        The average return of each calendar month across all years.
+                        Arrows up = the month usually gains; arrows down = it usually loses.
+                        Handy for timing regular buys or knowing when dips are common.
+                    </InfoTip>
                 </h3>
                 <div className="overflow-x-auto rounded-none border-y border-navy/5">
                     <table className="min-w-full divide-y divide-navy/5">

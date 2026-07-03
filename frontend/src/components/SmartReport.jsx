@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Download, CheckCircle, AlertTriangle } from 'lucide-react';
+import InfoTip from './InfoTip';
 
 const SmartReport = ({ ticker, data, profile }) => {
     if (!data || !profile) return null;
@@ -47,7 +48,14 @@ const SmartReport = ({ ticker, data, profile }) => {
         <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
             <div className="flex justify-between items-end mb-8 border-b border-navy/5 pb-6">
                 <div>
-                    <h2 className="text-3xl font-serif font-bold text-navy title-font">Smart Analyst Report</h2>
+                    <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                        Smart Analyst Report
+                        <InfoTip align="left" title="Smart Report">
+                            An auto-written analyst note: current trend, strengths, and risks —
+                            in plain words. Read it as a 60-second brief before deciding, or
+                            export it to PDF to share or keep.
+                        </InfoTip>
+                    </h2>
                     <div className="h-1 w-20 bg-gold mt-2"></div>
                 </div>
                 <button

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { DollarSign, TrendingUp, Calendar, Percent } from 'lucide-react';
+import InfoTip from './InfoTip';
 
 const DividendAnalysis = ({ ticker, startYear }) => {
     const [data, setData] = useState(null);
@@ -54,7 +55,15 @@ const DividendAnalysis = ({ ticker, startYear }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="border-b border-navy/5 pb-6">
-                <h2 className="text-3xl font-serif font-bold text-navy title-font">Dividend Analysis</h2>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                    Dividend Analysis
+                    <InfoTip align="left" title="Dividends">
+                        The cash the company pays you for holding its shares. Yield = the yearly
+                        pay as a % of the price. Payout ratio = the share of profit paid out
+                        (too high can be unsafe). Growth = whether your pay rises each year.
+                        Key tab for income investors.
+                    </InfoTip>
+                </h2>
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm pl-1">
                     Historical payout performance and growth sustainability.
@@ -96,7 +105,13 @@ const DividendAnalysis = ({ ticker, startYear }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Annual Payments */}
                 <div className="bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 h-80">
-                    <h3 className="text-lg font-serif font-bold text-navy mb-6">Annual Dividends</h3>
+                    <h3 className="text-lg font-serif font-bold text-navy mb-6 flex items-center gap-2">
+                        Annual Dividends
+                        <InfoTip title="Annual Dividends">
+                            Total dividend paid per share each year. Steady or rising bars =
+                            a reliable payer. Missing or shrinking bars = the payout was cut.
+                        </InfoTip>
+                    </h3>
                     <ResponsiveContainer width="100%" height="85%">
                         <BarChart data={data.annual}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -113,7 +128,14 @@ const DividendAnalysis = ({ ticker, startYear }) => {
 
                 {/* Growth Rate */}
                 <div className="bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 h-80">
-                    <h3 className="text-lg font-serif font-bold text-navy mb-6">Dividend Growth Rate</h3>
+                    <h3 className="text-lg font-serif font-bold text-navy mb-6 flex items-center gap-2">
+                        Dividend Growth Rate
+                        <InfoTip title="Dividend Growth">
+                            How much the payout changed vs the year before. Above 0% = a raise
+                            for you. Growth that beats inflation means your income gets stronger
+                            every year, not weaker.
+                        </InfoTip>
+                    </h3>
                     <ResponsiveContainer width="100%" height="85%">
                         <LineChart data={data.annual}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />

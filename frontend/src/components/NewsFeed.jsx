@@ -1,4 +1,5 @@
 import React from 'react';
+import InfoTip from './InfoTip';
 
 const NewsFeed = ({ news, onRead }) => {
     if (!news || news.length === 0) {
@@ -13,7 +14,14 @@ const NewsFeed = ({ news, onRead }) => {
     return (
         <div className="bg-gray-800 rounded-lg p-4 shadow-lg h-full overflow-y-auto custom-scrollbar">
             <h3 className="text-orange-400 text-sm font-semibold mb-3 uppercase tracking-wider border-b border-gray-700 pb-2 flex justify-between items-center">
-                <span>Top News</span>
+                <span className="flex items-center gap-2">
+                    Top News
+                    <InfoTip dark align="left" title="News Feed">
+                        Fresh headlines about this company. News moves prices — check here for
+                        the "why" behind a jump or a drop. Click "Read Article" to read it
+                        right here without leaving the app.
+                    </InfoTip>
+                </span>
                 <span className="text-xs text-gray-500">{news.length} items</span>
             </h3>
             <ul className="space-y-3">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { Users, TrendingUp, Award, ArrowRight } from 'lucide-react';
+import InfoTip from './InfoTip';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const PeerBenchmarking = ({ ticker, startYear }) => {
@@ -80,7 +81,14 @@ const PeerBenchmarking = ({ ticker, startYear }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="border-b border-navy/5 pb-6">
-                <h2 className="text-3xl font-serif font-bold text-navy title-font">Battle of the Peers</h2>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                    Battle of the Peers
+                    <InfoTip align="left" title="Peer Battle">
+                        Lines your stock up against its closest JSE rivals and compares yearly
+                        returns. Gold bar = your pick. It answers a simple question: is there a
+                        better horse in the same race?
+                    </InfoTip>
+                </h2>
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm pl-1">
                     Benchmarking {ticker} against its closest JSE rivals: <span className="font-bold text-navy">{peers.join(", ")}</span>.

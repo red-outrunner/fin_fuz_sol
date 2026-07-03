@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { Calculator, Target, TrendingUp, DollarSign } from 'lucide-react';
+import InfoTip from './InfoTip';
 
 const FreedomCalculator = ({ ticker }) => {
     const [goal, setGoal] = useState(5000); // Default R5000/pm
@@ -29,7 +30,15 @@ const FreedomCalculator = ({ ticker }) => {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="border-b border-navy/5 pb-6">
-                <h2 className="text-3xl font-serif font-bold text-navy title-font">Financial Freedom Calculator</h2>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                    Financial Freedom Calculator
+                    <InfoTip align="left" title="Freedom Calculator">
+                        Type the monthly income you want. It tells you how many shares of this
+                        stock you would need so the dividends alone pay you that much — and what
+                        that pile of shares costs today. It turns "one day I want passive income"
+                        into a real number you can aim for.
+                    </InfoTip>
+                </h2>
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm pl-1">
                     Calculate your path to living off dividends from {ticker}.

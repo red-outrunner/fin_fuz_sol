@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import InfoTip from './InfoTip';
 
 const WealthProjection = ({ ticker, startYear, endDate }) => {
     const [projectionData, setProjectionData] = useState([]);
@@ -43,7 +44,15 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
     return (
         <div className="space-y-12 animate-in fade-in duration-500">
             <div>
-                <h2 className="text-3xl font-serif font-bold text-navy title-font">Wealth Projection</h2>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                    Wealth Projection
+                    <InfoTip align="left" title="Wealth Projection">
+                        Runs 1,000 possible futures for R10,000, based on how this asset moved in
+                        the past. You get three paths: bad luck (bottom 10%), the middle case,
+                        and good luck (top 10%). Use it to see the realistic range — not just
+                        the dream case.
+                    </InfoTip>
+                </h2>
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm max-w-2xl">
                     Probabilistic forecasting using Monte Carlo simulations (1,000 runs) based on historical volatility and drift.

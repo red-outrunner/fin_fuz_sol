@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import InfoTip from './InfoTip';
 
 const Comparison = ({ ticker, startYear, endDate }) => {
     const [benchmarkStats, setBenchmarkStats] = useState({});
@@ -127,7 +128,15 @@ const Comparison = ({ ticker, startYear, endDate }) => {
         <div className="space-y-12 animate-in fade-in duration-500">
             {/* Header */}
             <div>
-                <h2 className="text-3xl font-serif font-bold text-navy title-font">Peer Benchmarking</h2>
+                <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
+                    Peer Benchmarking
+                    <InfoTip align="left" title="Comparison">
+                        Put any tickers side by side: month-by-month behaviour, risk and return
+                        numbers, and correlation (how much they move together). Low correlation
+                        between two assets = better diversification — one can zig while the
+                        other zags.
+                    </InfoTip>
+                </h2>
                 <div className="h-1 w-20 bg-gold mt-2 mb-4"></div>
                 <p className="text-slate-500 text-sm max-w-2xl">
                     Compare historical seasonality and risk-adjusted return metrics against peers.

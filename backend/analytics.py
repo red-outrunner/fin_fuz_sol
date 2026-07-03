@@ -181,9 +181,22 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, ticker:
 
 
 def run_ml_analysis(monthly_ret: pd.Series):
-    """Runs PCA, GMM, and Isolation Forest."""
+    """Runs PCA, GMM, and Isolation Forest.
+
+    Adds a `dates` list ("YYYY-MM") aligned with the results so the frontend can
+    label each point with its month (same alignment as the ML CSV export: each
+    12-month window is labeled with the month it leads into).
+    """
     try:
-        return core_math.run_ml_clusters(monthly_ret)
+        results = core_math.run_ml_clusters(monthly_ret)
+        if results is None:
+            return None
+
+        dates = monthly_ret.index[12:]
+        if len(dates) != len(results["clusters"]):
+            dates = dates[-len(results["clusters"]):]
+        results["dates"] = [d.strftime("%Y-%m") for d in dates]
+        return results
     except Exception as e:
         logger.error(f"Error in ML analysis: {e}")
         return None
