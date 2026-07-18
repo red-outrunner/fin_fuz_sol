@@ -117,6 +117,10 @@ class FreedomRequest(BaseModel):
 def read_root():
     return {"message": "Global Index Analyzer API is running"}
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
 @app.post("/api/search")
 def search_handler(request: SearchRequest):
     logger.info(f"Searching for: {request.query}")
