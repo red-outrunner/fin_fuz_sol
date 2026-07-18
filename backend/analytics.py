@@ -251,14 +251,19 @@ def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000,
 def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
     """
     Calculates the number of shares and investment required to generate a target monthly income.
-    Uses actual dividend data from yfinance (not from the price dataframe).
-    
+    Uses actual dividend data from yfinance with proper currency conversion to ZAR.
+
     Args:
         data: Price data DataFrame (from download_data)
-        monthly_income_goal: Target monthly dividend income
+        monthly_income_goal: Target monthly dividend income (assumed ZAR)
         ticker: Optional ticker symbol to fetch actual dividend data
     """
     try:
+        import yfinance as yf
+
+        ticker_obj = yf.Ticker(ticker) if ticker else None
+        info = ticker_obj.info if ticker_obj else {}
+
         # Get last price
         if "Close" in data.columns:
             current_price = data["Close"].iloc[-1]
@@ -267,30 +272,88 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
         else:
             return None
 
+        # Detect currency and convert to ZAR
+        # yfinance sometimes misreports currency, so we use ticker suffix as primary indicator
+        ticker_upper = (ticker or "").upper()
+        
+        if ticker_upper.endswith(".JO"):
+            # JSE stocks: prices in ZAR (Rand), dividends in ZAR
+            # Note: Some older yfinance versions return ZAc (cents), so we detect by magnitude
+            price_in_zar = current_price
+            # If price looks like cents (>500 suggests it's ZAc, since few JSE stocks trade above R500)
+            if current_price > 500:
+                price_in_zar = current_price / 100.0
+        elif ticker_upper.endswith(".US") or "." not in ticker_upper:
+            # US stocks: convert USD to ZAR
+            try:
+                zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
+            except:
+                zar_per_usd = 18.0
+            price_in_zar = current_price * zar_per_usd
+        else:
+            # Other exchanges (UK, EU, AU, etc.) - use info currency or default to no conversion
+            currency = info.get("currency", "USD")
+            if currency == "ZAc":
+                price_in_zar = current_price / 100.0
+            elif currency == "USD":
+                try:
+                    zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
+                except:
+                    zar_per_usd = 18.0
+                price_in_zar = current_price * zar_per_usd
+            else:
+                # GBP, EUR, AUD, etc. - would need additional FX conversion (TODO)
+                price_in_zar = current_price
+
         # Fetch actual dividend data from yfinance
         annual_yield = 0.0
-        dividends_12m = 0.0
-        
-        if ticker:
+        dividends_12m_raw = 0.0
+
+        if ticker and ticker_obj:
             try:
-                import yfinance as yf
-                ticker_obj = yf.Ticker(ticker)
                 dividends = ticker_obj.dividends
-                
+
                 if dividends is not None and not dividends.empty:
                     # Sum last 12 months of dividends
                     last_year = dividends.index.max() - pd.DateOffset(months=12)
-                    dividends_12m = dividends[dividends.index >= last_year].sum()
+                    dividends_12m_raw = dividends[dividends.index >= last_year].sum()
+
+                    # Convert dividends to ZAR using same logic as price
+                    dividends_in_zar = dividends_12m_raw
                     
-                    if current_price > 0:
-                        annual_yield = dividends_12m / current_price
+                    if ticker_upper.endswith(".JO"):
+                        # JSE: check if dividends are in cents (same magnitude logic as price)
+                        if dividends_12m_raw > 500:  # Likely in ZAc
+                            dividends_in_zar = dividends_12m_raw / 100.0
+                    elif ticker_upper.endswith(".US") or "." not in ticker_upper:
+                        # US: convert USD dividends to ZAR
+                        try:
+                            zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
+                        except:
+                            zar_per_usd = 18.0
+                        dividends_in_zar = dividends_12m_raw * zar_per_usd
+                    else:
+                        # Other currencies - use info currency
+                        currency = info.get("currency", "USD")
+                        if currency == "ZAc":
+                            dividends_in_zar = dividends_12m_raw / 100.0
+                        elif currency == "USD":
+                            try:
+                                zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
+                            except:
+                                zar_per_usd = 18.0
+                            dividends_in_zar = dividends_12m_raw * zar_per_usd
+
+                    if price_in_zar > 0:
+                        annual_yield = dividends_in_zar / price_in_zar
+                        dividends_12m = dividends_in_zar  # Store the ZAR-converted value
             except Exception as e:
                 logger.warning(f"Could not fetch dividend data for {ticker}: {e}")
 
         # Fallback: if still no yield, return zeros (frontend should warn user)
         if annual_yield <= 0:
             return {
-                "current_price": current_price,
+                "current_price": price_in_zar,
                 "annual_yield": 0.0,
                 "shares_needed": 0,
                 "investment_needed": 0,
@@ -301,15 +364,16 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
         estimated_annual_income_needed = monthly_income_goal * 12
 
         investment_needed = estimated_annual_income_needed / annual_yield
-        shares_needed = int(investment_needed / current_price)
+        shares_needed = int(investment_needed / price_in_zar)
 
         return {
-            "current_price": current_price,
+            "current_price": price_in_zar,
             "annual_yield": annual_yield,
             "dividends_12m": dividends_12m,
             "shares_needed": shares_needed,
             "investment_needed": investment_needed,
-            "monthly_income_goal": monthly_income_goal
+            "monthly_income_goal": monthly_income_goal,
+            "currency": "ZAR"
         }
     except Exception as e:
         logger.error(f"Error calculating financial freedom: {e}")

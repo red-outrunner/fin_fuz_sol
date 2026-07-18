@@ -115,6 +115,11 @@ const FreedomCalculator = ({ ticker }) => {
                                         Based on trailing 12-month dividend: R{result.dividends_12m.toFixed(2)}/share
                                     </p>
                                 )}
+                                {result.current_price && (
+                                    <p className="text-slate-400 text-xs mt-1">
+                                        Current share price: R{result.current_price.toFixed(2)}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 flex items-center gap-4">
