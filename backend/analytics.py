@@ -248,10 +248,15 @@ def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000,
         return None
 
 
-def calculate_financial_freedom(data, monthly_income_goal):
+def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
     """
     Calculates the number of shares and investment required to generate a target monthly income.
-    Assumes dividend yield based on the last year's payout.
+    Uses actual dividend data from yfinance (not from the price dataframe).
+    
+    Args:
+        data: Price data DataFrame (from download_data)
+        monthly_income_goal: Target monthly dividend income
+        ticker: Optional ticker symbol to fetch actual dividend data
     """
     try:
         # Get last price
@@ -262,35 +267,46 @@ def calculate_financial_freedom(data, monthly_income_goal):
         else:
             return None
 
-        # Calculate approximate dividend yield (using a robust heuristic if actual div data is missing)
-        # Ideally, we should fetch actual dividends.
-        # For this MVP, we will assume a "Yield" based on standard sector averages if not found,
-        # or calculate it if the dataframe contains 'Dividends' column.
-
+        # Fetch actual dividend data from yfinance
         annual_yield = 0.0
+        dividends_12m = 0.0
+        
+        if ticker:
+            try:
+                import yfinance as yf
+                ticker_obj = yf.Ticker(ticker)
+                dividends = ticker_obj.dividends
+                
+                if dividends is not None and not dividends.empty:
+                    # Sum last 12 months of dividends
+                    last_year = dividends.index.max() - pd.DateOffset(months=12)
+                    dividends_12m = dividends[dividends.index >= last_year].sum()
+                    
+                    if current_price > 0:
+                        annual_yield = dividends_12m / current_price
+            except Exception as e:
+                logger.warning(f"Could not fetch dividend data for {ticker}: {e}")
 
-        if "Dividends" in data.columns:
-            # Sum last 12 months of dividends
-            last_year = data.index.max() - pd.DateOffset(years=1)
-            dividends_12m = data[data.index > last_year]["Dividends"].sum()
-            if current_price > 0:
-                annual_yield = dividends_12m / current_price
-
-        # Fallback if no dividends found (or it's 0) - maybe user selected a non-paying stock
-        # We return the data assuming calculated yield. If 0, frontend should warn.
+        # Fallback: if still no yield, return zeros (frontend should warn user)
+        if annual_yield <= 0:
+            return {
+                "current_price": current_price,
+                "annual_yield": 0.0,
+                "shares_needed": 0,
+                "investment_needed": 0,
+                "monthly_income_goal": monthly_income_goal,
+                "warning": "No dividend data available for this stock"
+            }
 
         estimated_annual_income_needed = monthly_income_goal * 12
 
-        if annual_yield > 0:
-            investment_needed = estimated_annual_income_needed / annual_yield
-            shares_needed = int(investment_needed / current_price)
-        else:
-            investment_needed = 0
-            shares_needed = 0
+        investment_needed = estimated_annual_income_needed / annual_yield
+        shares_needed = int(investment_needed / current_price)
 
         return {
             "current_price": current_price,
             "annual_yield": annual_yield,
+            "dividends_12m": dividends_12m,
             "shares_needed": shares_needed,
             "investment_needed": investment_needed,
             "monthly_income_goal": monthly_income_goal

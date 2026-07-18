@@ -95,6 +95,12 @@ const FreedomCalculator = ({ ticker }) => {
                 <div className="space-y-6">
                     {result && (
                         <>
+                            {result.warning && (
+                                <div className="p-4 bg-amber-50 text-amber-700 rounded border border-amber-200">
+                                    ⚠️ {result.warning}
+                                </div>
+                            )}
+                            
                             <div className="bg-gradient-to-br from-navy to-navy-light p-8 rounded-lg shadow-lg text-white relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <Target className="w-32 h-32" />
@@ -104,6 +110,11 @@ const FreedomCalculator = ({ ticker }) => {
                                 <p className="text-slate-300 text-sm">
                                     You need <span className="text-white font-bold">{result.shares_needed.toLocaleString()}</span> shares of {ticker} to generate <span className="text-gold font-bold">R{result.monthly_income_goal.toLocaleString()}</span> per month.
                                 </p>
+                                {result.dividends_12m && (
+                                    <p className="text-slate-400 text-xs mt-2">
+                                        Based on trailing 12-month dividend: R{result.dividends_12m.toFixed(2)}/share
+                                    </p>
+                                )}
                             </div>
 
                             <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 flex items-center gap-4">

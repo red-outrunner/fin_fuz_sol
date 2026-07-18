@@ -298,15 +298,15 @@ def freedom_calculator(request: FreedomRequest):
     start_date = f"{start_year}-01-01"
     
     data = download_data(request.ticker, start_date, end_date)
-    
+
     if data is None:
         raise HTTPException(status_code=404, detail="Data not found")
-        
-    result = calculate_financial_freedom(data, request.monthly_income_goal)
-    
+
+    result = calculate_financial_freedom(data, request.monthly_income_goal, ticker=request.ticker)
+
     if result is None:
         raise HTTPException(status_code=500, detail="Error calculating freedom metrics")
-        
+
     return clean_data(result)
 
 @app.post("/api/peers")
