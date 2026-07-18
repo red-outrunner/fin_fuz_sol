@@ -174,7 +174,7 @@ const Dashboard = () => {
             <main className="lg:ml-80 w-full min-w-0 overflow-x-hidden p-6 md:p-12 transition-all duration-500 ease-in-out">
                 {/* Mobile Header */}
                 <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-navy/5">
-                    <h1 className="text-2xl font-serif font-bold text-gold tracking-tight">Fuzile Solutions</h1>
+                    <h1 className="text-2xl font-serif font-bold text-gold tracking-tight">Ubomvu</h1>
                     <button
                         onClick={() => setSidebarOpen(true)}
                         className="p-2 text-navy hover:text-gold transition-colors"

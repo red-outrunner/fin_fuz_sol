@@ -1,6 +1,6 @@
-# Global Index Analyzer (Fuzile)
+# Global Index Analyzer (Ubomvu)
 
-A sophisticated financial analysis platform designed for retail investors (with specific focus on JSE) and institutional analysts. Fuzile provides deep insights into stock performance, risk metrics, and future projections using statistical models and machine learning.
+A sophisticated financial analysis platform designed for retail investors (with specific focus on JSE) and institutional analysts. Ubomvu provides deep insights into stock performance, risk metrics, and future projections using statistical models and machine learning.
 
 ## 🚀 Features
 

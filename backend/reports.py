@@ -99,7 +99,7 @@ class PDFReportGenerator:
         # Header
         canvas.setFont('Helvetica-Bold', 12)
         canvas.setFillColor(colors.HexColor(COLOR_NAVY))
-        canvas.drawString(50, letter[1] - 40, "Fuzile Solutions")
+        canvas.drawString(50, letter[1] - 40, "Ubomvu")
         
         canvas.setFont('Helvetica-Oblique', 9)
         canvas.setFillColor(colors.HexColor(COLOR_GOLD))

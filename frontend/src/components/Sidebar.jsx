@@ -93,7 +93,7 @@ const Sidebar = ({
             `}>
                 <div className="p-10 pb-8 border-b border-white/5">
                     <h1 className="text-3xl font-serif font-bold text-gold tracking-tight">
-                        Fuzile Solutions
+                        Ubomvu
                     </h1>
                     <p className="text-[10px] text-slate-500 uppercase font-medium tracking-[0.2em] mt-2">Global Wealth Intelligence</p>
                 </div>
@@ -235,11 +235,11 @@ const Sidebar = ({
                 <div className="p-8 border-t border-white/5 bg-black/10 text-center space-y-3">
                     <p className="text-[10px] text-slate-500 font-medium tracking-wide">
                         A product of{' '}
-                        <span className="text-gold/60 font-serif italic">fuzile solution PTY LTD</span>
+                        <span className="text-gold/60 font-serif italic">ubomvu PTY LTD</span>
                     </p>
                     <div className="flex justify-center">
                         <a
-                            href="https://fuzilesolutions.netlify.app/monthly-analyser"
+                            href="https://ubomvu.netlify.app/monthly-analyser"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 text-[10px] text-gold/40 hover:text-gold transition-all duration-300 uppercase tracking-widest font-bold group"

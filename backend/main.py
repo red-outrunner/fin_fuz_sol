@@ -435,7 +435,7 @@ def export_pdf(request: AnalysisRequest):
     buffer.seek(0)
     
     headers = {
-        'Content-Disposition': f'attachment; filename="{request.ticker}_Fuzile_Report.pdf"'
+        'Content-Disposition': f'attachment; filename="{request.ticker}_Ubomvu_Report.pdf"'
     }
     return StreamingResponse(buffer, headers=headers, media_type='application/pdf')
 
