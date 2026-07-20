@@ -235,8 +235,8 @@ const JSEHeatmap = () => {
 
                 {/* Selected Stock Detail Panel */}
                 {selectedStock && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-white/60 shadow-2xl z-40 max-h-[400px] overflow-y-auto">
-                        <div className="max-w-[1600px] mx-auto px-6 py-6">
+                    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-white/60 shadow-2xl z-40">
+                        <div className="max-w-[1600px] mx-auto px-8 py-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
                             <div className="flex items-start justify-between mb-6">
                                 <div>
                                     <h3 className="text-2xl font-serif font-bold text-gold">
@@ -260,7 +260,7 @@ const JSEHeatmap = () => {
                             </div>
 
                             {/* Key Metrics Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
                                 <div className="bg-white/60 rounded-xl p-4 border border-white/60">
                                     <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Price</p>
                                     <p className="text-lg font-serif font-bold text-navy">{formatPrice(selectedStock.current_price)}</p>
@@ -329,15 +329,10 @@ const JSEHeatmap = () => {
                             </div>
 
                             {/* Action Button */}
-                            <div className="mt-6 flex items-center justify-end gap-3">
+                            <div className="flex items-center justify-end gap-3 pb-2">
                                 <button
                                     onClick={() => {
-                                        // Redirect to main dashboard with this ticker
                                         window.location.hash = '#/';
-                                        setTimeout(() => {
-                                            // You could pass the ticker via a custom event or state
-                                            console.log('Navigate to analyze:', selectedStock.ticker);
-                                        }, 100);
                                     }}
                                     className="px-6 py-3 bg-gradient-to-r from-gold to-yellow-600 text-navy font-bold uppercase tracking-widest rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
                                 >
