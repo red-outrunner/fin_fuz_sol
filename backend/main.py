@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 import io
 from reportlab.lib import colors
@@ -15,6 +15,7 @@ import logging
 import os
 from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers, get_dividend_yield
 from reports import PDFReportGenerator
+from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -565,16 +566,96 @@ def run_dca_simulation(request: DcaRequest):
     logger.info(f"Running DCA Simulation for {request.ticker}")
     start_date = f"{request.start_year}-01-01"
     data = download_data(request.ticker, start_date, request.end_date)
-    
+
     if data is None:
         raise HTTPException(status_code=404, detail="Data not found")
-        
+
     processed = process_data(data)
     if processed is None:
          raise HTTPException(status_code=500, detail="Error processing data")
-         
+
     from analysis import calculate_dca # Import here or at top
     dca_results = calculate_dca(processed['monthly_ret'], request.monthly_contribution)
-    
+
     return clean_data(dca_results)
+
+
+# === Stock Screener & Discovery Endpoints ===
+
+class ScreenerRequest(BaseModel):
+    min_market_cap: Optional[float] = None
+    max_market_cap: Optional[float] = None
+    min_pe: Optional[float] = None
+    max_pe: Optional[float] = None
+    min_dividend_yield: Optional[float] = None
+    min_roe: Optional[float] = None
+    max_debt_equity: Optional[float] = None
+    min_beta: Optional[float] = None
+    max_beta: Optional[float] = None
+    sectors: Optional[List[str]] = None
+    min_revenue_growth: Optional[float] = None
+    min_profit_margin: Optional[float] = None
+    undervalued_only: bool = False
+    dividend_growers_only: bool = False
+
+@app.post("/api/screener")
+@limiter.limit("30/minute")
+def stock_screener(request: Request, screener_request: ScreenerRequest):
+    """Screen JSE stocks based on fundamental criteria."""
+    logger.info(f"Running stock screener with filters: {screener_request}")
+    
+    results = screen_stocks(
+        min_market_cap=screener_request.min_market_cap,
+        max_market_cap=screener_request.max_market_cap,
+        min_pe=screener_request.min_pe,
+        max_pe=screener_request.max_pe,
+        min_dividend_yield=screener_request.min_dividend_yield,
+        min_roe=screener_request.min_roe,
+        max_debt_equity=screener_request.max_debt_equity,
+        min_beta=screener_request.min_beta,
+        max_beta=screener_request.max_beta,
+        sectors=screener_request.sectors,
+        min_revenue_growth=screener_request.min_revenue_growth,
+        min_profit_margin=screener_request.min_profit_margin,
+        undervalued_only=screener_request.undervalued_only,
+        dividend_growers_only=screener_request.dividend_growers_only,
+    )
+    
+    return {"results": results, "count": len(results)}
+
+@app.get("/api/screener/heatmap")
+@limiter.limit("30/minute")
+def sector_heatmap(request: Request):
+    """Get sector performance data for heatmap visualization."""
+    logger.info("Fetching sector heatmap data")
+    sectors = get_sector_performance()
+    return {"sectors": sectors}
+
+@app.get("/api/screener/ideas")
+@limiter.limit("30/minute")
+def stock_ideas(request: Request):
+    """Get curated stock ideas: undervalued, 52-week lows, dividend stars, etc."""
+    logger.info("Fetching stock ideas")
+    ideas = get_stock_ideas()
+    return ideas
+
+@app.get("/api/screener/universe")
+@limiter.limit("60/minute")
+def get_universe(request: Request):
+    """Get list of all available JSE Top 40 tickers."""
+    logger.info("Fetching JSE universe")
+    tickers = get_jse_universe()
+    return {"tickers": tickers}
+
+@app.get("/api/screener/ticker/{ticker}")
+@limiter.limit("60/minute")
+def ticker_detail(request: Request, ticker: str):
+    """Get detailed info for a single ticker."""
+    logger.info(f"Fetching details for {ticker}")
+    # Normalize ticker to uppercase
+    ticker = ticker.upper()
+    details = get_ticker_details(ticker)
+    if details is None:
+        raise HTTPException(status_code=404, detail=f"Ticker {ticker} not found")
+    return details
 

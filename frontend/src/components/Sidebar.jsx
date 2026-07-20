@@ -9,7 +9,8 @@ const Sidebar = ({
     endDate, setEndDate,
     inflationAdjusted, setInflationAdjusted,
     onAnalyze, loading,
-    isOpen, setIsOpen
+    isOpen, setIsOpen,
+    currentRoute
 }) => {
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -91,8 +92,11 @@ const Sidebar = ({
                 w-80 h-screen fixed left-0 top-0 overflow-y-auto z-50 font-sans glass-dark text-cream flex flex-col shadow-2xl border-r border-white/5 transition-all duration-500 ease-in-out
                 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
-                <div className="p-10 pb-8 border-b border-white/5">
-                    <h1 className="text-3xl font-serif font-bold text-gold tracking-tight">
+                <div 
+                    onClick={() => { window.location.hash = '#/'; }}
+                    className="p-10 pb-8 border-b border-white/5 cursor-pointer group hover:bg-white/5 transition-all"
+                >
+                    <h1 className="text-3xl font-serif font-bold text-gold tracking-tight group-hover:text-gold-light transition-colors">
                         Ubomvu
                     </h1>
                     <p className="text-[10px] text-slate-500 uppercase font-medium tracking-[0.2em] mt-2">Global Wealth Intelligence</p>
@@ -230,6 +234,90 @@ const Sidebar = ({
                         ) : 'Run Analysis'}
                     </button>
                 </div>
+
+                    {/* Section: Discovery Tools */}
+                    <div className="space-y-6 pt-2">
+                        <h2 className="text-[10px] font-bold text-gold/40 uppercase tracking-[0.15em] px-1">
+                            Navigation & Tools
+                        </h2>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => { window.location.hash = '#/'; }}
+                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
+                                    currentRoute === '#/' || currentRoute === ''
+                                        ? 'bg-gold/10 border-gold/30'
+                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-cream">Wealth Analyser</div>
+                                    <div className="text-[9px] text-slate-500">Institutional analytics</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => { window.location.hash = '#/screener'; }}
+                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
+                                    currentRoute === '#/screener'
+                                        ? 'bg-gold/10 border-gold/30'
+                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-cream">Stock Screener</div>
+                                    <div className="text-[9px] text-slate-500">Filter & discover stocks</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => { window.location.hash = '#/heatmap'; }}
+                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
+                                    currentRoute === '#/heatmap'
+                                        ? 'bg-gold/10 border-gold/30'
+                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-cream">JSE Heatmap</div>
+                                    <div className="text-[9px] text-slate-500">Sector performance</div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => { window.location.hash = '#/ideas'; }}
+                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
+                                    currentRoute === '#/ideas'
+                                        ? 'bg-gold/10 border-gold/30'
+                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-cream">Stock Ideas</div>
+                                    <div className="text-[9px] text-slate-500">Curated opportunities</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
 
                 {/* Footer Marker */}
                 <div className="p-8 border-t border-white/5 bg-black/10 text-center space-y-3">
