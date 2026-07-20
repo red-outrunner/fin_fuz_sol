@@ -5,6 +5,12 @@ import { TrendingUp, DollarSign, Activity } from 'lucide-react';
 import InfoTip from './InfoTip';
 
 const ValuationLab = ({ ticker }) => {
+    const formatPrice = (price) => {
+        if (price === null || price === undefined) return 'N/A';
+        // Prices from backend are in cents (ZAc), convert to Rands
+        const rands = price / 100;
+        return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(rands);
+    };
     const [financials, setFinancials] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -202,11 +208,11 @@ const ValuationLab = ({ ticker }) => {
                         <h3 className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4">Intrinsic Fair Value</h3>
 
                         <div className="text-7xl font-serif font-bold text-navy mb-2">
-                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: financials.currency }).format(fairValue)}
+                            {formatPrice(fairValue)}
                         </div>
 
                         <div className="flex items-center justify-center gap-2 mb-8">
-                            <span className="text-sm text-slate-500">Current Price: <span className="font-bold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: financials.currency }).format(financials.price)}</span></span>
+                            <span className="text-sm text-slate-500">Current Price: <span className="font-bold">{formatPrice(financials.price)}</span></span>
                         </div>
 
                         {/* Upside Meter */}

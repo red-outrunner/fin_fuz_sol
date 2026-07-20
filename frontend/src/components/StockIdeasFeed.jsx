@@ -59,6 +59,13 @@ const StockIdeasFeed = ({ onSelectTicker }) => {
         return `R${num.toFixed(0)}`;
     };
 
+    const formatPrice = (price) => {
+        if (price === null || price === undefined) return 'N/A';
+        // Prices from backend are in cents (ZAc), convert to Rands
+        const rands = price / 100;
+        return `R${rands.toFixed(2)}`;
+    };
+
     const formatPercent = (num) => {
         if (num === null || num === undefined) return 'N/A';
         return `${(num * 100).toFixed(1)}%`;
@@ -82,7 +89,7 @@ const StockIdeasFeed = ({ onSelectTicker }) => {
                     </div>
                     <div className="text-right">
                         <div className="text-2xl font-serif font-bold text-navy">
-                            {stock.current_price ? `R${stock.current_price.toFixed(2)}` : 'N/A'}
+                            {formatPrice(stock.current_price)}
                         </div>
                         {stock.market_cap && (
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
@@ -136,8 +143,8 @@ const StockIdeasFeed = ({ onSelectTicker }) => {
                         <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500">
                             <span>Annual Dividend:</span>
                             <span className="font-serif font-bold text-success">
-                                {stock.dividend_yield && stock.current_price 
-                                    ? `R${(stock.current_price * stock.dividend_yield).toFixed(2)}`
+                                {stock.dividend_yield && stock.current_price
+                                    ? formatPrice(stock.current_price * stock.dividend_yield)
                                     : 'N/A'}
                             </span>
                         </div>
