@@ -368,15 +368,26 @@ def get_sector_performance() -> List[Dict[str, Any]]:
                         day_change = 0
                 except Exception:
                     day_change = 0
-                
+
+                # Include ALL fundamental data for display in heatmap detail panel
                 stock_info = {
                     "ticker": data['ticker'],
                     "name": data.get('name', data['ticker']),
+                    "sector": data.get('sector', 'Other'),
                     "market_cap": data.get('market_cap') or 0,
                     "change_percent": day_change,
                     "current_price": data.get('current_price'),
+                    # Fundamental metrics
+                    "pe_ratio": data.get('pe_ratio'),
+                    "dividend_yield": data.get('dividend_yield'),
+                    "return_on_equity": data.get('return_on_equity'),
+                    "beta": data.get('beta'),
+                    "high_52w": data.get('high_52w'),
+                    "low_52w": data.get('low_52w'),
+                    "pct_from_high": data.get('pct_from_high'),
+                    "pct_from_low": data.get('pct_from_low'),
                 }
-                
+
                 sector_data[sector]["stocks"].append(stock_info)
                 sector_data[sector]["total_market_cap"] += data.get('market_cap') or 0
                 sector_data[sector]["performance_sum"] += day_change
