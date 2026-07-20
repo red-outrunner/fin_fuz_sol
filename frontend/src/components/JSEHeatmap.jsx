@@ -235,7 +235,7 @@ const JSEHeatmap = () => {
 
                 {/* Selected Stock Detail Panel */}
                 {selectedStock && (
-                    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-white/60 shadow-2xl z-40">
+                    <div className="fixed bottom-0 left-0 lg:left-80 right-0 bg-white/95 backdrop-blur-md border-t border-white/60 shadow-2xl z-40">
                         <div className="max-w-[1600px] mx-auto px-8 py-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
                             <div className="flex items-start justify-between mb-6">
                                 <div>
