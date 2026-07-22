@@ -16,92 +16,90 @@ logger = logging.getLogger(__name__)
 # === JSE Top 40 Tickers (as of 2025) ===
 # Source: Satrix Top 40 constituents
 JSE_TOP_40 = [
-    "NPN.JO",  # Naspers
-    "PRX.JO",  # Prosus
-    "AGL.JO",  # Anglo American
-    "ANG.JO",  # AngloGold Ashanti
-    "ANH.JO",  # Anheuser-Busch InBev
-    "ABG.JO",  # Absa Group
-    "BHG.JO",  # BHP Group
-    "BID.JO",  # Bid Corporation
-    "BTI.JO",  # British American Tobacco
-    "CPI.JO",  # Capitec Bank
-    "CLS.JO",  # Clicks Group
-    "DSY.JO",  # Discovery
-    "EXX.JO",  # Exxaro Resources
-    "FSR.JO",  # FirstRand
-    "GFI.JO",  # Gold Fields
-    "GRT.JO",  # Growthpoint Properties
-    "IMP.JO",  # Impala Platinum
-    "INL.JO",  # Investec
-    "INP.JO",  # Investec
-    "MCG.JO",  # MultiChoice Group
-    "MRP.JO",  # Mr Price Group
-    "MTN.JO",  # MTN Group
-    "NED.JO",  # Nedbank
-    "NPH.JO",  # Northam Platinum
-    "OMU.JO",  # Old Mutual
-    "RNI.JO",  # Remgro
-    "REM.JO",  # Remgro
-    "SBK.JO",  # Standard Bank
-    "SHP.JO",  # Shoprite Holdings
-    "SLM.JO",  # Sanlam
-    "SOL.JO",  # Sasol
-    "VOD.JO",  # Vodacom
-    "WHL.JO",  # Woolworths Holdings
-    "BVT.JO",  # Bidvest
-    "APN.JO",  # Aspen Pharmacare
-    "VAL.JO",  # Vulcan Materials
-    "MNP.JO",  # Murray & Roberts
-    "GLN.JO",  # Glencore
+    "AGL.JO",
+    "ANG.JO",
+    "ANH.JO",
+    "BHG.JO",
+    "BID.JO",
+    "BTI.JO",
+    "BVT.JO",
+    "CFR.JO",
+    "CLS.JO",
+    "CPI.JO",
+    "DSY.JO",
+    "FSR.JO",
+    "GFI.JO",
+    "GLN.JO",
+    "GRT.JO",
+    "HAR.JO",
+    "IMP.JO",
+    "INL.JO",
+    "INP.JO",
+    "MRP.JO",
+    "MTN.JO",
+    "NED.JO",
+    "NPH.JO",
+    "NPN.JO",
+    "NRP.JO",
+    "OMU.JO",
+    "OUT.JO",
+    "PAN.JO",
+    "PPH.JO",
+    "PRX.JO",
+    "REM.JO",
+    "RNI.JO",
+    "SBK.JO",
+    "SHP.JO",
+    "SLM.JO",
+    "SOL.JO",
+    "SSW.JO",
+    "VAL.JO",
+    "VOD.JO",
+    "WHL.JO",
 ]
 
-# Sector mappings for JSE stocks
+# Sector mappings for JSE stocks (based on constituent_details.xlsx)
 JSE_SECTORS = {
-    # Technology
-    "NPN.JO": "Technology",
-    "PRX.JO": "Technology",
-    "MCG.JO": "Technology",
-    # Financials
-    "ABG.JO": "Financials",
-    "CPI.JO": "Financials",
-    "FSR.JO": "Financials",
-    "NED.JO": "Financials",
-    "SBK.JO": "Financials",
-    "INL.JO": "Financials",
-    "INP.JO": "Financials",
-    "OMU.JO": "Financials",
-    "SLM.JO": "Financials",
-    "GRT.JO": "Financials",
-    # Materials / Mining
-    "AGL.JO": "Materials",
-    "ANG.JO": "Materials",
-    "BHG.JO": "Materials",
-    "EXX.JO": "Materials",
-    "GFI.JO": "Materials",
-    "IMP.JO": "Materials",
-    "NPH.JO": "Materials",
-    "SOL.JO": "Materials",
-    "VAL.JO": "Materials",
-    "GLN.JO": "Materials",
-    "MNP.JO": "Materials",
-    # Consumer
-    "ANH.JO": "Consumer",
-    "BID.JO": "Consumer",
-    "BTI.JO": "Consumer",
-    "CLS.JO": "Consumer",
-    "MRP.JO": "Consumer",
-    "SHP.JO": "Consumer",
-    "WHL.JO": "Consumer",
-    "BVT.JO": "Consumer",
-    "APN.JO": "Consumer",
-    # Telecom
-    "MTN.JO": "Telecom",
-    "VOD.JO": "Telecom",
-    # Healthcare
-    "DSY.JO": "Healthcare",
-    "RNI.JO": "Healthcare",
-    "REM.JO": "Healthcare",
+    "AGL.JO": "Materials",  # ANGLO
+    "ANG.JO": "Materials",  # ANGLO GOLD ASHANTI
+    "ANH.JO": "Consumer",  # ANHEUSER-BUSCH INBEV
+    "BHG.JO": "Materials",  # BHP Group Limited
+    "BID.JO": "Consumer",  # BID CORP LTD
+    "BTI.JO": "Consumer",  # BRITISH AMERICAN TOBACCO PLC
+    "BVT.JO": "Consumer",  # BIDVEST GROUP LIMITED
+    "CFR.JO": "Consumer",  # COMPAGNIE FINANCIERE
+    "CLS.JO": "Consumer",  # CLICKS GROUP
+    "CPI.JO": "Financials",  # CAPITEC
+    "DSY.JO": "Financials",  # DISCOVERY
+    "FSR.JO": "Financials",  # FIRSTRAND
+    "GFI.JO": "Materials",  # GOLDFIELDS LTD
+    "GLN.JO": "Materials",  # GLENCORE PLC
+    "GRT.JO": "Real Estate",  # GROWTHPOINT
+    "HAR.JO": "Materials",  # HARMONY GOLD MINING
+    "IMP.JO": "Materials",  # IMPLATS
+    "INL.JO": "Financials",  # INVLTD
+    "INP.JO": "Financials",  # INVESTECP
+    "MRP.JO": "Consumer",  # MR PRICE GROUP LTD
+    "MTN.JO": "Telecom",  # MTN GROUP
+    "NED.JO": "Financials",  # NEDBANK
+    "NPH.JO": "Materials",  # Northam Platinum Holdings
+    "NPN.JO": "Technology",  # NASPERS -N
+    "NRP.JO": "Real Estate",  # NEPI ROCKCASTLE PLC
+    "OMU.JO": "Financials",  # OLD MUTUAL LTD
+    "OUT.JO": "Financials",  # OUTSURANCE
+    "PAN.JO": "Materials",  # PAN AFRICAN RESOURCE
+    "PPH.JO": "Consumer",  # PEPKOR HOLDINGS LTD
+    "PRX.JO": "Technology",  # PROSUS NV
+    "REM.JO": "Financials",  # REMGRO
+    "RNI.JO": "Financials",  # REINET INVESTMENTS SCA
+    "SBK.JO": "Financials",  # STANBANK
+    "SHP.JO": "Consumer",  # SHOPRITE
+    "SLM.JO": "Financials",  # SANLAM
+    "SOL.JO": "Materials",  # SASOL
+    "SSW.JO": "Materials",  # Sibanye Stillwater Ltd
+    "VAL.JO": "Materials",  # Valterra Platinum Ltd
+    "VOD.JO": "Telecom",  # VODACOM GROUP LIMITED
+    "WHL.JO": "Consumer",  # Woolworths
 }
 
 

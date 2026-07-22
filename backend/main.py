@@ -16,6 +16,7 @@ import os
 from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers, get_dividend_yield
 from reports import PDFReportGenerator
 from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe
+from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -658,4 +659,64 @@ def ticker_detail(request: Request, ticker: str):
     if details is None:
         raise HTTPException(status_code=404, detail=f"Ticker {ticker} not found")
     return details
+
+
+# === Enhanced Fundamental Analysis Endpoints ===
+
+class FairValueRequest(BaseModel):
+    ticker: str
+    dcf_value: float
+
+@app.get("/api/fundamentals/{ticker}")
+@limiter.limit("30/minute")
+def fundamentals(request: Request, ticker: str):
+    """Get 5-year financial statements for a ticker."""
+    logger.info(f"Fetching financial statements for {ticker}")
+    ticker = ticker.upper()
+    statements = get_financial_statements(ticker)
+    if statements is None:
+        raise HTTPException(status_code=404, detail=f"Financial statements not found for {ticker}")
+    return statements
+
+@app.get("/api/fundamentals/{ticker}/ratios")
+@limiter.limit("30/minute")
+def ratio_trends(request: Request, ticker: str):
+    """Get ratio trends for fundamental analysis."""
+    logger.info(f"Fetching ratio trends for {ticker}")
+    ticker = ticker.upper()
+    ratios = get_ratio_trends(ticker)
+    if ratios is None:
+        raise HTTPException(status_code=404, detail=f"Ratio data not found for {ticker}")
+    return ratios
+
+@app.get("/api/fundamentals/{ticker}/analyst")
+@limiter.limit("30/minute")
+def analyst_data(request: Request, ticker: str):
+    """Get analyst estimates and recommendations."""
+    logger.info(f"Fetching analyst data for {ticker}")
+    ticker = ticker.upper()
+    estimates = get_analyst_estimates(ticker)
+    if estimates is None:
+        raise HTTPException(status_code=404, detail=f"Analyst data not found for {ticker}")
+    return estimates
+
+@app.get("/api/fundamentals/{ticker}/segments")
+@limiter.limit("30/minute")
+def segment_data(request: Request, ticker: str):
+    """Get segment revenue breakdown."""
+    logger.info(f"Fetching segment data for {ticker}")
+    ticker = ticker.upper()
+    segments = get_segment_data(ticker)
+    return segments or {"available": False, "message": "Segment data not available"}
+
+@app.post("/api/fundamentals/fair-value")
+@limiter.limit("30/minute")
+def fair_value(request: Request, req: FairValueRequest):
+    """Compare DCF valuation to analyst consensus."""
+    logger.info(f"Fetching fair value comparison for {req.ticker}")
+    ticker = req.ticker.upper()
+    comparison = get_fair_value_comparison(ticker, req.dcf_value)
+    if comparison is None:
+        raise HTTPException(status_code=404, detail=f"Fair value data not found for {ticker}")
+    return comparison
 
