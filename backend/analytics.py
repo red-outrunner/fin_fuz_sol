@@ -383,36 +383,46 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
 def get_jse_peers(ticker):
     """
     Returns a list of valid JSE competitor tickers based on the input ticker's sector.
-    This is a simplified lookup for the MVP.
+    Now uses the 12-13 Satrix industries for accurate peer matching.
+    ETFs compete with ETFs, Tech with Tech, Banks with Banks, etc.
     """
     # Normalize ticker
     ticker = ticker.upper().strip()
-
-    # Simple Sector Map for common JSE stocks
-    sector_map = {
-        "BANKS": ["SBK.JO", "FSR.JO", "NED.JO", "ABG.JO", "CPI.JO"],
-        "RETAIL": ["SHP.JO", "PIK.JO", "WHL.JO", "SPP.JO", "MRP.JO"],
-        "MINING": ["ANG.JO", "SOL.JO", "IMP.JO", "SSW.JO", "GFI.JO", "BHP.JO"],
-        "TECH/PROSUS": ["NPN.JO", "PRX.JO"],
-        "TELCO": ["MTN.JO", "VOD.JO", "TKG.JO"],
-        "INSURANCE": ["SLM.JO", "OMU.JO", "DSY.JO"],
-        "PROPERTY": ["GRT.JO", "NEP.JO", "RDF.JO"]
-    }
-
-    # Find which list the ticker belongs to
-    found_peers = []
-
-    for sector, members in sector_map.items():
-        if ticker in members:
-            # Return all members except the ticker itself, limit to top 3
-            peers = [m for m in members if m != ticker]
-            found_peers = peers[:3]
-            break
-
-    # Default fallback if not found in map (Generic Top 40)
-    if not found_peers:
-        # Avoid self-reference in fallback
+    
+    # Import sector mappings from screener
+    try:
+        from screener import JSE_SECTORS
+    except ImportError:
+        JSE_SECTORS = {}
+    
+    # Get the sector/industry for the input ticker
+    ticker_sector = JSE_SECTORS.get(ticker, None)
+    
+    if not ticker_sector:
+        # Fallback to old method if sector not found
+        sector_map = {
+            "BANKS": ["SBK.JO", "FSR.JO", "NED.JO", "ABG.JO", "CPI.JO"],
+            "RETAIL": ["SHP.JO", "PIK.JO", "WHL.JO", "SPP.JO", "MRP.JO"],
+            "MINING": ["ANG.JO", "SOL.JO", "IMP.JO", "SSW.JO", "GFI.JO", "BHP.JO"],
+            "TECH/PROSUS": ["NPN.JO", "PRX.JO"],
+            "TELCO": ["MTN.JO", "VOD.JO", "TKG.JO"],
+            "INSURANCE": ["SLM.JO", "OMU.JO", "DSY.JO"],
+            "PROPERTY": ["GRT.JO", "NEP.JO", "RDF.JO"]
+        }
+        
+        # Find which list the ticker belongs to
+        for sector, members in sector_map.items():
+            if ticker in members:
+                peers = [m for m in members if m != ticker]
+                return peers[:3]
+        
+        # Default fallback
         defaults = ["STX40.JO", "NPN.JO", "SBK.JO"]
-        found_peers = [d for d in defaults if d != ticker]
-
-    return found_peers
+        return [d for d in defaults if d != ticker]
+    
+    # NEW: Use 12-13 Satrix industries for accurate peer matching
+    # Find all tickers in the same industry
+    peers = [t for t, sector in JSE_SECTORS.items() if sector == ticker_sector and t != ticker]
+    
+    # Return top 3 peers (could be enhanced with market cap filtering)
+    return peers[:4] if len(peers) > 3 else peers
