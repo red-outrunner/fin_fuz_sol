@@ -6,15 +6,9 @@ import StockScreener from './components/StockScreener';
 import JSEHeatmap from './components/JSEHeatmap';
 import StockIdeasFeed from './components/StockIdeasFeed';
 import Sidebar from './components/Sidebar';
-import { DarkModeToggle } from './components/QuickWinFeatures';
 
 function App() {
     const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
-    
-    // Dark Mode State
-    const [isDark, setIsDark] = useState(() => {
-        return localStorage.getItem('darkMode') === 'true';
-    });
 
     // Analyser Configuration & Parameters State
     const [ticker, setTicker] = useState('^J203.JO');
@@ -33,17 +27,6 @@ function App() {
 
     // Sidebar drawer state
     const [sidebarOpen, setSidebarOpen] = useState(false);
-
-    // Dark Mode Effect
-    useEffect(() => {
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('darkMode', 'true');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('darkMode', 'false');
-        }
-    }, [isDark]);
 
     useEffect(() => {
         const handleHashChange = () => {
@@ -144,7 +127,7 @@ function App() {
     };
 
     return (
-        <div className={`flex min-h-screen font-sans ${isDark ? 'dark bg-navy-dark text-cream' : 'bg-cream text-navy'}`}>
+        <div className="flex min-h-screen bg-cream font-sans text-navy">
             <Sidebar
                 ticker={ticker}
                 setTicker={setTicker}
@@ -162,25 +145,17 @@ function App() {
             />
 
             <main className="lg:ml-80 w-full min-w-0 overflow-x-hidden p-6 md:p-12 transition-all duration-500 ease-in-out">
-                {/* Mobile Header with Dark Mode Toggle */}
+                {/* Mobile Header */}
                 <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-navy/5">
                     <h1 className="text-2xl font-serif font-bold text-gold tracking-tight cursor-pointer" onClick={() => { window.location.hash = '#/'; }}>Ubomvu</h1>
-                    <div className="flex items-center gap-2">
-                        <DarkModeToggle />
-                        <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-2 text-navy hover:text-gold transition-colors"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                
-                {/* Desktop Dark Mode Toggle - Fixed top right */}
-                <div className="hidden lg:block fixed top-4 right-4 z-50">
-                    <DarkModeToggle />
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="p-2 text-navy hover:text-gold transition-colors"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
                 </div>
 
                 {renderRoute()}
