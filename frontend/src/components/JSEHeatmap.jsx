@@ -1,17 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
-import { Activity, TrendingUp, TrendingDown, Layers, RefreshCcw } from 'lucide-react';
+import { Activity, RefreshCcw, X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
-const JSEHeatmap = () => {
+/**
+ * Diverging Finviz-style colour scale.
+ * Neutral slate at 0 → emerald / crimson at ±scalePct.
+ */
+const heatColor = (pct, scalePct = 4) => {
+    if (pct == null || Number.isNaN(pct)) return { bg: '#1e293b', fg: '#94a3b8' };
+    const t = Math.max(-1, Math.min(1, pct / scalePct));
+    const abs = Math.abs(t);
+
+    let r, g, b;
+    if (t >= 0) {
+        // slate → emerald
+        r = Math.round(30 + (16 - 30) * abs);
+        g = Math.round(41 + (185 - 41) * abs);
+        b = Math.round(59 + (129 - 59) * abs);
+    } else {
+        // slate → crimson
+        r = Math.round(30 + (220 - 30) * abs);
+        g = Math.round(41 + (38 - 41) * abs);
+        b = Math.round(59 + (38 - 59) * abs);
+    }
+
+    const fg = abs > 0.35 ? '#f8fafc' : '#cbd5e1';
+    return { bg: `rgb(${r},${g},${b})`, fg };
+};
+
+const formatCap = (num) => {
+    if (num == null) return '—';
+    if (num >= 1e12) return `R${(num / 1e12).toFixed(2)}T`;
+    if (num >= 1e9) return `R${(num / 1e9).toFixed(1)}B`;
+    if (num >= 1e6) return `R${(num / 1e6).toFixed(0)}M`;
+    return `R${num.toLocaleString()}`;
+};
+
+const formatPrice = (price) => {
+    if (price == null) return '—';
+    // JSE often in cents via yfinance
+    const rands = price > 1000 ? price / 100 : price;
+    return `R${rands.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const formatPct = (n, digits = 1) => {
+    if (n == null) return '—';
+    return `${(n * 100).toFixed(digits)}%`;
+};
+
+const JSEHeatmap = ({ onSelectTicker }) => {
     const [sectors, setSectors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedStock, setSelectedStock] = useState(null);
-
-    useEffect(() => {
-        fetchHeatmapData();
-    }, []);
+    const [selected, setSelected] = useState(null);
+    const [hover, setHover] = useState(null);
+    const [layout, setLayout] = useState('map'); // map | list
+    const [updatedAt, setUpdatedAt] = useState(null);
 
     const fetchHeatmapData = async () => {
         setLoading(true);
@@ -19,6 +64,7 @@ const JSEHeatmap = () => {
         try {
             const response = await axios.get(`${API_BASE_URL}/api/screener/heatmap`);
             setSectors(response.data.sectors || []);
+            setUpdatedAt(new Date());
         } catch (err) {
             console.error('Heatmap error:', err);
             setError(err.response?.data?.detail || 'Failed to load heatmap data');
@@ -27,46 +73,59 @@ const JSEHeatmap = () => {
         }
     };
 
-    const getColorForPerformance = (performance) => {
-        const intensity = Math.min(Math.abs(performance) / 5, 1);
-        
-        if (performance >= 0) {
-            const r = Math.round(74 + (30 - 74) * intensity);
-            const g = Math.round(124 + (200 - 124) * intensity);
-            const b = Math.round(89 + (100 - 89) * intensity);
-            return `rgb(${r}, ${g}, ${b})`;
-        } else {
-            const r = Math.round(140 + (100 - 140) * intensity);
-            const g = Math.round(74 + (50 - 74) * intensity);
-            const b = Math.round(74 + (50 - 74) * intensity);
-            return `rgb(${r}, ${g}, ${b})`;
+    useEffect(() => {
+        fetchHeatmapData();
+    }, []);
+
+    const allStocks = useMemo(
+        () => sectors.flatMap((s) => s.stocks || []),
+        [sectors]
+    );
+
+    const breadth = useMemo(() => {
+        let up = 0;
+        let down = 0;
+        let flat = 0;
+        allStocks.forEach((s) => {
+            const c = s.change_percent ?? 0;
+            if (c > 0.05) up += 1;
+            else if (c < -0.05) down += 1;
+            else flat += 1;
+        });
+        return { up, down, flat, total: allStocks.length };
+    }, [allStocks]);
+
+    const marketAvg = useMemo(() => {
+        if (!allStocks.length) return 0;
+        const w = allStocks.reduce((a, s) => a + (s.market_cap || 0), 0);
+        if (w <= 0) {
+            return allStocks.reduce((a, s) => a + (s.change_percent || 0), 0) / allStocks.length;
         }
-    };
+        return allStocks.reduce((a, s) => a + (s.change_percent || 0) * (s.market_cap || 0), 0) / w;
+    }, [allStocks]);
 
-    const formatNumber = (num) => {
-        if (num === null || num === undefined) return 'N/A';
-        if (num > 1e9) return `R${(num / 1e9).toFixed(1)}B`;
-        if (num > 1e6) return `R${(num / 1e6).toFixed(1)}M`;
-        return `R${(num / 100).toFixed(2)}`;
-    };
-
-    const formatPrice = (price) => {
-        if (price === null || price === undefined) return 'N/A';
-        const rands = price / 100;
-        return `R${rands.toFixed(2)}`;
-    };
-
-    const formatPercent = (num) => {
-        if (num === null || num === undefined) return 'N/A';
-        return `${(num * 100).toFixed(1)}%`;
-    };
+    const leaders = useMemo(() => {
+        const sorted = [...allStocks].sort((a, b) => (b.change_percent || 0) - (a.change_percent || 0));
+        return {
+            best: sorted.slice(0, 3),
+            worst: sorted.slice(-3).reverse(),
+            bestSector: sectors.length
+                ? sectors.reduce((b, s) => ((s.change_percent || 0) > (b.change_percent || 0) ? s : b))
+                : null,
+            worstSector: sectors.length
+                ? sectors.reduce((w, s) => ((s.change_percent || 0) < (w.change_percent || 0) ? s : w))
+                : null,
+        };
+    }, [allStocks, sectors]);
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-cream flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <Activity className="w-12 h-12 text-gold animate-spin mx-auto" />
-                    <p className="text-navy font-bold uppercase tracking-widest text-sm">Loading Market Heatmap...</p>
+            <div className="min-h-[70vh] flex items-center justify-center">
+                <div className="text-center space-y-3">
+                    <Activity className="w-8 h-8 text-gold animate-spin mx-auto" />
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                        Loading market map…
+                    </p>
                 </div>
             </div>
         );
@@ -74,334 +133,448 @@ const JSEHeatmap = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-cream flex items-center justify-center">
-                <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-8 max-w-md text-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Activity className="w-8 h-8 text-red-600" />
-                    </div>
-                    <h3 className="text-xl font-serif font-bold text-navy mb-2">Failed to Load Heatmap</h3>
-                    <p className="text-slate-500 font-medium mb-6">{error}</p>
+            <div className="min-h-[50vh] flex items-center justify-center">
+                <div className="max-w-md text-center border border-white/10 bg-[#0f172a] text-cream rounded-lg p-8">
+                    <p className="font-serif text-xl mb-2">Heatmap unavailable</p>
+                    <p className="text-sm text-slate-400 mb-6">{error}</p>
                     <button
+                        type="button"
                         onClick={fetchHeatmapData}
-                        className="inline-flex items-center gap-2 bg-gradient-to-r from-gold to-yellow-600 text-navy font-bold uppercase tracking-widest px-6 py-3 rounded-xl hover:shadow-lg transition-all"
+                        className="inline-flex items-center gap-2 bg-gold text-navy text-xs font-bold uppercase tracking-widest px-5 py-2.5 rounded"
                     >
-                        <RefreshCcw className="w-4 h-4" />
-                        Retry
+                        <RefreshCcw className="w-3.5 h-3.5" /> Retry
                     </button>
                 </div>
             </div>
         );
     }
 
+    const tip = hover; // reserved for future pinned HUD variants — hover drives floating card
+    void tip;
+
     return (
-        <div className="min-h-screen bg-cream">
-            {/* Top Bar */}
-            <div className="bg-white/60 backdrop-blur-md border-b border-white/60 sticky top-0 z-30">
-                <div className="max-w-[1600px] mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <h1 className="text-3xl font-serif font-bold text-gold">
-                                JSE Sector Heatmap
+        <div className=" -mx-2 md:-mx-4">
+            {/* Terminal header */}
+            <header className="border border-slate-800/80 dark:border-white/10 rounded-t-lg bg-[#0b1220] text-slate-200 px-4 md:px-5 py-3 flex flex-wrap items-center gap-3 justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-sm md:text-base font-semibold tracking-wide text-cream uppercase">
+                                JSE Market Map
                             </h1>
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-gold/10 px-3 py-1 rounded-full">
-                                Market Overview
+                            <span className="hidden sm:inline text-[9px] font-bold tracking-[0.18em] uppercase text-gold/80 border border-gold/30 px-2 py-0.5 rounded">
+                                Top 40
                             </span>
                         </div>
+                        <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                            Cap-weighted mosaic · session change
+                            {updatedAt && (
+                                <> · as of {updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
+                            )}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex rounded border border-slate-700 overflow-hidden text-[10px] font-bold uppercase tracking-wider">
                         <button
-                            onClick={fetchHeatmapData}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/60 border border-white/60 text-navy font-bold uppercase tracking-wider text-xs rounded-xl hover:bg-gold/10 hover:border-gold/30 transition-all"
+                            type="button"
+                            onClick={() => setLayout('map')}
+                            className={`px-3 py-1.5 ${layout === 'map' ? 'bg-gold text-navy' : 'bg-slate-900 text-slate-400 hover:text-cream'}`}
                         >
-                            <RefreshCcw className="w-4 h-4" />
-                            Refresh
+                            Map
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setLayout('list')}
+                            className={`px-3 py-1.5 ${layout === 'list' ? 'bg-gold text-navy' : 'bg-slate-900 text-slate-400 hover:text-cream'}`}
+                        >
+                            Sectors
                         </button>
                     </div>
+                    <button
+                        type="button"
+                        onClick={fetchHeatmapData}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-700 bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-slate-300 hover:border-gold/40 hover:text-gold transition"
+                    >
+                        <RefreshCcw className="w-3 h-3" /> Refresh
+                    </button>
+                </div>
+            </header>
+
+            {/* Breadth / tape strip */}
+            <div className="border-x border-slate-800/80 dark:border-white/10 bg-[#0f172a] px-4 md:px-5 py-2.5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px]">
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">Breadth</span>
+                    <span className="font-mono text-emerald-400 font-semibold">{breadth.up}↑</span>
+                    <span className="text-slate-600">/</span>
+                    <span className="font-mono text-rose-400 font-semibold">{breadth.down}↓</span>
+                    <span className="text-slate-600">/</span>
+                    <span className="font-mono text-slate-400">{breadth.flat}→</span>
+                </div>
+                <div className="h-1.5 w-28 rounded-full bg-slate-800 overflow-hidden flex">
+                    <div
+                        className="h-full bg-emerald-500"
+                        style={{ width: `${breadth.total ? (breadth.up / breadth.total) * 100 : 0}%` }}
+                    />
+                    <div
+                        className="h-full bg-slate-600"
+                        style={{ width: `${breadth.total ? (breadth.flat / breadth.total) * 100 : 0}%` }}
+                    />
+                    <div
+                        className="h-full bg-rose-500"
+                        style={{ width: `${breadth.total ? (breadth.down / breadth.total) * 100 : 0}%` }}
+                    />
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">Cap-wtd</span>
+                    <span className={`font-mono font-semibold tabular-nums ${marketAvg >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {marketAvg >= 0 ? '+' : ''}{marketAvg.toFixed(2)}%
+                    </span>
+                </div>
+                {leaders.bestSector && (
+                    <div className="hidden lg:flex items-center gap-3 text-slate-400">
+                        <span>
+                            Best <span className="text-emerald-400 font-medium">{leaders.bestSector.name}</span>
+                            <span className="font-mono ml-1 text-emerald-400/80">
+                                {leaders.bestSector.change_percent >= 0 ? '+' : ''}
+                                {leaders.bestSector.change_percent?.toFixed(2)}%
+                            </span>
+                        </span>
+                        <span className="text-slate-700">|</span>
+                        <span>
+                            Weak <span className="text-rose-400 font-medium">{leaders.worstSector?.name}</span>
+                            <span className="font-mono ml-1 text-rose-400/80">
+                                {leaders.worstSector?.change_percent?.toFixed(2)}%
+                            </span>
+                        </span>
+                    </div>
+                )}
+                {/* Colour legend */}
+                <div className="ml-auto flex items-center gap-2">
+                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">−4%</span>
+                    <div
+                        className="h-2 w-28 md:w-40 rounded-sm"
+                        style={{
+                            background:
+                                'linear-gradient(90deg, rgb(220,38,38), rgb(30,41,59) 50%, rgb(16,185,129))',
+                        }}
+                    />
+                    <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">+4%</span>
                 </div>
             </div>
 
-            <div className="max-w-[1600px] mx-auto px-6 py-8">
-                {/* Legend */}
-                <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-5 mb-6">
-                    <div className="flex items-center gap-6">
-                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Performance:</span>
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-3 rounded" style={{ background: 'rgb(30, 200, 100)' }}></div>
-                            <span className="text-[10px] font-bold text-green-600">+5%</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-3 rounded" style={{ background: 'rgb(74, 124, 89)' }}></div>
-                            <span className="text-[10px] font-bold text-navy">+3%</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-3 rounded" style={{ background: 'rgb(44, 62, 80)' }}></div>
-                            <span className="text-[10px] font-bold text-slate-500">0%</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-3 rounded" style={{ background: 'rgb(140, 74, 74)' }}></div>
-                            <span className="text-[10px] font-bold text-red-600">-3%</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-3 rounded" style={{ background: 'rgb(200, 50, 50)' }}></div>
-                            <span className="text-[10px] font-bold text-red-700">-5%</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Heatmap Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-                    {sectors.map((sector) => (
-                        <div
-                            key={sector.name}
-                            className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300"
-                        >
-                            {/* Sector Header */}
-                            <div
-                                className="p-5 text-white"
-                                style={{ background: getColorForPerformance(sector.change_percent) }}
-                            >
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-xl font-serif font-bold">{sector.name}</h3>
-                                    <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-                                        {sector.change_percent >= 0 ? (
-                                            <TrendingUp className="w-5 h-5" />
-                                        ) : (
-                                            <TrendingDown className="w-5 h-5" />
-                                        )}
-                                        <span className="text-lg font-bold">
-                                            {sector.change_percent >= 0 ? '+' : ''}{sector.change_percent.toFixed(2)}%
+            {/* Main map */}
+            <div className="border border-t-0 border-slate-800/80 dark:border-white/10 rounded-b-lg bg-[#020617] p-2 md:p-3">
+                {layout === 'map' ? (
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-2">
+                        {sectors.map((sector) => {
+                            const stocks = [...(sector.stocks || [])].sort(
+                                (a, b) => (b.market_cap || 0) - (a.market_cap || 0)
+                            );
+                            const sectorColor = heatColor(sector.change_percent);
+                            return (
+                                <div
+                                    key={sector.name}
+                                    className="xl:col-span-4 min-h-[160px] flex flex-col rounded border border-slate-800/90 overflow-hidden"
+                                >
+                                    <div
+                                        className="flex items-center justify-between px-2.5 py-1.5 border-b border-black/30"
+                                        style={{ background: sectorColor.bg, color: sectorColor.fg }}
+                                    >
+                                        <span className="text-[10px] font-bold uppercase tracking-[0.12em] truncate">
+                                            {sector.name}
+                                        </span>
+                                        <span className="font-mono text-[10px] font-semibold tabular-nums shrink-0 ml-2">
+                                            {sector.change_percent >= 0 ? '+' : ''}
+                                            {sector.change_percent?.toFixed(2)}%
+                                            <span className="opacity-70 ml-1.5">{stocks.length}</span>
                                         </span>
                                     </div>
-                                </div>
-                                <div className="flex items-center justify-between text-xs opacity-90">
-                                    <span className="flex items-center gap-1">
-                                        <Layers className="w-3 h-3" />
-                                        {sector.stock_count} stocks
-                                    </span>
-                                    <span>Market Cap: {formatNumber(sector.market_cap)}</span>
-                                </div>
-                            </div>
-
-                            {/* Sector Stocks */}
-                            <div className="p-4">
-                                <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-                                    {sector.stocks.slice(0, 8).map((stock) => (
-                                        <div
-                                            key={stock.ticker}
-                                            className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
-                                                selectedStock?.ticker === stock.ticker
-                                                    ? 'bg-gold/20 border border-gold/50'
-                                                    : 'bg-white/50 hover:bg-white/80 border border-white/60'
-                                            }`}
-                                            onClick={() => setSelectedStock(stock)}
-                                        >
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-gold text-sm">
-                                                        {stock.ticker.replace('.JO', '')}
-                                                    </span>
-                                                    {stock.change_percent >= 0 ? (
-                                                        <TrendingUp className="w-3 h-3 text-green-600" />
-                                                    ) : (
-                                                        <TrendingDown className="w-3 h-3 text-red-600" />
-                                                    )}
-                                                </div>
-                                                <div className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[180px]">
-                                                    {stock.name}
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div
-                                                    className={`text-sm font-bold ${
-                                                        stock.change_percent >= 0 ? 'text-green-600' : 'text-red-600'
+                                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 auto-rows-fr gap-[2px] p-[2px] bg-black/40 min-h-[120px]">
+                                        {stocks.map((stock) => {
+                                            const c = heatColor(stock.change_percent);
+                                            const weight = Math.max(stock.market_cap || 1, 1);
+                                            const maxCap = Math.max(...stocks.map((s) => s.market_cap || 1));
+                                            const span = weight / maxCap > 0.45 ? 'sm:col-span-2 sm:row-span-2' : '';
+                                            const active = selected?.ticker === stock.ticker;
+                                            return (
+                                                <button
+                                                    key={stock.ticker}
+                                                    type="button"
+                                                    onMouseEnter={() => setHover(stock)}
+                                                    onMouseLeave={() => setHover(null)}
+                                                    onClick={() => setSelected(stock)}
+                                                    className={`relative text-left p-2 transition-all duration-150 hover:brightness-110 hover:ring-1 hover:ring-gold/60 focus:outline-none focus:ring-1 focus:ring-gold min-h-[52px] ${span} ${
+                                                        active ? 'ring-2 ring-gold z-10' : ''
                                                     }`}
+                                                    style={{ background: c.bg, color: c.fg }}
+                                                    title={`${stock.ticker} ${stock.change_percent?.toFixed(2)}%`}
                                                 >
-                                                    {stock.change_percent >= 0 ? '+' : ''}{stock.change_percent.toFixed(2)}%
-                                                </div>
-                                                <div className="text-[10px] text-slate-500 mt-0.5">
-                                                    {formatPrice(stock.current_price)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {sector.stocks.length > 8 && (
-                                        <div className="text-center text-[10px] text-slate-500 pt-2 border-t border-white/60">
-                                            +{sector.stocks.length - 8} more stocks
-                                        </div>
-                                    )}
+                                                    <div className="flex items-start justify-between gap-1">
+                                                        <span className="font-mono text-[11px] md:text-xs font-bold tracking-tight">
+                                                            {stock.ticker.replace('.JO', '')}
+                                                        </span>
+                                                        {(stock.change_percent || 0) >= 0 ? (
+                                                            <ArrowUpRight className="w-3 h-3 opacity-70" />
+                                                        ) : (
+                                                            <ArrowDownRight className="w-3 h-3 opacity-70" />
+                                                        )}
+                                                    </div>
+                                                    <div className="font-mono text-[11px] md:text-sm font-semibold tabular-nums mt-0.5">
+                                                        {stock.change_percent >= 0 ? '+' : ''}
+                                                        {stock.change_percent?.toFixed(2)}%
+                                                    </div>
+                                                    <div className="text-[9px] opacity-70 truncate mt-0.5 hidden sm:block">
+                                                        {stock.name}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {sectors.map((sector) => {
+                            const sc = heatColor(sector.change_percent);
+                            return (
+                                <div key={sector.name} className="border border-slate-800 rounded overflow-hidden">
+                                    <div
+                                        className="px-3 py-2 flex items-center justify-between"
+                                        style={{ background: sc.bg, color: sc.fg }}
+                                    >
+                                        <span className="text-xs font-bold uppercase tracking-wider">{sector.name}</span>
+                                        <span className="font-mono text-xs tabular-nums">
+                                            {sector.change_percent >= 0 ? '+' : ''}
+                                            {sector.change_percent?.toFixed(2)}% · {formatCap(sector.market_cap)}
+                                        </span>
+                                    </div>
+                                    <div className="divide-y divide-slate-800/80 bg-[#0b1220]">
+                                        {[...(sector.stocks || [])]
+                                            .sort((a, b) => (b.change_percent || 0) - (a.change_percent || 0))
+                                            .map((stock) => {
+                                                const c = heatColor(stock.change_percent);
+                                                return (
+                                                    <button
+                                                        key={stock.ticker}
+                                                        type="button"
+                                                        onClick={() => setSelected(stock)}
+                                                        className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-white/5 transition"
+                                                    >
+                                                        <span
+                                                            className="w-1.5 h-8 rounded-sm shrink-0"
+                                                            style={{ background: c.bg }}
+                                                        />
+                                                        <span className="font-mono text-xs font-bold text-gold w-14">
+                                                            {stock.ticker.replace('.JO', '')}
+                                                        </span>
+                                                        <span className="text-xs text-slate-400 truncate flex-1">
+                                                            {stock.name}
+                                                        </span>
+                                                        <span className="font-mono text-xs text-slate-300 tabular-nums">
+                                                            {formatPrice(stock.current_price)}
+                                                        </span>
+                                                        <span
+                                                            className={`font-mono text-xs font-semibold tabular-nums w-16 text-right ${
+                                                                (stock.change_percent || 0) >= 0
+                                                                    ? 'text-emerald-400'
+                                                                    : 'text-rose-400'
+                                                            }`}
+                                                        >
+                                                            {stock.change_percent >= 0 ? '+' : ''}
+                                                            {stock.change_percent?.toFixed(2)}%
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Movers strip */}
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="border border-slate-800 rounded bg-[#0b1220] p-3">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-500/80 mb-2">
+                            Top gainers
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {leaders.best.map((s) => {
+                                const c = heatColor(s.change_percent);
+                                return (
+                                    <button
+                                        key={s.ticker}
+                                        type="button"
+                                        onClick={() => setSelected(s)}
+                                        className="px-2 py-1 rounded font-mono text-[10px] font-bold"
+                                        style={{ background: c.bg, color: c.fg }}
+                                    >
+                                        {s.ticker.replace('.JO', '')} +{s.change_percent?.toFixed(2)}%
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div className="border border-slate-800 rounded bg-[#0b1220] p-3">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-rose-500/80 mb-2">
+                            Top losers
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {leaders.worst.map((s) => {
+                                const c = heatColor(s.change_percent);
+                                return (
+                                    <button
+                                        key={s.ticker}
+                                        type="button"
+                                        onClick={() => setSelected(s)}
+                                        className="px-2 py-1 rounded font-mono text-[10px] font-bold"
+                                        style={{ background: c.bg, color: c.fg }}
+                                    >
+                                        {s.ticker.replace('.JO', '')} {s.change_percent?.toFixed(2)}%
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Hover HUD (desktop) */}
+            {hover && !selected && (
+                <div className="hidden lg:block fixed bottom-6 right-6 z-40 w-72 pointer-events-none">
+                    <div className="bg-[#0b1220]/95 border border-slate-700 shadow-2xl rounded-lg p-4 text-cream backdrop-blur">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <p className="font-mono text-gold font-bold">{hover.ticker}</p>
+                                <p className="text-xs text-slate-400 truncate">{hover.name}</p>
+                            </div>
+                            <p className={`font-mono font-bold ${hover.change_percent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {hover.change_percent >= 0 ? '+' : ''}{hover.change_percent?.toFixed(2)}%
+                            </p>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                            <div>
+                                <p className="text-slate-500 uppercase tracking-wider">Price</p>
+                                <p className="font-mono text-cream">{formatPrice(hover.current_price)}</p>
+                            </div>
+                            <div>
+                                <p className="text-slate-500 uppercase tracking-wider">Mkt Cap</p>
+                                <p className="font-mono text-cream">{formatCap(hover.market_cap)}</p>
+                            </div>
+                            <div>
+                                <p className="text-slate-500 uppercase tracking-wider">P/E</p>
+                                <p className="font-mono text-cream">{hover.pe_ratio?.toFixed(1) ?? '—'}</p>
+                            </div>
+                            <div>
+                                <p className="text-slate-500 uppercase tracking-wider">Yield</p>
+                                <p className="font-mono text-cream">
+                                    {hover.dividend_yield != null ? formatPct(hover.dividend_yield) : '—'}
+                                </p>
                             </div>
                         </div>
-                    ))}
+                    </div>
                 </div>
+            )}
 
-                {/* Selected Stock Detail Panel */}
-                {selectedStock && (
-                    <div className="fixed bottom-0 left-0 lg:left-80 right-0 bg-white/95 backdrop-blur-md border-t border-white/60 shadow-2xl z-40">
-                        <div className="max-w-[1600px] mx-auto px-8 py-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
-                            <div className="flex items-start justify-between mb-6">
-                                <div>
-                                    <h3 className="text-2xl font-serif font-bold text-gold">
-                                        {selectedStock.ticker.replace('.JO', '')}
+            {/* Detail drawer */}
+            {selected && (
+                <div className="fixed inset-x-0 bottom-0 lg:left-80 z-50 border-t border-slate-700 bg-[#0b1220]/98 backdrop-blur-md text-cream shadow-2xl max-h-[70vh] overflow-y-auto">
+                    <div className="max-w-[1600px] mx-auto px-5 md:px-8 py-5">
+                        <div className="flex items-start justify-between gap-4 mb-5">
+                            <div>
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-mono text-2xl font-bold text-gold tracking-tight">
+                                        {selected.ticker.replace('.JO', '')}
                                     </h3>
-                                    <p className="text-sm text-slate-600 font-medium mt-1">
-                                        {selectedStock.name}
-                                    </p>
-                                    <span className="text-[10px] font-bold text-slate-500 bg-white/60 px-2 py-1 rounded mt-2 inline-block">
-                                        {selectedStock.sector || 'N/A'}
+                                    <span
+                                        className={`font-mono text-lg font-semibold tabular-nums ${
+                                            selected.change_percent >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                                        }`}
+                                    >
+                                        {selected.change_percent >= 0 ? '+' : ''}
+                                        {selected.change_percent?.toFixed(2)}%
                                     </span>
                                 </div>
+                                <p className="text-sm text-slate-400 mt-0.5">{selected.name}</p>
+                                <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-1">
+                                    {selected.sector}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelected(null)}
+                                className="p-2 text-slate-500 hover:text-cream transition"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+                            {[
+                                { l: 'Price', v: formatPrice(selected.current_price) },
+                                { l: 'Market Cap', v: formatCap(selected.market_cap) },
+                                { l: 'P/E', v: selected.pe_ratio?.toFixed(1) ?? '—' },
+                                {
+                                    l: 'Div Yield',
+                                    v: selected.dividend_yield != null ? formatPct(selected.dividend_yield) : '—',
+                                },
+                                {
+                                    l: 'ROE',
+                                    v: selected.return_on_equity != null ? formatPct(selected.return_on_equity) : '—',
+                                },
+                                { l: 'Beta', v: selected.beta?.toFixed(2) ?? '—' },
+                            ].map((m) => (
+                                <div key={m.l} className="border border-slate-800 rounded bg-slate-900/50 px-3 py-2.5">
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">{m.l}</p>
+                                    <p className="font-mono text-sm font-semibold tabular-nums mt-1">{m.v}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-5">
+                            <div className="border border-slate-800 rounded bg-slate-900/50 px-3 py-2.5">
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">52W High</p>
+                                <p className="font-mono text-sm mt-1">{selected.high_52w ? formatPrice(selected.high_52w) : '—'}</p>
+                                {selected.pct_from_high != null && (
+                                    <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                                        {selected.pct_from_high.toFixed(1)}% from high
+                                    </p>
+                                )}
+                            </div>
+                            <div className="border border-slate-800 rounded bg-slate-900/50 px-3 py-2.5">
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">52W Low</p>
+                                <p className="font-mono text-sm mt-1">{selected.low_52w ? formatPrice(selected.low_52w) : '—'}</p>
+                                {selected.pct_from_low != null && (
+                                    <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                                        {selected.pct_from_low.toFixed(1)}% from low
+                                    </p>
+                                )}
+                            </div>
+                            <div className="border border-slate-800 rounded bg-slate-900/50 px-3 py-2.5 flex items-end justify-between gap-3">
+                                <div>
+                                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-500">Action</p>
+                                    <p className="text-xs text-slate-400 mt-1">Open full analyser</p>
+                                </div>
                                 <button
-                                    onClick={() => setSelectedStock(null)}
-                                    className="p-2 text-slate-400 hover:text-navy transition-colors"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            {/* Key Metrics Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Price</p>
-                                    <p className="text-lg font-serif font-bold text-navy">{formatPrice(selectedStock.current_price)}</p>
-                                </div>
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Change</p>
-                                    <p className={`text-lg font-bold ${selectedStock.change_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {selectedStock.change_percent >= 0 ? '+' : ''}{selectedStock.change_percent.toFixed(2)}%
-                                    </p>
-                                </div>
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Market Cap</p>
-                                    <p className="text-lg font-bold text-navy">{formatNumber(selectedStock.market_cap)}</p>
-                                </div>
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">P/E Ratio</p>
-                                    <p className="text-lg font-bold text-navy">{selectedStock.pe_ratio?.toFixed(1) || 'N/A'}</p>
-                                </div>
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Div Yield</p>
-                                    <p className={`text-lg font-bold ${selectedStock.dividend_yield && selectedStock.dividend_yield > 0.04 ? 'text-green-600' : 'text-navy'}`}>
-                                        {selectedStock.dividend_yield ? formatPercent(selectedStock.dividend_yield) : 'N/A'}
-                                    </p>
-                                </div>
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">ROE</p>
-                                    <p className={`text-lg font-bold ${selectedStock.return_on_equity && selectedStock.return_on_equity > 0.15 ? 'text-green-600' : 'text-navy'}`}>
-                                        {selectedStock.return_on_equity ? formatPercent(selectedStock.return_on_equity) : 'N/A'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Additional Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">52 Week High</p>
-                                    <p className="text-base font-bold text-navy">
-                                        {selectedStock.high_52w ? formatPrice(selectedStock.high_52w) : 'N/A'}
-                                    </p>
-                                    {selectedStock.pct_from_high && (
-                                        <p className={`text-xs font-bold mt-1 ${selectedStock.pct_from_high < -20 ? 'text-green-600' : 'text-slate-500'}`}>
-                                            {selectedStock.pct_from_high.toFixed(1)}% from high
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">52 Week Low</p>
-                                    <p className="text-base font-bold text-navy">
-                                        {selectedStock.low_52w ? formatPrice(selectedStock.low_52w) : 'N/A'}
-                                    </p>
-                                    {selectedStock.pct_from_low && (
-                                        <p className={`text-xs font-bold mt-1 ${selectedStock.pct_from_low < 0.1 ? 'text-orange-600' : 'text-slate-500'}`}>
-                                            {selectedStock.pct_from_low.toFixed(1)}% from low
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="bg-white/60 rounded-xl p-4 border border-white/60">
-                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Beta</p>
-                                    <p className={`text-base font-bold ${selectedStock.beta && selectedStock.beta > 1.2 ? 'text-orange-600' : selectedStock.beta && selectedStock.beta < 0.8 ? 'text-green-600' : 'text-navy'}`}>
-                                        {selectedStock.beta?.toFixed(2) || 'N/A'}
-                                    </p>
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        {selectedStock.beta && selectedStock.beta > 1.2 ? 'High Volatility' : selectedStock.beta && selectedStock.beta < 0.8 ? 'Low Volatility' : 'Market Correlation'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Action Button */}
-                            <div className="flex items-center justify-end gap-3 pb-2">
-                                <button
+                                    type="button"
                                     onClick={() => {
-                                        window.location.hash = '#/';
+                                        if (onSelectTicker) onSelectTicker(selected.ticker);
+                                        else window.location.hash = '#/';
                                     }}
-                                    className="px-6 py-3 bg-gradient-to-r from-gold to-yellow-600 text-navy font-bold uppercase tracking-widest rounded-xl hover:shadow-lg transition-all flex items-center gap-2"
+                                    className="shrink-0 bg-gold text-navy text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded hover:bg-gold-light transition"
                                 >
-                                    Analyze Stock
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                    </svg>
+                                    Analyse
                                 </button>
                             </div>
                         </div>
                     </div>
-                )}
-
-                {/* Market Summary Cards */}
-                {sectors.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-                        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-5">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                                    <TrendingUp className="w-5 h-5 text-green-600" />
-                                </div>
-                                <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Best Performing</h3>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-serif font-bold text-green-600">
-                                    {sectors.reduce((best, s) => s.change_percent > best.change_percent ? s : best).name}
-                                </div>
-                                <div className="text-sm text-slate-600 mt-1">
-                                    +{sectors.reduce((best, s) => s.change_percent > best.change_percent ? s : best).change_percent.toFixed(2)}%
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-5">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                                    <TrendingDown className="w-5 h-5 text-red-600" />
-                                </div>
-                                <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Worst Performing</h3>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-serif font-bold text-red-600">
-                                    {sectors.reduce((worst, s) => s.change_percent < worst.change_percent ? s : worst).name}
-                                </div>
-                                <div className="text-sm text-slate-600 mt-1">
-                                    {sectors.reduce((worst, s) => s.change_percent < worst.change_percent ? s : worst).change_percent.toFixed(2)}%
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-5">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 bg-gold/20 rounded-xl flex items-center justify-center">
-                                    <Layers className="w-5 h-5 text-gold" />
-                                </div>
-                                <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Largest Sector</h3>
-                            </div>
-                            <div>
-                                <div className="text-2xl font-serif font-bold text-gold">
-                                    {sectors.reduce((largest, s) => s.market_cap > largest.market_cap ? s : largest).name}
-                                </div>
-                                <div className="text-sm text-slate-600 mt-1">
-                                    {formatNumber(sectors.reduce((largest, s) => s.market_cap > largest.market_cap ? s : largest).market_cap)}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -22,9 +22,26 @@ import ProtectedComponent from './ProtectedComponent';
 import PaymentModal from './PaymentModal';
 import StockOfTheDay from './StockOfTheDay';
 import ChartShareButton from './ChartShareButton';
+import TechnicalAnalysis from './TechnicalAnalysis';
+import AlertsPanel from './AlertsPanel';
+import LiveQuoteStrip from './LiveQuoteStrip';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+
+const TABS = [
+    'summary', 'charts', 'technical', 'alerts', 'freedom', 'peers', 'report',
+    'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal',
+];
+
+const tabLabel = (tab) => {
+    if (tab === 'patterns') return 'Market Patterns';
+    if (tab === 'freedom') return 'Freedom Calc';
+    if (tab === 'peers') return 'Peer Battle';
+    if (tab === 'technical') return 'Technical';
+    if (tab === 'alerts') return 'Alerts';
+    return tab.charAt(0).toUpperCase() + tab.slice(1);
+};
 
 const Dashboard = ({
     ticker,
@@ -187,28 +204,29 @@ const Dashboard = ({
 
             {data && !loading && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <header className="flex flex-col xl:flex-row xl:justify-between xl:items-center mb-12 pb-6 border-b border-navy/5 gap-4">
+                    <LiveQuoteStrip tickers={[ticker]} />
+                    <header className="flex flex-col xl:flex-row xl:justify-between xl:items-center mb-12 pb-6 border-b border-navy/5 dark:border-white/10 gap-4">
                         {/* Mobile Dropdown */}
                         <div className="w-full xl:hidden relative z-20">
                             <select
                                 value={activeTab}
                                 onChange={(e) => setActiveTab(e.target.value)}
-                                className="w-full bg-white/40 p-3.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-md text-navy font-bold text-sm uppercase tracking-wider appearance-none focus:outline-none focus:ring-2 focus:ring-gold"
+                                className="w-full bg-white/40 dark:bg-navy-light p-3.5 rounded-xl border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-md text-navy dark:text-cream font-bold text-sm uppercase tracking-wider appearance-none focus:outline-none focus:ring-2 focus:ring-gold"
                             >
-                                {['summary', 'charts', 'freedom', 'peers', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
+                                {TABS.map((tab) => (
                                     <option key={tab} value={tab}>
-                                        {tab === 'patterns' ? 'Market Patterns' : tab === 'freedom' ? 'Freedom Calc' : tab === 'peers' ? 'Peer Battle' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                        {tabLabel(tab)}
                                     </option>
                                 ))}
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-navy">
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-navy dark:text-cream">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                             </div>
                         </div>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden xl:flex space-x-1 bg-white/40 p-1.5 rounded-xl border border-white/60 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto w-full xl:flex-1 xl:min-w-0">
-                            {['summary', 'charts', 'freedom', 'peers', 'report', 'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal'].map((tab) => (
+                        <nav className="hidden xl:flex space-x-1 bg-white/40 dark:bg-navy-light/60 p-1.5 rounded-xl border border-white/60 dark:border-white/10 shadow-sm backdrop-blur-sm relative z-10 transition-all overflow-x-auto w-full xl:flex-1 xl:min-w-0">
+                            {TABS.map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -216,10 +234,10 @@ const Dashboard = ({
                                         shrink-0 px-5 py-2.5 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all duration-500 relative overflow-hidden group whitespace-nowrap
                                         ${activeTab === tab
                                             ? 'text-gold bg-navy shadow-lg scale-[1.02]'
-                                            : 'text-slate-500 hover:text-navy hover:bg-white/50'}
+                                            : 'text-slate-500 hover:text-navy dark:hover:text-cream hover:bg-white/50 dark:hover:bg-white/5'}
                                     `}
                                 align="center">
-                                    {tab === 'patterns' ? 'Market Patterns' : tab === 'freedom' ? 'Freedom Calc' : tab === 'peers' ? 'Peer Battle' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                    {tabLabel(tab)}
                                 </button>
                             ))}
                         </nav>
@@ -280,6 +298,16 @@ const Dashboard = ({
                     </header>
 
                     {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
+                    {activeTab === 'technical' && (
+                        <div className="animate-in fade-in duration-300">
+                            <TechnicalAnalysis ticker={ticker} />
+                        </div>
+                    )}
+                    {activeTab === 'alerts' && (
+                        <div className="animate-in fade-in duration-300">
+                            <AlertsPanel ticker={ticker} />
+                        </div>
+                    )}
                     {activeTab === 'charts' && (
                         <div className="space-y-6 md:space-y-12 animate-fade-in w-full max-w-full overflow-hidden">
                             <div ref={returnsChartRef} className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">

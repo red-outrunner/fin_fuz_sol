@@ -172,7 +172,7 @@ function App() {
     };
 
     return (
-        <div className="flex min-h-screen bg-cream dark:bg-[#0B1220] font-sans text-navy dark:text-cream transition-colors duration-300">
+        <div className="flex min-h-screen bg-cream font-sans text-ink transition-colors duration-300">
             <Sidebar
                 ticker={ticker}
                 setTicker={setTicker}
@@ -201,15 +201,15 @@ function App() {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={toggleTheme}
-                            className="p-2 text-navy dark:text-cream hover:text-gold transition-colors"
-                            title="Toggle dark mode (D)"
-                        >
-                            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                        </button>
-                        <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-2 text-navy dark:text-cream hover:text-gold transition-colors"
-                        >
+                        className="p-2 text-ink hover:text-gold transition-colors"
+                        title="Toggle dark mode (D)"
+                    >
+                        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </button>
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="p-2 text-ink hover:text-gold transition-colors"
+                    >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
                             </svg>
@@ -221,7 +221,7 @@ function App() {
                 <div className="hidden lg:flex justify-end mb-4">
                     <button
                         onClick={toggleTheme}
-                        className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-gold transition-colors"
+                        className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-ink-muted hover:text-gold transition-colors"
                         title="Toggle dark mode (D)"
                     >
                         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

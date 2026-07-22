@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Semantic theme tokens — font/surface colours flip with html.dark
+ * so the whole app adapts without per-component dark:text-* rewrites.
+ */
 :root {
     --color-cream: #FDFCF8;
     --color-beige: #F4F1E6;
@@ -12,16 +16,27 @@
     --color-gold: #B8860B;
     --color-gold-light: #D4AF37;
     --color-gold-muted: rgba(184, 134, 11, 0.1);
-    --page-bg: #FDFCF8;
-    --page-fg: #0F172A;
 
-    /* Shadows & Elevation - More subtle for Old Money */
+    --page-bg: #FDFCF8;
+    --page-fg: #1A2433;
+
+    --text-primary: #1A2433;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --text-faint: #94a3b8;
+    --text-on-dark: #F9F7F2;
+
+    --surface: #ffffff;
+    --surface-muted: #F9F7F2;
+    --border-subtle: rgba(15, 23, 42, 0.08);
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 10px -1px rgba(0, 0, 0, 0.02);
     --shadow-lg: 0 10px 40px -3px rgba(0, 0, 0, 0.04), 0 4px 20px -2px rgba(0, 0, 0, 0.02);
 
-    /* Transitions */
     --transition-base: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    color-scheme: light;
 }
 
 html.dark {
@@ -29,9 +44,22 @@ html.dark {
     --color-beige: #111827;
     --page-bg: #0B1220;
     --page-fg: #E8E6DF;
+
+    --text-primary: #E8E6DF;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-faint: #64748b;
+    --text-on-dark: #E8E6DF;
+
+    --surface: #1A2433;
+    --surface-muted: #111827;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 40px -3px rgba(0, 0, 0, 0.5);
+
+    color-scheme: dark;
 }
 
 html, body, #root {
@@ -53,6 +81,11 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+#root {
+    color: var(--page-fg);
+    min-height: 100vh;
+}
+
 h1,
 h2,
 h3,
@@ -62,6 +95,107 @@ h6 {
     font-family: 'Playfair Display', serif;
     letter-spacing: -0.015em;
     font-weight: 600;
+    color: inherit;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Theme-adaptive text utilities                                              */
+/* Maps brand/Tailwind text classes to semantic tokens under each theme.      */
+/* -------------------------------------------------------------------------- */
+
+/* Primary ink (was navy / dark slate) */
+html.dark .text-navy,
+html.dark .text-navy-light,
+html.dark .text-navy-dark,
+html.dark .hover\:text-navy:hover,
+html.dark .group:hover .group-hover\:text-navy {
+    color: var(--text-primary) !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-gray-900,
+html.dark .text-gray-800,
+html.dark .text-gray-700,
+html.dark .text-black {
+    color: var(--text-primary) !important;
+}
+
+/* Secondary body copy */
+html.dark .text-slate-600,
+html.dark .text-gray-600 {
+    color: var(--text-secondary) !important;
+}
+
+/* Muted labels / captions */
+html.dark .text-slate-500,
+html.dark .text-gray-500 {
+    color: var(--text-muted) !important;
+}
+
+html.dark .text-slate-400,
+html.dark .text-gray-400 {
+    color: var(--text-faint) !important;
+}
+
+/* Soft text used on light cards — lift in dark mode */
+html.dark .text-slate-300,
+html.dark .text-gray-300 {
+    color: var(--text-secondary) !important;
+}
+
+/*
+ * text-cream is used both as "light ink on dark chrome" and as a brand cream.
+ * In dark mode keep it as readable light ink (same family as primary).
+ */
+html.dark .text-cream {
+    color: var(--text-primary) !important;
+}
+
+/* Placeholders */
+html.dark .placeholder-slate-600::placeholder,
+html.dark .placeholder-slate-500::placeholder,
+html.dark .placeholder-slate-400::placeholder,
+html.dark .placeholder-gray-500::placeholder,
+html.dark .placeholder-gray-400::placeholder {
+    color: var(--text-faint) !important;
+}
+
+/* Inherit theme ink inside common surfaces */
+html.dark .card-premium,
+html.dark main,
+html.dark .bg-cream,
+html.dark .bg-white,
+html.dark .bg-beige,
+html.dark .bg-beige-light {
+    color: var(--text-primary);
+}
+
+/* Light mode: ensure cream/white surfaces use dark ink by default */
+html:not(.dark) .card-premium,
+html:not(.dark) main {
+    color: var(--text-primary);
+}
+
+/* Keep intentional inverse text on navy/gold solid fills readable */
+html.dark .bg-navy,
+html.dark .bg-navy-dark,
+html.dark .bg-navy-light,
+html:not(.dark) .bg-navy,
+html:not(.dark) .bg-navy-dark {
+    color: var(--text-on-dark);
+}
+
+.glass-dark {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: var(--text-on-dark);
+}
+
+html.dark .glass-dark {
+    color: var(--text-primary);
 }
 
 /* Old Money Refinements */
@@ -71,7 +205,7 @@ h6 {
 }
 
 .border-refined {
-    border: 1px solid rgba(15, 23, 42, 0.06);
+    border: 1px solid var(--border-subtle);
 }
 
 .gold-accent {
@@ -79,7 +213,6 @@ h6 {
     border-bottom: 2px solid var(--color-gold-muted);
 }
 
-/* Glassmorphism Utilities - More subtle */
 .glass {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
@@ -87,25 +220,19 @@ h6 {
     border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-.glass-dark {
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+html.dark .glass {
+    background: rgba(26, 36, 51, 0.75);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
 }
 
-/* Quiet Luxury Cards */
 .card-premium {
-    background: white;
-    border: 1px solid rgba(15, 23, 42, 0.04);
+    background: var(--surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
     box-shadow: var(--shadow-sm);
     transition: all var(--transition-base);
     border-radius: 4px;
-    /* More traditional than rounded corners */
-}
-
-html.dark .card-premium {
-    background: #1A2433;
-    border-color: rgba(255, 255, 255, 0.06);
 }
 
 .card-premium:hover {
@@ -117,7 +244,6 @@ html.dark ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.12);
 }
 
-/* Responsive Grid System */
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -136,7 +262,6 @@ html.dark ::-webkit-scrollbar-thumb {
     }
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -154,13 +279,11 @@ html.dark ::-webkit-scrollbar-thumb {
     background: var(--color-gold);
 }
 
-/* Animations */
 @keyframes fadeInUp {
     from {
         opacity: 0;
         transform: translateY(10px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
@@ -169,4 +292,23 @@ html.dark ::-webkit-scrollbar-thumb {
 
 .animate-fade-in-up {
     animation: fadeInUp var(--transition-base) forwards;
+}
+
+/* Form controls pick up theme colour */
+input,
+select,
+textarea,
+button {
+    color: inherit;
+}
+
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+    color: var(--text-primary);
+}
+
+html.dark option {
+    background: #1A2433;
+    color: var(--text-primary);
 }

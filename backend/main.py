@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import StreamingResponse
 import io
 from reportlab.lib import colors
@@ -13,10 +13,17 @@ import pandas as pd
 from datetime import datetime
 import logging
 import os
+import asyncio
+import json
 from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers, get_dividend_yield
 from reports import PDFReportGenerator
 from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe
 from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
+from technical import build_technical_snapshot, run_backtest
+from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_provider
+from database import get_db, engine, Base
+import models
+from sqlalchemy.orm import Session
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -850,4 +857,204 @@ def fair_value(request: Request, req: FairValueRequest):
     if comparison is None:
         raise HTTPException(status_code=404, detail=f"Fair value data not found for {ticker}")
     return comparison
+
+
+# === Technical Analysis ===
+
+class TechnicalRequest(BaseModel):
+    ticker: str
+    timeframe: Optional[str] = "daily"  # daily | weekly | monthly
+
+
+class BacktestRequest(BaseModel):
+    ticker: str
+    timeframe: Optional[str] = "daily"
+    fast: Optional[int] = 20
+    slow: Optional[int] = 50
+
+
+@app.post("/api/technical")
+@limiter.limit("20/minute")
+def technical_analysis(request: Request, body: TechnicalRequest):
+    """OHLCV + RSI/MACD/Bollinger/Fibonacci + pattern detection + multi-TF."""
+    tf = (body.timeframe or "daily").lower()
+    if tf not in ("daily", "weekly", "monthly"):
+        raise HTTPException(status_code=400, detail="timeframe must be daily, weekly, or monthly")
+    snap = build_technical_snapshot(body.ticker, tf)
+    if snap is None:
+        raise HTTPException(status_code=404, detail=f"No technical data for {body.ticker}")
+    return snap
+
+
+@app.post("/api/technical/backtest")
+@limiter.limit("15/minute")
+def technical_backtest(request: Request, body: BacktestRequest):
+    """SMA crossover strategy backtest."""
+    fast = int(body.fast or 20)
+    slow = int(body.slow or 50)
+    if fast < 2 or slow < 3 or fast >= slow:
+        raise HTTPException(status_code=400, detail="Require 2 ≤ fast < slow")
+    return run_backtest(body.ticker, body.timeframe or "daily", fast=fast, slow=slow)
+
+
+# === Live quotes & alerts ===
+
+class QuotesRequest(BaseModel):
+    tickers: List[str]
+
+
+class AlertEvaluateRequest(BaseModel):
+    rules: List[dict]
+
+
+class AlertCreate(BaseModel):
+    client_key: str
+    ticker: str
+    alert_type: Optional[str] = "price"  # price | volume | earnings
+    condition: Optional[str] = "above"
+    threshold: Optional[float] = None
+    label: Optional[str] = None
+
+
+@app.post("/api/quotes/live")
+@limiter.limit("60/minute")
+def live_quotes(request: Request, body: QuotesRequest):
+    return get_live_quotes(body.tickers)
+
+
+@app.get("/api/quotes/provider")
+def quotes_provider_info():
+    return {
+        "provider": quote_provider(),
+        "supports_streaming": True,
+        "note": "WebSocket at /ws/quotes?tickers=NPN.JO,SBK.JO — polls provider every few seconds.",
+    }
+
+
+@app.post("/api/alerts/evaluate")
+@limiter.limit("30/minute")
+def alerts_evaluate(request: Request, body: AlertEvaluateRequest):
+    """Evaluate client-supplied alert rules (also works without DB)."""
+    return evaluate_alerts(body.rules)
+
+
+@app.get("/api/alerts/{client_key}")
+def list_alerts(client_key: str, db: Session = Depends(get_db)):
+    rows = (
+        db.query(models.Alert)
+        .filter(models.Alert.client_key == client_key, models.Alert.active == True)  # noqa: E712
+        .order_by(models.Alert.id.desc())
+        .all()
+    )
+    return {
+        "alerts": [
+            {
+                "id": a.id,
+                "ticker": a.ticker,
+                "type": a.alert_type,
+                "condition": a.condition,
+                "threshold": a.threshold,
+                "label": a.label,
+                "triggered": a.triggered,
+                "last_triggered_at": a.last_triggered_at.isoformat() if a.last_triggered_at else None,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in rows
+        ]
+    }
+
+
+@app.post("/api/alerts")
+def create_alert(body: AlertCreate, db: Session = Depends(get_db)):
+    alert = models.Alert(
+        client_key=body.client_key.strip(),
+        ticker=body.ticker.upper().strip(),
+        alert_type=(body.alert_type or "price").lower(),
+        condition=(body.condition or "above").lower(),
+        threshold=body.threshold,
+        label=body.label,
+        active=True,
+    )
+    db.add(alert)
+    db.commit()
+    db.refresh(alert)
+    return {"id": alert.id, "ok": True}
+
+
+@app.delete("/api/alerts/{alert_id}")
+def delete_alert(alert_id: int, client_key: str, db: Session = Depends(get_db)):
+    row = db.query(models.Alert).filter(models.Alert.id == alert_id, models.Alert.client_key == client_key).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    row.active = False
+    db.commit()
+    return {"ok": True}
+
+
+@app.post("/api/alerts/{client_key}/check")
+@limiter.limit("20/minute")
+def check_stored_alerts(request: Request, client_key: str, db: Session = Depends(get_db)):
+    """Load DB alerts for client, evaluate, mark triggered."""
+    rows = (
+        db.query(models.Alert)
+        .filter(models.Alert.client_key == client_key, models.Alert.active == True)  # noqa: E712
+        .all()
+    )
+    rules = [
+        {
+            "id": a.id,
+            "ticker": a.ticker,
+            "type": a.alert_type,
+            "condition": a.condition,
+            "threshold": a.threshold if a.threshold is not None else 2.5,
+        }
+        for a in rows
+    ]
+    result = evaluate_alerts(rules)
+    fired_ids = {f.get("id") for f in result.get("fired", [])}
+    for a in rows:
+        if a.id in fired_ids:
+            a.triggered = True
+            a.last_triggered_at = datetime.utcnow()
+    db.commit()
+    return result
+
+
+@app.websocket("/ws/quotes")
+async def ws_quotes(websocket: WebSocket):
+    """
+    Near-real-time quote stream. Polls the configured provider on an interval.
+    Query: ?tickers=NPN.JO,SBK.JO&interval=5
+    """
+    await websocket.accept()
+    params = websocket.query_params
+    tickers = [t.strip().upper() for t in (params.get("tickers") or "").split(",") if t.strip()]
+    try:
+        interval = max(3, min(60, int(params.get("interval") or "5")))
+    except ValueError:
+        interval = 5
+    if not tickers:
+        await websocket.send_json({"error": "Provide tickers query param"})
+        await websocket.close()
+        return
+    try:
+        while True:
+            payload = get_live_quotes(tickers)
+            await websocket.send_json(payload)
+            await asyncio.sleep(interval)
+    except WebSocketDisconnect:
+        logger.info("Quote WebSocket disconnected")
+    except Exception as e:
+        logger.error(f"Quote WebSocket error: {e}")
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
+
+# Ensure new tables exist in local/dev even before migrations are applied
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    logger.warning(f"create_all skipped: {e}")
 

@@ -8,12 +8,14 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                cream: '#F9F7F2',
+                // Page cream flips with theme (see --color-cream in index.css)
+                cream: 'var(--color-cream)',
                 beige: {
                     light: '#F8F6F1',
-                    DEFAULT: '#F0EBE0',
+                    DEFAULT: 'var(--color-beige)',
                     dark: '#E2D9C8',
                 },
+                // Navy stays structural (backgrounds / accents) — text remapped in CSS
                 navy: {
                     light: '#2A3B52',
                     DEFAULT: '#1A2433',
@@ -35,16 +37,22 @@ module.exports = {
                 },
                 success: '#4A7C59',
                 error: '#8C4A4A',
+                // Semantic ink — always correct for current theme
+                ink: 'var(--text-primary)',
+                'ink-secondary': 'var(--text-secondary)',
+                'ink-muted': 'var(--text-muted)',
+                'ink-faint': 'var(--text-faint)',
+                surface: 'var(--surface)',
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],
                 serif: ['Playfair Display', 'serif'],
             },
             boxShadow: {
-                'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
-                'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
-            }
+                soft: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                glass: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+            },
         },
     },
     plugins: [],
-}
+};

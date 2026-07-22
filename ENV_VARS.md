@@ -62,6 +62,9 @@ All optional — the app runs with sensible defaults if these are unset.
 | `ADMIN_PASSWORD` | `12345678` | Password for the seeded admin. **Change both of these in production** — the defaults are for local/dev only. |
 | `CACHE_DIR` | `cache_v3` | Directory for the parquet market-data cache. |
 | `CACHE_TTL_SECONDS` | `86400` | How long (seconds) a cached price series is considered fresh. |
+| `POLYGON_API_KEY` | _(unset)_ | Optional. Enables lower-latency quotes via Polygon.io (falls back to yfinance). |
+| `ALPHA_VANTAGE_API_KEY` | _(unset)_ | Optional alternate quote provider key. |
+| `IEX_API_KEY` | _(unset)_ | Optional IEX Cloud quote provider key. |
 
 ---
 
