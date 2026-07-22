@@ -13,93 +13,117 @@ from serialization import clean_data
 
 logger = logging.getLogger(__name__)
 
-# === JSE Top 40 Tickers (as of 2025) ===
-# Source: Satrix Top 40 constituents
+# === JSE Top 40 Tickers (from Satrix constituent_details.xlsx) ===
 JSE_TOP_40 = [
-    "AGL.JO",
-    "ANG.JO",
-    "ANH.JO",
-    "BHG.JO",
-    "BID.JO",
-    "BTI.JO",
-    "BVT.JO",
-    "CFR.JO",
-    "CLS.JO",
-    "CPI.JO",
-    "DSY.JO",
-    "FSR.JO",
-    "GFI.JO",
-    "GLN.JO",
-    "GRT.JO",
-    "HAR.JO",
-    "IMP.JO",
-    "INL.JO",
-    "INP.JO",
-    "MRP.JO",
-    "MTN.JO",
-    "NED.JO",
-    "NPH.JO",
-    "NPN.JO",
-    "NRP.JO",
-    "OMU.JO",
-    "OUT.JO",
-    "PAN.JO",
-    "PPH.JO",
-    "PRX.JO",
-    "REM.JO",
-    "RNI.JO",
-    "SBK.JO",
-    "SHP.JO",
-    "SLM.JO",
-    "SOL.JO",
-    "SSW.JO",
-    "VAL.JO",
-    "VOD.JO",
-    "WHL.JO",
+    "ABG.JO",  # Absa Group Ltd - Banks
+    "AGL.JO",  # Anglo American - Basic Resources
+    "ANG.JO",  # AngloGold Ashanti - Basic Resources
+    "ANH.JO",  # Anheuser-Busch InBev - Food Beverage and Tobacco
+    "APN.JO",  # Aspen Pharmacare - Retail
+    "BHG.JO",  # BHP Group Limited - Basic Resources
+    "BID.JO",  # Bid Corp Ltd - Personal Care Drug and Grocery Stores
+    "BTI.JO",  # British American Tobacco - Food Beverage and Tobacco
+    "BVT.JO",  # Bidvest Group Limited - Industrial Goods & Sevices
+    "CFR.JO",  # Compagnie Financiere - Consumer Products and Services
+    "CLS.JO",  # Clicks Group - Personal Care Drug and Grocery Stores
+    "CPI.JO",  # Capitec - Banks
+    "DSY.JO",  # Discovery - Insurance
+    "EXX.JO",  # Exxaro Resources - Basic Resources
+    "FSR.JO",  # Firstrand - Banks
+    "GFI.JO",  # Gold Fields Ltd - Basic Resources
+    "GLN.JO",  # Glencore Plc - Basic Resources
+    "GRT.JO",  # Growthpoint - Real Estate
+    "HAR.JO",  # Harmony Gold Mining - Basic Resources
+    "IMP.JO",  # Implats - Basic Resources
+    "INL.JO",  # Investec Ltd - Banks
+    "INP.JO",  # Investec Plc - Banks
+    "MCG.JO",  # MultiChoice Group - Technology
+    "MNP.JO",  # Murray & Roberts - Industrial Goods & Sevices
+    "MRP.JO",  # Mr Price Group Ltd - Retail
+    "MTN.JO",  # MTN Group - Telecommunications
+    "NED.JO",  # Nedbank - Banks
+    "NPH.JO",  # Northam Platinum - Basic Resources
+    "NPN.JO",  # Naspers - Technology
+    "NRP.JO",  # NEPI Rockcastle Plc - Real Estate
+    "OMU.JO",  # Old Mutual Ltd - Insurance
+    "OUT.JO",  # Outsurance - Insurance
+    "PAN.JO",  # Pan African Resources - Basic Resources
+    "PPH.JO",  # Pepkor Holdings Ltd - Retail
+    "PRX.JO",  # Prosus Nv - Technology
+    "REM.JO",  # Remgro - Financial Services
+    "RMI.JO",  # Rand Merchant Investment - Insurance
+    "RNI.JO",  # Reinet Investments Sca - Financial Services
+    "SBK.JO",  # Standard Bank - Banks
+    "SHP.JO",  # Shoprite - Personal Care Drug and Grocery Stores
+    "SLM.JO",  # Sanlam - Insurance
+    "SOL.JO",  # Sasol - Chemicals
+    "SSW.JO",  # Sibanye Stillwater Ltd - Basic Resources
+    "VAL.JO",  # Valterra Platinum Ltd - Basic Resources
+    "VOD.JO",  # Vodacom Group Limited - Telecommunications
+    "WHL.JO",  # Woolworths Holdings Ltd - Retail
 ]
 
-# Sector mappings for JSE stocks (based on constituent_details.xlsx)
+# Sector mappings from Satrix constituent_details.xlsx - 12 Industries
 JSE_SECTORS = {
-    "AGL.JO": "Materials",  # ANGLO
-    "ANG.JO": "Materials",  # ANGLO GOLD ASHANTI
-    "ANH.JO": "Consumer",  # ANHEUSER-BUSCH INBEV
-    "BHG.JO": "Materials",  # BHP Group Limited
-    "BID.JO": "Consumer",  # BID CORP LTD
-    "BTI.JO": "Consumer",  # BRITISH AMERICAN TOBACCO PLC
-    "BVT.JO": "Consumer",  # BIDVEST GROUP LIMITED
-    "CFR.JO": "Consumer",  # COMPAGNIE FINANCIERE
-    "CLS.JO": "Consumer",  # CLICKS GROUP
-    "CPI.JO": "Financials",  # CAPITEC
-    "DSY.JO": "Financials",  # DISCOVERY
-    "FSR.JO": "Financials",  # FIRSTRAND
-    "GFI.JO": "Materials",  # GOLDFIELDS LTD
-    "GLN.JO": "Materials",  # GLENCORE PLC
-    "GRT.JO": "Real Estate",  # GROWTHPOINT
-    "HAR.JO": "Materials",  # HARMONY GOLD MINING
-    "IMP.JO": "Materials",  # IMPLATS
-    "INL.JO": "Financials",  # INVLTD
-    "INP.JO": "Financials",  # INVESTECP
-    "MRP.JO": "Consumer",  # MR PRICE GROUP LTD
-    "MTN.JO": "Telecom",  # MTN GROUP
-    "NED.JO": "Financials",  # NEDBANK
-    "NPH.JO": "Materials",  # Northam Platinum Holdings
-    "NPN.JO": "Technology",  # NASPERS -N
-    "NRP.JO": "Real Estate",  # NEPI ROCKCASTLE PLC
-    "OMU.JO": "Financials",  # OLD MUTUAL LTD
-    "OUT.JO": "Financials",  # OUTSURANCE
-    "PAN.JO": "Materials",  # PAN AFRICAN RESOURCE
-    "PPH.JO": "Consumer",  # PEPKOR HOLDINGS LTD
-    "PRX.JO": "Technology",  # PROSUS NV
-    "REM.JO": "Financials",  # REMGRO
-    "RNI.JO": "Financials",  # REINET INVESTMENTS SCA
-    "SBK.JO": "Financials",  # STANBANK
-    "SHP.JO": "Consumer",  # SHOPRITE
-    "SLM.JO": "Financials",  # SANLAM
-    "SOL.JO": "Materials",  # SASOL
-    "SSW.JO": "Materials",  # Sibanye Stillwater Ltd
-    "VAL.JO": "Materials",  # Valterra Platinum Ltd
-    "VOD.JO": "Telecom",  # VODACOM GROUP LIMITED
-    "WHL.JO": "Consumer",  # Woolworths
+    # Banks (7)
+    "ABG.JO": "Banks",
+    "CPI.JO": "Banks",
+    "FSR.JO": "Banks",
+    "INL.JO": "Banks",
+    "INP.JO": "Banks",
+    "NED.JO": "Banks",
+    "SBK.JO": "Banks",
+    # Basic Resources (13)
+    "AGL.JO": "Basic Resources",
+    "ANG.JO": "Basic Resources",
+    "BHG.JO": "Basic Resources",
+    "EXX.JO": "Basic Resources",
+    "GFI.JO": "Basic Resources",
+    "GLN.JO": "Basic Resources",
+    "HAR.JO": "Basic Resources",
+    "IMP.JO": "Basic Resources",
+    "NPH.JO": "Basic Resources",
+    "PAN.JO": "Basic Resources",
+    "SSW.JO": "Basic Resources",
+    "VAL.JO": "Basic Resources",
+    # Chemicals (1)
+    "SOL.JO": "Chemicals",
+    # Consumer Products and Services (1)
+    "CFR.JO": "Consumer Products and Services",
+    # Financial Services (2)
+    "REM.JO": "Financial Services",
+    "RNI.JO": "Financial Services",
+    # Food Beverage and Tobacco (2)
+    "ANH.JO": "Food Beverage and Tobacco",
+    "BTI.JO": "Food Beverage and Tobacco",
+    # Industrial Goods & Sevices (2)
+    "BVT.JO": "Industrial Goods & Sevices",
+    "MNP.JO": "Industrial Goods & Sevices",
+    # Insurance (5)
+    "DSY.JO": "Insurance",
+    "OMU.JO": "Insurance",
+    "OUT.JO": "Insurance",
+    "RMI.JO": "Insurance",
+    "SLM.JO": "Insurance",
+    # Personal Care Drug and Grocery Stores (3)
+    "BID.JO": "Personal Care Drug and Grocery Stores",
+    "CLS.JO": "Personal Care Drug and Grocery Stores",
+    "SHP.JO": "Personal Care Drug and Grocery Stores",
+    # Real Estate (2)
+    "GRT.JO": "Real Estate",
+    "NRP.JO": "Real Estate",
+    # Retail (4)
+    "APN.JO": "Retail",
+    "MRP.JO": "Retail",
+    "PPH.JO": "Retail",
+    "WHL.JO": "Retail",
+    # Technology (3)
+    "MCG.JO": "Technology",
+    "NPN.JO": "Technology",
+    "PRX.JO": "Technology",
+    # Telecommunications (2)
+    "MTN.JO": "Telecommunications",
+    "VOD.JO": "Telecommunications",
 }
 
 
