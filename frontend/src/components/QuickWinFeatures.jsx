@@ -249,21 +249,24 @@ export const ShareChartButton = ({ chartRef, ticker }) => {
 };
 
 // === 6. Stock of the Day ===
-export const StockOfTheDay = ({ ticker, onSelect }) => {
+export const StockOfTheDay = ({ onSelect }) => {
     const [stock, setStock] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchStockData = async () => {
-            if (!ticker) return;
+        // Fetch stock of the day (could be random or curated)
+        const fetchStockOfTheDay = async () => {
             setLoading(true);
             try {
-                // Fetch from screener API
-                const response = await fetch(`/api/screener/ticker/${ticker}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setStock(data);
-                }
+                // In production, fetch from backend: /api/stock-of-the-day
+                // For now, pick random from JSE Top 40
+                const jseTop40 = ['NPN.JO', 'PRX.JO', 'SBK.JO', 'CPI.JO', 'AGL.JO'];
+                const random = jseTop40[Math.floor(Math.random() * jseTop40.length)];
+                
+                // Fetch basic data
+                const response = await fetch(`/api/screener/ticker/${random}`);
+                const data = await response.json();
+                setStock(data);
             } catch (error) {
                 console.error('Failed to fetch stock of the day:', error);
             } finally {
@@ -271,8 +274,8 @@ export const StockOfTheDay = ({ ticker, onSelect }) => {
             }
         };
 
-        fetchStockData();
-    }, [ticker]);
+        fetchStockOfTheDay();
+    }, []);
 
     if (loading) return <div className="animate-pulse h-32 bg-white/40 rounded-2xl"></div>;
     if (!stock) return null;
@@ -288,16 +291,16 @@ export const StockOfTheDay = ({ ticker, onSelect }) => {
                 </div>
                 <div>
                     <h3 className="text-lg font-serif font-bold text-navy">Stock of the Day</h3>
-                    <p className="text-xs text-slate-600">Featured Analysis - {new Date().toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-600">Featured Analysis</p>
                 </div>
             </div>
             <div className="flex items-center justify-between">
                 <div>
                     <h4 className="text-2xl font-bold text-gold">{stock.ticker?.replace('.JO', '')}</h4>
-                    <p className="text-sm text-slate-600">{stock.name || stock.ticker}</p>
+                    <p className="text-sm text-slate-600">{stock.name}</p>
                 </div>
                 <div className="text-right">
-                    <div className="text-xl font-bold text-navy">R{(stock.current_price / 100).toFixed(2)}</div>
+                    <div className="text-xl font-bold text-navy">R{stock.current_price?.toFixed(2)}</div>
                     <div className={`text-sm font-bold ${stock.change_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {stock.change_percent >= 0 ? '+' : ''}{stock.change_percent?.toFixed(2)}%
                     </div>
