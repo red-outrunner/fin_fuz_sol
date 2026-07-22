@@ -380,49 +380,147 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
         return None
 
 
-def get_jse_peers(ticker):
+# Asset-class peer universes — never mix ETFs with stocks, or indices with either.
+JSE_ETF_PEERS = {
+    "STX40.JO": "JSE Equity ETFs",
+    "STXIND.JO": "JSE Equity ETFs",
+    "STXFIN.JO": "JSE Equity ETFs",
+    "STXRES.JO": "JSE Equity ETFs",
+    "STXSWX.JO": "JSE Equity ETFs",
+    "CTOP.JO": "JSE Equity ETFs",
+    "ETF40.JO": "JSE Equity ETFs",
+    "SYG400.JO": "JSE Equity ETFs",
+    "SYGJP.JO": "Global Equity ETFs",
+    "SYGUS.JO": "Global Equity ETFs",
+    "SYGEU.JO": "Global Equity ETFs",
+    "NFEM.JO": "Global Equity ETFs",
+    "STXEMG.JO": "Global Equity ETFs",
+    "GLD.JO": "Commodity ETFs",
+    "ETFRND.JO": "Commodity ETFs",
+    "NEWGOLD.JO": "Commodity ETFs",
+}
+
+JSE_INDEX_PEERS = {
+    "^J203.JO": "JSE Indices",
+    "^J200.JO": "JSE Indices",
+    "^J258.JO": "JSE Indices",
+    "^J250.JO": "JSE Indices",
+    "^J260.JO": "JSE Indices",
+    "^J213.JO": "JSE Indices",
+    "^GSPC": "Global Indices",
+    "^NDX": "Global Indices",
+    "^FTSE": "Global Indices",
+    "^GDAXI": "Global Indices",
+    "^N225": "Global Indices",
+    "000001.SS": "Global Indices",
+    "^MXWO": "Global Indices",
+    "^MXEF": "Global Indices",
+}
+
+# When an industry has too few names, widen to the parent group (still same asset class).
+INDUSTRY_PARENT_GROUP = {
+    "Banks": "Financials",
+    "Insurance": "Financials",
+    "Financial Services": "Financials",
+    "Technology": "Technology & Communications",
+    "Telecommunications": "Technology & Communications",
+    "Retail": "Consumer",
+    "Personal Care Drug and Grocery Stores": "Consumer",
+    "Food Beverage and Tobacco": "Consumer",
+    "Consumer Products and Services": "Consumer",
+    "Basic Resources": "Resources & Industrials",
+    "Chemicals": "Resources & Industrials",
+    "Industrial Goods & Sevices": "Resources & Industrials",
+    "Real Estate": "Real Estate",
+}
+
+_ETF_TICKER_HINTS = ("STX", "SYG", "ETF", "CTOP", "NFEM", "GLD", "NEWGOLD", "ETFRND")
+
+
+def _is_likely_etf(ticker: str) -> bool:
+    t = ticker.upper()
+    if t in JSE_ETF_PEERS:
+        return True
+    if t.startswith("^"):
+        return False
+    base = t.split(".")[0]
+    return any(h in base for h in _ETF_TICKER_HINTS)
+
+
+def get_jse_peers(ticker, return_meta: bool = False):
     """
-    Returns a list of valid JSE competitor tickers based on the input ticker's sector.
-    Now uses the 12-13 Satrix industries for accurate peer matching.
-    ETFs compete with ETFs, Tech with Tech, Banks with Banks, etc.
+    Returns competitor tickers matched by asset class then industry.
+
+    Rules:
+      - ETFs only compete with ETFs
+      - Indices only compete with indices
+      - Equities compete within the same industry (Banks vs Banks, Tech vs Tech, …)
+      - Thin industries widen to a parent group (still equities only)
     """
-    # Normalize ticker
     ticker = ticker.upper().strip()
-    
-    # Import sector mappings from screener
+
     try:
         from screener import JSE_SECTORS
     except ImportError:
         JSE_SECTORS = {}
-    
-    # Get the sector/industry for the input ticker
-    ticker_sector = JSE_SECTORS.get(ticker, None)
-    
-    if not ticker_sector:
-        # Fallback to old method if sector not found
-        sector_map = {
-            "BANKS": ["SBK.JO", "FSR.JO", "NED.JO", "ABG.JO", "CPI.JO"],
-            "RETAIL": ["SHP.JO", "PIK.JO", "WHL.JO", "SPP.JO", "MRP.JO"],
-            "MINING": ["ANG.JO", "SOL.JO", "IMP.JO", "SSW.JO", "GFI.JO", "BHP.JO"],
-            "TECH/PROSUS": ["NPN.JO", "PRX.JO"],
-            "TELCO": ["MTN.JO", "VOD.JO", "TKG.JO"],
-            "INSURANCE": ["SLM.JO", "OMU.JO", "DSY.JO"],
-            "PROPERTY": ["GRT.JO", "NEP.JO", "RDF.JO"]
-        }
-        
-        # Find which list the ticker belongs to
-        for sector, members in sector_map.items():
-            if ticker in members:
-                peers = [m for m in members if m != ticker]
-                return peers[:3]
-        
-        # Default fallback
-        defaults = ["STX40.JO", "NPN.JO", "SBK.JO"]
-        return [d for d in defaults if d != ticker]
-    
-    # NEW: Use 12-13 Satrix industries for accurate peer matching
-    # Find all tickers in the same industry
-    peers = [t for t, sector in JSE_SECTORS.items() if sector == ticker_sector and t != ticker]
-    
-    # Return top 3 peers (could be enhanced with market cap filtering)
-    return peers[:4] if len(peers) > 3 else peers
+
+    def _result(peers, peer_group, asset_class):
+        peers = [p for p in peers if p != ticker][:4]
+        if return_meta:
+            return {"peers": peers, "peer_group": peer_group, "asset_class": asset_class}
+        return peers
+
+    # --- Indices ---
+    if ticker.startswith("^") or ticker in JSE_INDEX_PEERS:
+        group = JSE_INDEX_PEERS.get(ticker, "JSE Indices" if ticker.endswith(".JO") or ticker.startswith("^J") else "Global Indices")
+        peers = [t for t, g in JSE_INDEX_PEERS.items() if g == group and t != ticker]
+        if len(peers) < 2:
+            peers = [t for t in JSE_INDEX_PEERS if t != ticker]
+        return _result(peers, group, "index")
+
+    # --- ETFs ---
+    if _is_likely_etf(ticker):
+        group = JSE_ETF_PEERS.get(ticker, "JSE Equity ETFs")
+        peers = [t for t, g in JSE_ETF_PEERS.items() if g == group and t != ticker]
+        if len(peers) < 2:
+            peers = [t for t in JSE_ETF_PEERS if t != ticker]
+        return _result(peers, group, "etf")
+
+    # --- Equities: exact industry first ---
+    ticker_sector = JSE_SECTORS.get(ticker)
+    if ticker_sector:
+        peers = [t for t, sector in JSE_SECTORS.items() if sector == ticker_sector and t != ticker]
+        peer_group = ticker_sector
+
+        # Widen to parent group only when the industry has no other names
+        if len(peers) < 1:
+            parent = INDUSTRY_PARENT_GROUP.get(ticker_sector)
+            if parent:
+                sibling_industries = {
+                    ind for ind, p in INDUSTRY_PARENT_GROUP.items() if p == parent
+                }
+                peers = [
+                    t for t, sector in JSE_SECTORS.items()
+                    if sector in sibling_industries and t != ticker
+                ]
+                peer_group = parent
+
+        return _result(peers, peer_group, "equity")
+
+    # Last-resort equity fallback by coarse bucket — still no ETF/index mix-ins
+    sector_map = {
+        "Banks": ["SBK.JO", "FSR.JO", "NED.JO", "ABG.JO", "CPI.JO"],
+        "Retail": ["SHP.JO", "WHL.JO", "MRP.JO", "PPH.JO"],
+        "Basic Resources": ["ANG.JO", "GFI.JO", "IMP.JO", "SSW.JO", "BHG.JO"],
+        "Technology": ["NPN.JO", "PRX.JO", "MCG.JO"],
+        "Telecommunications": ["MTN.JO", "VOD.JO"],
+        "Insurance": ["SLM.JO", "OMU.JO", "DSY.JO", "OUT.JO"],
+        "Real Estate": ["GRT.JO", "NRP.JO"],
+    }
+    for sector, members in sector_map.items():
+        if ticker in members:
+            return _result([m for m in members if m != ticker], sector, "equity")
+
+    # Unknown ticker: stay in equity Top-40 names only (never STX40 + NPN + SBK mashup)
+    defaults = ["NPN.JO", "SBK.JO", "AGL.JO", "MTN.JO"]
+    return _result([d for d in defaults if d != ticker], "Broad Equity", "equity")

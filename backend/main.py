@@ -314,41 +314,80 @@ def freedom_calculator(request: FreedomRequest):
 @app.post("/api/peers")
 def get_peers(request: AnalysisRequest):
     logger.info(f"Fetching peers for {request.ticker}")
-    peers = get_jse_peers(request.ticker)
-    return {"peers": peers}
+    meta = get_jse_peers(request.ticker, return_meta=True)
+    return meta
+
+def _build_export_frames(request: AnalysisRequest):
+    """Shared data prep for Excel / Sheets exports."""
+    start_date = f"{request.start_year}-01-01"
+    data = download_data(request.ticker, start_date, request.end_date)
+    if data is None:
+        raise HTTPException(status_code=404, detail="Data not found")
+    processed = process_data(data)
+    if processed is None:
+        raise HTTPException(status_code=500, detail="Error processing data")
+    stats = calculate_summary_stats(
+        processed['monthly_ret'], processed['pivot'],
+        ticker=request.ticker, inflation_rate=request.inflation_rate
+    )
+    flat_stats = None
+    if stats:
+        flat_stats = {k: v for k, v in stats.items() if isinstance(v, (int, float, str))}
+    return processed, flat_stats
+
 
 @app.post("/api/export/excel")
 def export_excel(request: AnalysisRequest):
     logger.info(f"Exporting Excel for {request.ticker}")
-    start_date = f"{request.start_year}-01-01"
-    data = download_data(request.ticker, start_date, request.end_date)
-    
-    if data is None:
-        raise HTTPException(status_code=404, detail="Data not found")
-        
-    processed = process_data(data)
-    if processed is None:
-        raise HTTPException(status_code=500, detail="Error processing data")
-        
-    # Create Excel file in memory
+    processed, flat_stats = _build_export_frames(request)
+
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         processed['df'].to_excel(writer, sheet_name='Monthly Data')
         processed['pivot'].to_excel(writer, sheet_name='Yearly Pivot')
-        
-        # Add summary stats if desired
-        stats = calculate_summary_stats(processed['monthly_ret'], processed['pivot'], ticker=request.ticker, inflation_rate=request.inflation_rate)
-        if stats:
-            # Flatten stats for dataframe
-            flat_stats = {k: v for k, v in stats.items() if isinstance(v, (int, float, str))}
+        if flat_stats:
             pd.DataFrame([flat_stats]).to_excel(writer, sheet_name='Summary Stats', index=False)
-            
+
     output.seek(0)
-    
     headers = {
         'Content-Disposition': f'attachment; filename="{request.ticker}_analysis.xlsx"'
     }
-    return StreamingResponse(output, headers=headers, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    return StreamingResponse(
+        output,
+        headers=headers,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+
+
+@app.post("/api/export/sheets")
+def export_sheets(request: AnalysisRequest):
+    """
+    Returns tab-separated analysis data for one-click Google Sheets sync.
+    Frontend copies the TSV to the clipboard and opens sheets.new.
+    """
+    logger.info(f"Exporting Sheets TSV for {request.ticker}")
+    processed, flat_stats = _build_export_frames(request)
+
+    monthly = processed['df'].reset_index()
+    monthly_tsv = monthly.to_csv(sep='\t', index=False)
+    pivot_tsv = processed['pivot'].reset_index().to_csv(sep='\t', index=False)
+    stats_tsv = ""
+    if flat_stats:
+        stats_tsv = pd.DataFrame([flat_stats]).to_csv(sep='\t', index=False)
+
+    payload = (
+        f"UBOMVU ANALYSIS\t{request.ticker}\n"
+        f"Period\t{request.start_year} → {request.end_date}\n\n"
+        f"=== SUMMARY ===\n{stats_tsv}\n"
+        f"=== MONTHLY DATA ===\n{monthly_tsv}\n"
+        f"=== YEARLY PIVOT ===\n{pivot_tsv}"
+    )
+    return {
+        "ticker": request.ticker,
+        "tsv": payload,
+        "sheets_url": "https://sheets.new",
+        "hint": "Data copied — paste into the new Google Sheet with Ctrl+V / Cmd+V",
+    }
 
 @app.post("/api/export/csv")
 def export_csv(request: AnalysisRequest):
@@ -659,6 +698,98 @@ def ticker_detail(request: Request, ticker: str):
     if details is None:
         raise HTTPException(status_code=404, detail=f"Ticker {ticker} not found")
     return details
+
+
+class SparklineRequest(BaseModel):
+    tickers: List[str]
+
+
+@app.post("/api/watchlist/sparklines")
+@limiter.limit("30/minute")
+def watchlist_sparklines(request: Request, body: SparklineRequest):
+    """Return compact 30-day close series for watchlist mini-charts."""
+    tickers = [t.upper().strip() for t in body.tickers if t][:20]
+    if not tickers:
+        return {"series": {}}
+
+    end = datetime.now().strftime("%Y-%m-%d")
+    start = (datetime.now() - pd.Timedelta(days=45)).strftime("%Y-%m-%d")
+    series = {}
+
+    for ticker in tickers:
+        try:
+            data = download_data(ticker, start, end)
+            if data is None or data.empty:
+                series[ticker] = {"prices": [], "change_pct": None}
+                continue
+            closes = data["Adj Close"] if "Adj Close" in data.columns else data["Close"]
+            closes = closes.dropna().tail(30)
+            prices = [round(float(p), 4) for p in closes.tolist()]
+            change_pct = None
+            if len(prices) >= 2 and prices[0] != 0:
+                change_pct = round(((prices[-1] - prices[0]) / prices[0]) * 100, 2)
+            series[ticker] = {
+                "prices": prices,
+                "change_pct": change_pct,
+                "last": prices[-1] if prices else None,
+            }
+        except Exception as e:
+            logger.error(f"Sparkline failed for {ticker}: {e}")
+            series[ticker] = {"prices": [], "change_pct": None}
+
+    return {"series": series}
+
+
+@app.get("/api/stock-of-the-day")
+@limiter.limit("30/minute")
+def stock_of_the_day(request: Request):
+    """
+    Deterministic featured equity for the calendar day — same pick for every user.
+    Rotates through the JSE Top 40 by date hash.
+    """
+    from screener import JSE_TOP_40, JSE_SECTORS
+    import hashlib
+
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    idx = int(hashlib.md5(today.encode()).hexdigest(), 16) % len(JSE_TOP_40)
+    ticker = JSE_TOP_40[idx]
+    details = get_ticker_details(ticker) or {"ticker": ticker, "name": ticker}
+    sector = JSE_SECTORS.get(ticker, details.get("sector", "Equity"))
+
+    # Lightweight sparkline for the card
+    end = datetime.now().strftime("%Y-%m-%d")
+    start = (datetime.now() - pd.Timedelta(days=45)).strftime("%Y-%m-%d")
+    prices = []
+    try:
+        data = download_data(ticker, start, end)
+        if data is not None and not data.empty:
+            closes = data["Adj Close"] if "Adj Close" in data.columns else data["Close"]
+            prices = [round(float(p), 4) for p in closes.dropna().tail(30).tolist()]
+    except Exception as e:
+        logger.warning(f"Stock-of-the-day sparkline failed: {e}")
+
+    change_pct = None
+    if len(prices) >= 2 and prices[0] != 0:
+        change_pct = round(((prices[-1] - prices[0]) / prices[0]) * 100, 2)
+
+    blurb = (
+        f"{details.get('name', ticker)} ({ticker}) is today's featured name in {sector}. "
+        f"Open the Wealth Analyser for full returns, risk, valuation and peer battle."
+    )
+
+    return clean_data({
+        "date": today,
+        "ticker": ticker,
+        "name": details.get("name", ticker),
+        "sector": sector,
+        "current_price": details.get("current_price"),
+        "pe_ratio": details.get("pe_ratio"),
+        "dividend_yield": details.get("dividend_yield"),
+        "market_cap": details.get("market_cap"),
+        "change_pct_30d": change_pct,
+        "sparkline": prices,
+        "blurb": blurb,
+    })
 
 
 # === Enhanced Fundamental Analysis Endpoints ===

@@ -1,22 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from './api';
 import Dashboard from './components/Dashboard';
 import StockScreener from './components/StockScreener';
 import JSEHeatmap from './components/JSEHeatmap';
 import StockIdeasFeed from './components/StockIdeasFeed';
+import Watchlist from './components/Watchlist';
 import Sidebar from './components/Sidebar';
+import { useTheme } from './context/ThemeContext';
+import { Moon, Sun } from 'lucide-react';
 
 function App() {
     const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
+    const { isDark, toggleTheme } = useTheme();
+    const searchInputRef = useRef(null);
 
-    // Analyser Configuration & Parameters State
     const [ticker, setTicker] = useState('^J203.JO');
     const [startYear, setStartYear] = useState(2018);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [inflationAdjusted, setInflationAdjusted] = useState(false);
 
-    // Analyser Data State
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -24,20 +27,57 @@ function App() {
     const [fundamentals, setFundamentals] = useState(null);
     const [news, setNews] = useState(null);
     const [calendar, setCalendar] = useState(null);
-
-    // Sidebar drawer state
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [dashboardTab, setDashboardTab] = useState('summary');
 
     useEffect(() => {
         const handleHashChange = () => {
-            setCurrentRoute(window.location.hash || '#/');
+            const hash = window.location.hash || '#/';
+            setCurrentRoute(hash.split('?')[0] || '#/');
+            const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
+            const tab = params.get('tab');
+            if (tab) setDashboardTab(tab);
         };
 
+        handleHashChange();
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
     }, []);
 
-    // Analysis trigger helper
+    const focusSearch = useCallback(() => {
+        setSidebarOpen(true);
+        window.setTimeout(() => {
+            searchInputRef.current?.focus();
+            searchInputRef.current?.select?.();
+        }, 120);
+    }, []);
+
+    // Keyboard shortcuts: G → search, R → reports, D → toggle dark
+    useEffect(() => {
+        const onKey = (e) => {
+            const tag = (e.target?.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) {
+                return;
+            }
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+            const key = e.key.toLowerCase();
+            if (key === 'g') {
+                e.preventDefault();
+                focusSearch();
+            } else if (key === 'r') {
+                e.preventDefault();
+                setDashboardTab('report');
+                window.location.hash = '#/?tab=report';
+            } else if (key === 'd') {
+                e.preventDefault();
+                toggleTheme();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [focusSearch, toggleTheme]);
+
     const triggerAnalyze = async (symbol, year = startYear, date = endDate, inflation = inflationAdjusted) => {
         window.location.hash = '#/';
         setLoading(true);
@@ -49,28 +89,28 @@ function App() {
                     ticker: symbol,
                     start_year: year,
                     end_date: date,
-                    inflation_rate: inflation ? 0.05 : 0.0
+                    inflation_rate: inflation ? 0.05 : 0.0,
                 }),
                 axios.post(`${API_BASE_URL}/api/profile`, {
                     ticker: symbol,
                     start_year: year,
-                    end_date: date
+                    end_date: date,
                 }).catch(() => ({ data: null })),
                 axios.post(`${API_BASE_URL}/api/fundamentals`, {
                     ticker: symbol,
                     start_year: year,
-                    end_date: date
+                    end_date: date,
                 }).catch(() => ({ data: null })),
                 axios.post(`${API_BASE_URL}/api/news`, {
                     ticker: symbol,
                     start_year: year,
-                    end_date: date
+                    end_date: date,
                 }).catch(() => ({ data: [] })),
                 axios.post(`${API_BASE_URL}/api/calendar`, {
                     ticker: symbol,
                     start_year: year,
-                    end_date: date
-                }).catch(() => ({ data: [] }))
+                    end_date: date,
+                }).catch(() => ({ data: [] })),
             ]);
 
             setData(analysisRes.data);
@@ -79,7 +119,7 @@ function App() {
             setNews(newsRes.data);
             setCalendar(calRes.data);
         } catch (err) {
-            console.error("Analysis Error:", err);
+            console.error('Analysis Error:', err);
             const errorMessage = err.response?.data?.detail || err.message || 'Analysis failed. Please check the ticker and try again.';
             setError(errorMessage);
         } finally {
@@ -104,6 +144,8 @@ function App() {
                 return <JSEHeatmap onSelectTicker={handleSelectTicker} />;
             case '#/ideas':
                 return <StockIdeasFeed onSelectTicker={handleSelectTicker} />;
+            case '#/watchlist':
+                return <Watchlist onSelectTicker={handleSelectTicker} />;
             case '#/':
             default:
                 return (
@@ -121,13 +163,16 @@ function App() {
                         calendar={calendar}
                         onAnalyze={handleAnalyze}
                         setSidebarOpen={setSidebarOpen}
+                        onSelectTicker={handleSelectTicker}
+                        activeTab={dashboardTab}
+                        setActiveTab={setDashboardTab}
                     />
                 );
         }
     };
 
     return (
-        <div className="flex min-h-screen bg-cream font-sans text-navy">
+        <div className="flex min-h-screen bg-cream dark:bg-[#0B1220] font-sans text-navy dark:text-cream transition-colors duration-300">
             <Sidebar
                 ticker={ticker}
                 setTicker={setTicker}
@@ -142,19 +187,45 @@ function App() {
                 isOpen={sidebarOpen}
                 setIsOpen={setSidebarOpen}
                 currentRoute={currentRoute}
+                searchInputRef={searchInputRef}
             />
 
             <main className="lg:ml-80 w-full min-w-0 overflow-x-hidden p-6 md:p-12 transition-all duration-500 ease-in-out">
-                {/* Mobile Header */}
-                <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-navy/5">
-                    <h1 className="text-2xl font-serif font-bold text-gold tracking-tight cursor-pointer" onClick={() => { window.location.hash = '#/'; }}>Ubomvu</h1>
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="p-2 text-navy hover:text-gold transition-colors"
+                <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-navy/5 dark:border-white/10">
+                    <h1
+                        className="text-2xl font-serif font-bold text-gold tracking-tight cursor-pointer"
+                        onClick={() => { window.location.hash = '#/'; }}
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
-                        </svg>
+                        Ubomvu
+                    </h1>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 text-navy dark:text-cream hover:text-gold transition-colors"
+                            title="Toggle dark mode (D)"
+                        >
+                            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </button>
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="p-2 text-navy dark:text-cream hover:text-gold transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Desktop theme toggle */}
+                <div className="hidden lg:flex justify-end mb-4">
+                    <button
+                        onClick={toggleTheme}
+                        className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-gold transition-colors"
+                        title="Toggle dark mode (D)"
+                    >
+                        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        {isDark ? 'Light' : 'Dark'}
                     </button>
                 </div>
 
@@ -165,4 +236,3 @@ function App() {
 }
 
 export default App;
-

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Summary from './Summary';
 import MLAnalysis from './MLAnalysis';
 import Comparison from './Comparison';
@@ -20,6 +20,8 @@ import FreedomCalculator from './FreedomCalculator';
 import PeerBenchmarking from './PeerBenchmarking';
 import ProtectedComponent from './ProtectedComponent';
 import PaymentModal from './PaymentModal';
+import StockOfTheDay from './StockOfTheDay';
+import ChartShareButton from './ChartShareButton';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
@@ -37,14 +39,24 @@ const Dashboard = ({
     news,
     calendar,
     onAnalyze,
-    setSidebarOpen
+    setSidebarOpen,
+    onSelectTicker,
+    activeTab: controlledTab,
+    setActiveTab: setControlledTab,
 }) => {
     const { user } = useAuth();
 
-    const [activeTab, setActiveTab] = useState('summary');
+    const [internalTab, setInternalTab] = useState('summary');
+    const activeTab = controlledTab ?? internalTab;
+    const setActiveTab = setControlledTab ?? setInternalTab;
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [targetUpgradeTier, setTargetUpgradeTier] = useState('pro');
+    const [exportStatus, setExportStatus] = useState(null);
+
+    const returnsChartRef = useRef(null);
+    const scatterChartRef = useRef(null);
+    const heatmapChartRef = useRef(null);
 
     // Read Mode State
     const [readingArticle, setReadingArticle] = useState(null);
@@ -53,7 +65,22 @@ const Dashboard = ({
 
     const handleExport = async (type) => {
         setIsExportMenuOpen(false);
+        setExportStatus(null);
         try {
+            if (type === 'sheets') {
+                const response = await axios.post(`${API_BASE_URL}/api/export/sheets`, {
+                    ticker,
+                    start_year: startYear,
+                    end_date: endDate,
+                });
+                const { tsv, sheets_url, hint } = response.data;
+                await navigator.clipboard.writeText(tsv);
+                window.open(sheets_url, '_blank', 'noopener,noreferrer');
+                setExportStatus(hint || 'Copied — paste into Google Sheets (Ctrl+V)');
+                window.setTimeout(() => setExportStatus(null), 5000);
+                return;
+            }
+
             const response = await axios.post(`${API_BASE_URL}/api/export/${type}`, {
                 ticker,
                 start_year: startYear,
@@ -76,6 +103,10 @@ const Dashboard = ({
             document.body.appendChild(link);
             link.click();
             link.remove();
+            if (type === 'excel') {
+                setExportStatus('Excel downloaded');
+                window.setTimeout(() => setExportStatus(null), 3000);
+            }
         } catch (err) {
             console.error("Export failed:", err);
             alert(`Export failed for ${type}`);
@@ -111,6 +142,14 @@ const Dashboard = ({
 
     return (
         <>
+            <StockOfTheDay onSelectTicker={onSelectTicker} />
+
+            {exportStatus && (
+                <div className="mb-4 px-4 py-3 rounded-lg bg-gold/10 border border-gold/30 text-sm text-navy dark:text-cream font-medium">
+                    {exportStatus}
+                </div>
+            )}
+
             {error && (
                 <div className="bg-red-50 border-l-4 border-error text-error p-6 mb-8 rounded shadow-soft slide-in-from-top-2 animate-in fade-in" role="alert">
                     <div className="flex items-center gap-3">
@@ -200,20 +239,28 @@ const Dashboard = ({
                                         <div className="p-3 border-b border-slate-50 bg-slate-50/50">
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2">Export Data</p>
                                         </div>
-                                        {['excel', 'csv', 'pdf', 'ml'].map((type) => (
+                                        {['excel', 'sheets', 'csv', 'pdf', 'ml'].map((type) => (
                                             <button
                                                 key={type}
-                                                disabled={type !== 'ml' && user?.tier !== 'institutional'}
+                                                disabled={type !== 'ml' && type !== 'excel' && type !== 'sheets' && user?.tier !== 'institutional'}
                                                 onClick={() => handleExport(type)}
                                                 className={`
                                                     block w-full text-left px-5 py-4 text-xs font-bold uppercase tracking-tight transition-all border-b border-slate-50 last:border-0 flex items-center justify-between
-                                                    ${(type === 'ml' || user?.tier === 'institutional')
+                                                    ${(type === 'ml' || type === 'excel' || type === 'sheets' || user?.tier === 'institutional')
                                                         ? 'text-slate-700 hover:bg-cream hover:text-gold cursor-pointer'
                                                         : 'text-slate-300 cursor-not-allowed'}
                                                 `}
                                             >
-                                                <span>{type === 'ml' ? 'ML Data (CSV)' : type.toUpperCase() + ' Report'}</span>
-                                                {type !== 'ml' && user?.tier !== 'institutional' && (
+                                                <span>
+                                                    {type === 'ml'
+                                                        ? 'ML Data (CSV)'
+                                                        : type === 'sheets'
+                                                            ? 'Google Sheets Sync'
+                                                            : type === 'excel'
+                                                                ? 'Excel (One-Click)'
+                                                                : type.toUpperCase() + ' Report'}
+                                                </span>
+                                                {type !== 'ml' && type !== 'excel' && type !== 'sheets' && user?.tier !== 'institutional' && (
                                                     <svg className="w-3.5 h-3.5 text-gold/40" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                                 )}
                                             </button>
@@ -235,49 +282,58 @@ const Dashboard = ({
                     {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
                     {activeTab === 'charts' && (
                         <div className="space-y-6 md:space-y-12 animate-fade-in w-full max-w-full overflow-hidden">
-                            <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
-                                <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy flex items-center gap-2">
-                                    Monthly Returns Pattern
-                                    <InfoTip title="Monthly Returns Pattern">
-                                        Shows the average return for each month of the year (all years mixed
-                                        together). Gold bars = months that usually go up, navy bars = months
-                                        that usually go down. Use it to spot strong and weak seasons — e.g.
-                                        good months to add money, or weak months to expect dips.
-                                    </InfoTip>
-                                </h3>
+                            <div ref={returnsChartRef} className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
+                                <div className="flex items-center justify-between mb-4 md:mb-8 gap-2">
+                                    <h3 className="text-lg md:text-xl font-serif font-bold text-navy dark:text-cream flex items-center gap-2">
+                                        Monthly Returns Pattern
+                                        <InfoTip title="Monthly Returns Pattern">
+                                            Shows the average return for each month of the year (all years mixed
+                                            together). Gold bars = months that usually go up, navy bars = months
+                                            that usually go down. Use it to spot strong and weak seasons — e.g.
+                                            good months to add money, or weak months to expect dips.
+                                        </InfoTip>
+                                    </h3>
+                                    <ChartShareButton targetRef={returnsChartRef} filename={`${ticker}_returns.png`} />
+                                </div>
                                 <div className="overflow-hidden w-full pb-2">
                                     <div className="w-full">
                                         <BarChart data={data} />
                                     </div>
                                 </div>
                             </div>
-                            <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
-                                <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy flex items-center gap-2">
-                                    Risk Spectrum (Volatility vs Return)
-                                    <InfoTip title="Risk Spectrum">
-                                        Each dot is a month of the year. Up = better average return.
-                                        Right = bigger swings (more risk). The best months sit top-left:
-                                        good reward for little risk. Hover a dot to see the month's name,
-                                        return, risk and win rate. Helps you judge if a month's gains are
-                                        worth its bumps.
-                                    </InfoTip>
-                                </h3>
+                            <div ref={scatterChartRef} className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
+                                <div className="flex items-center justify-between mb-4 md:mb-8 gap-2">
+                                    <h3 className="text-lg md:text-xl font-serif font-bold text-navy dark:text-cream flex items-center gap-2">
+                                        Risk Spectrum (Volatility vs Return)
+                                        <InfoTip title="Risk Spectrum">
+                                            Each dot is a month of the year. Up = better average return.
+                                            Right = bigger swings (more risk). The best months sit top-left:
+                                            good reward for little risk. Hover a dot to see the month's name,
+                                            return, risk and win rate. Helps you judge if a month's gains are
+                                            worth its bumps.
+                                        </InfoTip>
+                                    </h3>
+                                    <ChartShareButton targetRef={scatterChartRef} filename={`${ticker}_risk_spectrum.png`} />
+                                </div>
                                 <div className="overflow-hidden w-full pb-2">
                                     <div className="w-full">
                                         <ScatterPlot data={data} />
                                     </div>
                                 </div>
                             </div>
-                            <div className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
-                                <h3 className="text-lg md:text-xl font-serif font-bold mb-4 md:mb-8 text-navy flex items-center gap-2">
-                                    Historical Performance Matrix
-                                    <InfoTip title="Historical Performance Matrix">
-                                        Every cell is one real month: green = up, red = down, darker =
-                                        bigger move. Read a row to relive a year; read a column to see if
-                                        a month repeats its behaviour. Great for spotting long winning or
-                                        losing streaks at a glance.
-                                    </InfoTip>
-                                </h3>
+                            <div ref={heatmapChartRef} className="card-premium p-4 md:p-8 overflow-hidden w-full max-w-full">
+                                <div className="flex items-center justify-between mb-4 md:mb-8 gap-2">
+                                    <h3 className="text-lg md:text-xl font-serif font-bold text-navy dark:text-cream flex items-center gap-2">
+                                        Historical Performance Matrix
+                                        <InfoTip title="Historical Performance Matrix">
+                                            Every cell is one real month: green = up, red = down, darker =
+                                            bigger move. Read a row to relive a year; read a column to see if
+                                            a month repeats its behaviour. Great for spotting long winning or
+                                            losing streaks at a glance.
+                                        </InfoTip>
+                                    </h3>
+                                    <ChartShareButton targetRef={heatmapChartRef} filename={`${ticker}_heatmap.png`} />
+                                </div>
                                 <div className="overflow-hidden w-full pb-2">
                                     <div className="w-full">
                                         <Heatmap data={data} />

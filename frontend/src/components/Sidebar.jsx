@@ -10,7 +10,8 @@ const Sidebar = ({
     inflationAdjusted, setInflationAdjusted,
     onAnalyze, loading,
     isOpen, setIsOpen,
-    currentRoute
+    currentRoute,
+    searchInputRef,
 }) => {
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +19,8 @@ const Sidebar = ({
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const searchRef = useRef(null);
+    const localSearchInputRef = useRef(null);
+    const inputRef = searchInputRef || localSearchInputRef;
 
     // Click outside to close results
     useEffect(() => {
@@ -131,9 +134,10 @@ const Sidebar = ({
 
                             <div className="relative group">
                                 <input
+                                    ref={inputRef}
                                     type="text"
                                     value={searchQuery}
-                                    placeholder="Search symbol or company..."
+                                    placeholder="Search symbol or company... (G)"
                                     className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 text-sm text-cream placeholder-slate-600 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all hover:border-white/10"
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
@@ -316,7 +320,31 @@ const Sidebar = ({
                                     <div className="text-[9px] text-slate-500">Curated opportunities</div>
                                 </div>
                             </button>
+
+                            <button
+                                onClick={() => { window.location.hash = '#/watchlist'; }}
+                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
+                                    currentRoute === '#/watchlist'
+                                        ? 'bg-gold/10 border-gold/30'
+                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-cream">Watchlist</div>
+                                    <div className="text-[9px] text-slate-500">Sparklines & tracking</div>
+                                </div>
+                            </button>
                         </div>
+                        <p className="text-[9px] text-slate-600 px-1 tracking-wide">
+                            Shortcuts: <span className="text-gold/70">G</span> search ·{' '}
+                            <span className="text-gold/70">R</span> reports ·{' '}
+                            <span className="text-gold/70">D</span> dark mode
+                        </p>
                     </div>
 
                 {/* Footer Marker */}

@@ -15,10 +15,29 @@ def test_peers():
     sbk_peers = get_jse_peers("SBK.JO")
     print(f"SBK.JO Peers: {sbk_peers}")
     assert "FSR.JO" in sbk_peers
-    
+    # Banks must not include ETFs or tech
+    assert all(not p.startswith("STX") for p in sbk_peers)
+    assert "NPN.JO" not in sbk_peers
+
     npn_peers = get_jse_peers("NPN.JO")
     print(f"NPN.JO Peers: {npn_peers}")
     assert "PRX.JO" in npn_peers
+    assert "SBK.JO" not in npn_peers
+
+    etf_meta = get_jse_peers("STX40.JO", return_meta=True)
+    print(f"STX40.JO Peers: {etf_meta}")
+    assert etf_meta["asset_class"] == "etf"
+    assert all(p.endswith(".JO") and "STX" in p or "CTOP" in p or "ETF" in p or "SYG" in p
+               or p in ("NFEM.JO", "GLD.JO", "ETFRND.JO", "NEWGOLD.JO")
+               for p in etf_meta["peers"])
+    assert "NPN.JO" not in etf_meta["peers"]
+    assert "SBK.JO" not in etf_meta["peers"]
+
+    idx_meta = get_jse_peers("^J203.JO", return_meta=True)
+    print(f"^J203.JO Peers: {idx_meta}")
+    assert idx_meta["asset_class"] == "index"
+    assert "SBK.JO" not in idx_meta["peers"]
+    assert "STX40.JO" not in idx_meta["peers"]
 
 def test_freedom():
     print("\nTesting Financial Freedom Calculator...")
