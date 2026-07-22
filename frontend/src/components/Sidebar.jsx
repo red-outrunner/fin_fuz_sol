@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import { Watchlist } from './QuickWinFeatures';
 
 const Sidebar = ({
     ticker, setTicker,
@@ -317,6 +318,18 @@ const Sidebar = ({
                                 </div>
                             </button>
                         </div>
+                    </div>
+                    
+                    {/* Watchlist Section */}
+                    <div className="space-y-6">
+                        <h2 className="text-[10px] font-bold text-gold/40 uppercase tracking-[0.15em]">
+                            My Watchlist
+                        </h2>
+                        <Watchlist 
+                            watchlist={watchlist || []}
+                            onRemove={removeFromWatchlist}
+                            onSelect={onSelectTicker}
+                        />
                     </div>
 
                 {/* Footer Marker */}
