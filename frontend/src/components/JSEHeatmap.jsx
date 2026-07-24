@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { Activity, RefreshCcw, X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import CompanyLogo from './CompanyLogo';
 
 /**
  * Diverging Finviz-style colour scale.
@@ -305,14 +306,21 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                     onMouseEnter={() => setHover(stock)}
                                                     onMouseLeave={() => setHover(null)}
                                                     onClick={() => setSelected(stock)}
-                                                    className={`relative text-left p-2 transition-all duration-150 hover:brightness-110 hover:ring-1 hover:ring-gold/60 focus:outline-none focus:ring-1 focus:ring-gold min-h-[52px] ${span} ${
+                                                    className={`relative text-left p-2 transition-all duration-150 hover:brightness-110 hover:ring-1 hover:ring-gold/60 focus:outline-none focus:ring-1 focus:ring-gold min-h-[60px] ${span} ${
                                                         active ? 'ring-2 ring-gold z-10' : ''
                                                     }`}
                                                     style={{ background: c.bg, color: c.fg }}
                                                     title={`${stock.ticker} ${stock.change_percent?.toFixed(2)}%`}
                                                 >
                                                     <div className="flex items-start justify-between gap-1">
-                                                        <span className="font-mono text-[11px] md:text-xs font-bold tracking-tight">
+                                                        <CompanyLogo
+                                                            ticker={stock.ticker}
+                                                            name={stock.name}
+                                                            website={stock.website}
+                                                            size={span ? 'md' : 'sm'}
+                                                            className="shadow-sm border border-black/20 shrink-0"
+                                                        />
+                                                        <span className="font-mono text-[9px] md:text-[10px] font-bold opacity-80 uppercase tracking-tight ml-auto">
                                                             {stock.ticker.replace('.JO', '')}
                                                         </span>
                                                         {(stock.change_percent || 0) >= 0 ? (
@@ -325,7 +333,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                         {stock.change_percent >= 0 ? '+' : ''}
                                                         {stock.change_percent?.toFixed(2)}%
                                                     </div>
-                                                    <div className="text-[9px] opacity-70 truncate mt-0.5 hidden sm:block">
+                                                    <div className="text-[9px] opacity-80 truncate mt-0.5 hidden sm:block">
                                                         {stock.name}
                                                     </div>
                                                 </button>
@@ -368,9 +376,17 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                             className="w-1.5 h-8 rounded-sm shrink-0"
                                                             style={{ background: c.bg }}
                                                         />
-                                                        <span className="font-mono text-xs font-bold text-gold w-14">
-                                                            {stock.ticker.replace('.JO', '')}
-                                                        </span>
+                                                        <div className="flex items-center gap-2.5 w-28 shrink-0">
+                                                            <CompanyLogo
+                                                                ticker={stock.ticker}
+                                                                name={stock.name}
+                                                                website={stock.website}
+                                                                size="sm"
+                                                            />
+                                                            <span className="font-mono text-xs font-bold text-gold">
+                                                                {stock.ticker.replace('.JO', '')}
+                                                            </span>
+                                                        </div>
                                                         <span className="text-xs text-slate-400 truncate flex-1">
                                                             {stock.name}
                                                         </span>
@@ -411,10 +427,11 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                         key={s.ticker}
                                         type="button"
                                         onClick={() => setSelected(s)}
-                                        className="px-2 py-1 rounded font-mono text-[10px] font-bold"
+                                        className="px-2 py-1 rounded font-mono text-[10px] font-bold inline-flex items-center gap-1.5 shadow-sm transition hover:scale-105"
                                         style={{ background: c.bg, color: c.fg }}
                                     >
-                                        {s.ticker.replace('.JO', '')} +{s.change_percent?.toFixed(2)}%
+                                        <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" />
+                                        <span>{s.ticker.replace('.JO', '')} +{s.change_percent?.toFixed(2)}%</span>
                                     </button>
                                 );
                             })}
@@ -432,10 +449,11 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                         key={s.ticker}
                                         type="button"
                                         onClick={() => setSelected(s)}
-                                        className="px-2 py-1 rounded font-mono text-[10px] font-bold"
+                                        className="px-2 py-1 rounded font-mono text-[10px] font-bold inline-flex items-center gap-1.5 shadow-sm transition hover:scale-105"
                                         style={{ background: c.bg, color: c.fg }}
                                     >
-                                        {s.ticker.replace('.JO', '')} {s.change_percent?.toFixed(2)}%
+                                        <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" />
+                                        <span>{s.ticker.replace('.JO', '')} {s.change_percent?.toFixed(2)}%</span>
                                     </button>
                                 );
                             })}
@@ -449,9 +467,17 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 <div className="hidden lg:block fixed bottom-6 right-6 z-40 w-72 pointer-events-none">
                     <div className="bg-[#0b1220]/95 border border-slate-700 shadow-2xl rounded-lg p-4 text-cream backdrop-blur">
                         <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-mono text-gold font-bold">{hover.ticker}</p>
-                                <p className="text-xs text-slate-400 truncate">{hover.name}</p>
+                            <div className="flex items-center gap-3">
+                                <CompanyLogo
+                                    ticker={hover.ticker}
+                                    name={hover.name}
+                                    website={hover.website}
+                                    size="md"
+                                />
+                                <div>
+                                    <p className="font-mono text-gold font-bold">{hover.ticker.replace('.JO', '')}</p>
+                                    <p className="text-xs text-slate-400 truncate">{hover.name}</p>
+                                </div>
                             </div>
                             <p className={`font-mono font-bold ${hover.change_percent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {hover.change_percent >= 0 ? '+' : ''}{hover.change_percent?.toFixed(2)}%
@@ -486,24 +512,32 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 <div className="fixed inset-x-0 bottom-0 lg:left-80 z-50 border-t border-slate-700 bg-[#0b1220]/98 backdrop-blur-md text-cream shadow-2xl max-h-[70vh] overflow-y-auto">
                     <div className="max-w-[1600px] mx-auto px-5 md:px-8 py-5">
                         <div className="flex items-start justify-between gap-4 mb-5">
-                            <div>
-                                <div className="flex items-center gap-3">
-                                    <h3 className="font-mono text-2xl font-bold text-gold tracking-tight">
-                                        {selected.ticker.replace('.JO', '')}
-                                    </h3>
-                                    <span
-                                        className={`font-mono text-lg font-semibold tabular-nums ${
-                                            selected.change_percent >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                                        }`}
-                                    >
-                                        {selected.change_percent >= 0 ? '+' : ''}
-                                        {selected.change_percent?.toFixed(2)}%
-                                    </span>
+                            <div className="flex items-center gap-3">
+                                <CompanyLogo
+                                    ticker={selected.ticker}
+                                    name={selected.name}
+                                    website={selected.website}
+                                    size="lg"
+                                />
+                                <div>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="font-mono text-2xl font-bold text-gold tracking-tight">
+                                            {selected.ticker.replace('.JO', '')}
+                                        </h3>
+                                        <span
+                                            className={`font-mono text-lg font-semibold tabular-nums ${
+                                                selected.change_percent >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                                            }`}
+                                        >
+                                            {selected.change_percent >= 0 ? '+' : ''}
+                                            {selected.change_percent?.toFixed(2)}%
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-slate-400 mt-0.5">{selected.name}</p>
+                                    <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-1">
+                                        {selected.sector}
+                                    </p>
                                 </div>
-                                <p className="text-sm text-slate-400 mt-0.5">{selected.name}</p>
-                                <p className="text-[10px] uppercase tracking-widest text-slate-500 mt-1">
-                                    {selected.sector}
-                                </p>
                             </div>
                             <button
                                 type="button"
