@@ -3,31 +3,11 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import Sparkline from './Sparkline';
 import { Star, Trash2, Plus } from 'lucide-react';
-
-const STORAGE_KEY = 'ubomvu_watchlist';
-
-export function loadWatchlist() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    } catch {
-        return [];
-    }
-}
-
-export function saveWatchlist(list) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-}
-
-export function toggleWatchlistTicker(ticker) {
-    const list = loadWatchlist();
-    const exists = list.includes(ticker);
-    const next = exists ? list.filter((t) => t !== ticker) : [...list, ticker].slice(0, 20);
-    saveWatchlist(next);
-    return next;
-}
+import { useUserPreferences } from '../context/UserPreferencesContext';
 
 const Watchlist = ({ onSelectTicker }) => {
-    const [tickers, setTickers] = useState(loadWatchlist);
+    const { watchlist, updateWatchlist } = useUserPreferences();
+    const [tickers, setTickers] = useState(watchlist);
     const [series, setSeries] = useState({});
     const [loading, setLoading] = useState(false);
     const [draft, setDraft] = useState('');
@@ -55,7 +35,7 @@ const Watchlist = ({ onSelectTicker }) => {
 
     const persist = (next) => {
         setTickers(next);
-        saveWatchlist(next);
+        updateWatchlist(next);
         refresh(next);
     };
 

@@ -5,6 +5,7 @@ import JSZip from 'jszip';
 import { API_BASE_URL } from '../api';
 import { Activity, RefreshCcw, X, ArrowUpRight, ArrowDownRight, ChevronDown, Download } from 'lucide-react';
 import CompanyLogo from './CompanyLogo';
+import { useUserPreferences } from '../context/UserPreferencesContext';
 
 /**
  * Diverging Finviz-style colour scale.
@@ -53,6 +54,7 @@ const formatPct = (n, digits = 1) => {
 };
 
 const JSEHeatmap = ({ onSelectTicker }) => {
+    const { preferences, updatePreference } = useUserPreferences();
     const [sectors, setSectors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -60,9 +62,18 @@ const JSEHeatmap = ({ onSelectTicker }) => {
     const [hover, setHover] = useState(null);
     const [layout, setLayout] = useState('map'); // map | list
     const [updatedAt, setUpdatedAt] = useState(null);
-    const [timePeriod, setTimePeriod] = useState('1d'); // 1d, 7d, 1mo, ytd
-    const [exportQuality, setExportQuality] = useState('social'); // social, print, custom
+    const [timePeriod, setTimePeriod] = useState(preferences.heatmapTimePeriod || '1d'); // 1d, 7d, 1mo, ytd
+    const [exportQuality, setExportQuality] = useState(preferences.exportQuality || 'social'); // social, print, custom
     const heatmapRef = useRef(null);
+
+    // Save preferences when they change
+    useEffect(() => {
+        updatePreference('heatmapTimePeriod', timePeriod);
+    }, [timePeriod, updatePreference]);
+
+    useEffect(() => {
+        updatePreference('exportQuality', exportQuality);
+    }, [exportQuality, updatePreference]);
 
     const exportPresets = {
         social: { width: 1920, height: 1080, scale: 3, name: 'Social Media (5760x3240)' },

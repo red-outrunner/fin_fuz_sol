@@ -7,12 +7,15 @@ import JSEHeatmap from './components/JSEHeatmap';
 import StockIdeasFeed from './components/StockIdeasFeed';
 import Watchlist from './components/Watchlist';
 import Sidebar from './components/Sidebar';
+import ConsentToast from './components/ConsentToast';
 import { useTheme } from './context/ThemeContext';
+import { UserPreferencesProvider, useUserPreferences } from './context/UserPreferencesContext';
 import { Moon, Sun } from 'lucide-react';
 
-function App() {
+function AppContent() {
     const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
     const { isDark, toggleTheme } = useTheme();
+    const { preferences, watchlist, updatePreference, updateWatchlist } = useUserPreferences();
     const searchInputRef = useRef(null);
 
     const [ticker, setTicker] = useState('^J203.JO');
@@ -231,7 +234,16 @@ function App() {
 
                 {renderRoute()}
             </main>
+            <ConsentToast />
         </div>
+    );
+}
+
+function App() {
+    return (
+        <UserPreferencesProvider>
+            <AppContent />
+        </UserPreferencesProvider>
     );
 }
 

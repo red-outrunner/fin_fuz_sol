@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import Sparkline from './Sparkline';
-import { toggleWatchlistTicker, loadWatchlist } from './Watchlist';
+import { useUserPreferences } from '../context/UserPreferencesContext';
 import { Sparkles, Star } from 'lucide-react';
 
 const StockOfTheDay = ({ onSelectTicker }) => {
+    const { watchlist, updateWatchlist } = useUserPreferences();
     const [feat, setFeat] = useState(null);
     const [loading, setLoading] = useState(true);
     const [watched, setWatched] = useState(false);
@@ -17,7 +18,7 @@ const StockOfTheDay = ({ onSelectTicker }) => {
                 const res = await axios.get(`${API_BASE_URL}/api/stock-of-the-day`);
                 if (!cancelled) {
                     setFeat(res.data);
-                    setWatched(loadWatchlist().includes(res.data.ticker));
+                    setWatched(watchlist.includes(res.data.ticker));
                 }
             } catch (err) {
                 console.error(err);
@@ -26,7 +27,7 @@ const StockOfTheDay = ({ onSelectTicker }) => {
             }
         })();
         return () => { cancelled = true; };
-    }, []);
+    }, [watchlist]);
 
     if (loading) {
         return (
@@ -40,8 +41,12 @@ const StockOfTheDay = ({ onSelectTicker }) => {
     const positive = change == null ? null : change >= 0;
 
     const handleWatch = () => {
-        const next = toggleWatchlistTicker(feat.ticker);
-        setWatched(next.includes(feat.ticker));
+        const exists = watchlist.includes(feat.ticker);
+        const next = exists 
+            ? watchlist.filter(t => t !== feat.ticker)
+            : [...watchlist, feat.ticker].slice(0, 20);
+        updateWatchlist(next);
+        setWatched(!exists);
     };
 
     return (
