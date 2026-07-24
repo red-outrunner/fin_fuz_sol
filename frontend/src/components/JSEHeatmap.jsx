@@ -65,14 +65,17 @@ const JSEHeatmap = ({ onSelectTicker }) => {
     const heatmapRef = useRef(null);
 
     const exportPresets = {
-        social: { width: 1920, height: 1080, scale: 2, name: 'Social Media (1920x1080)' },
-        print: { width: 1920, height: 1080, scale: 4, name: 'Print Quality (300 DPI)' },
-        custom: { width: 1920, height: 1080, scale: 3, name: 'Custom (1920x1080)' },
+        social: { width: 1920, height: 1080, scale: 3, name: 'Social Media (5760x3240)' },
+        print: { width: 2560, height: 1440, scale: 4, name: 'Print Quality (10240x5760)' },
+        custom: { width: 3840, height: 2160, scale: 2, name: '4K UHD (7680x4320)' },
     };
 
     const renderHeatmapToCanvas = (ctx, preset, startSector = 0, endSector = null) => {
         const width = preset.width;
         const height = preset.height;
+        
+        // Calculate scale factor for high-detail rendering
+        const detailScale = preset.scale >= 4 ? 1.5 : 1.0;
         
         // Background
         ctx.fillStyle = '#020617';
@@ -82,32 +85,32 @@ const JSEHeatmap = ({ onSelectTicker }) => {
         ctx.fillStyle = '#0b1220';
         ctx.fillRect(0, 0, width, 100);
         
-        // Title
+        // Title - larger fonts for high-detail exports
         ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 28px Inter, system-ui, sans-serif';
+        ctx.font = `bold ${28 * detailScale}px Inter, system-ui, sans-serif`;
         ctx.fillText('JSE Market Map', 40, 45);
-        
+
         // Top 40 badge
         ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+        ctx.font = `bold ${14 * detailScale}px Inter, system-ui, sans-serif`;
         ctx.fillText('TOP 40', 220, 45);
-        
+
         // Subtitle
         ctx.fillStyle = '#64748b';
-        ctx.font = '16px Inter, system-ui, sans-serif';
+        ctx.font = `${16 * detailScale}px Inter, system-ui, sans-serif`;
         const periodLabel = periodLabels[timePeriod];
         const now = new Date();
         const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         ctx.fillText(`Cap-weighted mosaic · ${periodLabel} change · as of ${timeStr}`, 40, 75);
-        
+
         // Get sectors to render - handle null endSector properly
-        const sectorsToRender = endSector !== null 
+        const sectorsToRender = endSector !== null
             ? sectors.slice(startSector, endSector)
             : sectors.slice(startSector);
-        
+
         if (sectorsToRender.length === 0) {
             ctx.fillStyle = '#94a3b8';
-            ctx.font = '16px Inter, system-ui, sans-serif';
+            ctx.font = `${16 * detailScale}px Inter, system-ui, sans-serif`;
             ctx.textAlign = 'center';
             ctx.fillText('No sectors to display', width / 2, height / 2);
             ctx.textAlign = 'left';
@@ -130,21 +133,29 @@ const JSEHeatmap = ({ onSelectTicker }) => {
             
             const sectorColor = heatColor(sector.change_percent);
             
-            // Sector container
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(x, y, colWidth, rowHeight - 10);
+            // Sector container with subtle gradient for high-detail
+            if (preset.scale >= 3) {
+                const gradient = ctx.createLinearGradient(x, y, x, y + rowHeight);
+                gradient.addColorStop(0, '#1e293b');
+                gradient.addColorStop(1, '#0f172a');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, y, colWidth, rowHeight - 10);
+            } else {
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(x, y, colWidth, rowHeight - 10);
+            }
             
             // Sector header
             ctx.fillStyle = sectorColor.bg;
             ctx.fillRect(x, y, colWidth, 35);
             
-            // Sector name
+            // Sector name - larger fonts for high-detail
             ctx.fillStyle = sectorColor.fg;
-            ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+            ctx.font = `bold ${13 * detailScale}px Inter, system-ui, sans-serif`;
             ctx.fillText(sector.name.toUpperCase(), x + 10, y + 22);
-            
+
             // Sector change
-            ctx.font = '13px monospace';
+            ctx.font = `${13 * detailScale}px monospace`;
             const changeSign = sector.change_percent >= 0 ? '+' : '';
             ctx.textAlign = 'right';
             ctx.fillText(
@@ -172,17 +183,24 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 
                 const stockColor = heatColor(stock.change_percent);
                 
-                // Stock tile background
+                // Stock tile background with subtle border for high-detail
                 ctx.fillStyle = stockColor.bg;
                 ctx.fillRect(sx, sy, stockWidth - 2, stockHeight - 2);
                 
-                // Stock ticker
-                ctx.fillStyle = stockColor.fg;
-                ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-                ctx.fillText(stock.ticker.replace('.JO', ''), sx + 8, sy + 18);
+                // Add subtle border for high-detail exports
+                if (preset.scale >= 3) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(sx, sy, stockWidth - 2, stockHeight - 2);
+                }
                 
+                // Stock ticker - larger fonts for high-detail
+                ctx.fillStyle = stockColor.fg;
+                ctx.font = `bold ${11 * detailScale}px Inter, system-ui, sans-serif`;
+                ctx.fillText(stock.ticker.replace('.JO', ''), sx + 8, sy + 18);
+
                 // Stock change
-                ctx.font = 'bold 12px monospace';
+                ctx.font = `bold ${12 * detailScale}px monospace`;
                 const stockChangeSign = stock.change_percent >= 0 ? '+' : '';
                 ctx.textAlign = 'right';
                 ctx.fillText(
@@ -193,7 +211,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 ctx.textAlign = 'left';
                 
                 // Stock name (smaller)
-                ctx.font = '10px Inter, system-ui, sans-serif';
+                ctx.font = `${10 * detailScale}px Inter, system-ui, sans-serif`;
                 ctx.fillStyle = stockColor.fg;
                 ctx.globalAlpha = 0.8;
                 ctx.fillText(
@@ -211,7 +229,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
         const currentPart = startSector < halfPoint ? 1 : 2;
         if (totalParts > 1) {
             ctx.fillStyle = '#94a3b8';
-            ctx.font = '14px Inter, system-ui, sans-serif';
+            ctx.font = `${14 * detailScale}px Inter, system-ui, sans-serif`;
             ctx.textAlign = 'center';
             ctx.fillText(`Part ${currentPart} of ${totalParts}`, width / 2, height - 30);
             ctx.textAlign = 'left';
