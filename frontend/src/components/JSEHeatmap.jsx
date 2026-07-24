@@ -100,17 +100,24 @@ const JSEHeatmap = ({ onSelectTicker }) => {
         const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         ctx.fillText(`Cap-weighted mosaic · ${periodLabel} change · as of ${timeStr}`, 40, 75);
         
-        // Get sectors to render
-        const sectorsToRender = sectors.slice(startSector, endSector);
-        if (sectorsToRender.length === 0) return;
+        // Get sectors to render - handle null endSector properly
+        const sectorsToRender = endSector !== null 
+            ? sectors.slice(startSector, endSector)
+            : sectors.slice(startSector);
         
-        // Calculate layout based on TOTAL sectors to maintain consistent sizing
-        const totalSectors = endSector ? (endSector - startSector) : sectors.length;
-        const sectorsInThisPart = sectorsToRender.length;
+        if (sectorsToRender.length === 0) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '16px Inter, system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('No sectors to display', width / 2, height / 2);
+            ctx.textAlign = 'left';
+            return;
+        }
         
         // Draw sectors in 3 columns
         const margin = 40;
         const cols = 3;
+        const sectorsInThisPart = sectorsToRender.length;
         const rows = Math.ceil(sectorsInThisPart / cols);
         const colWidth = (width - margin * 2 - margin * (cols - 1)) / cols;
         const rowHeight = (height - 180 - margin * (rows - 1)) / rows;
@@ -220,8 +227,10 @@ const JSEHeatmap = ({ onSelectTicker }) => {
             const halfPoint = Math.ceil(sectors.length / 2);
             const parts = [
                 { start: 0, end: halfPoint, name: 'part1' },
-                { start: halfPoint, end: null, name: 'part2' }
-            ].filter(part => part.start < sectors.length);
+                { start: halfPoint, end: sectors.length, name: 'part2' }
+            ];
+
+            console.log(`Exporting ${sectors.length} sectors in 2 parts: Part 1 (0-${halfPoint}), Part 2 (${halfPoint}-${sectors.length})`);
 
             // Create ZIP file
             const zip = new JSZip();
@@ -237,6 +246,8 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 
                 // Scale context for high DPI
                 ctx.scale(preset.scale, preset.scale);
+                
+                console.log(`Rendering ${part.name}: sectors ${part.start} to ${part.end}`);
                 
                 // Render heatmap to canvas
                 renderHeatmapToCanvas(ctx, preset, part.start, part.end);
