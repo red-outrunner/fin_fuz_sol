@@ -29,9 +29,9 @@ const TICKER_DOMAINS = {
     'MRP.JO': 'mrpricegroup.com',
     'MTN.JO': 'mtn.com',
     'NED.JO': 'nedbank.co.za',
-    'NPH.JO': 'northam.co.za',
+    'NPH.JO': 'northamplatinum.com',
     'NPN.JO': 'naspers.com',
-    'NRP.JO': 'nepirockcastle.com',
+    'NRP.JO': 'rockcastle.co.za',
     'OMU.JO': 'oldmutual.com',
     'OUT.JO': 'outsurance.co.za',
     'PAN.JO': 'panafricanresources.com',
@@ -130,6 +130,21 @@ const CompanyLogo = ({ ticker = '', name = '', website = '', size = 'md', classN
     // Build candidate image sources
     const candidateUrls = useMemo(() => {
         const urls = [];
+        
+        // Direct logo URLs for problematic companies (prioritized)
+        if (cleanTicker === 'SOL') {
+            urls.push('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Sasol_Logo_2021.svg/120px-Sasol_Logo_2021.svg.png');
+            urls.push('https://logo.clearbit.com/sasol.com');
+        }
+        if (cleanTicker === 'RNI') {
+            urls.push('https://reinet.co.uk/wp-content/themes/reinet/images/logo.png');
+            urls.push('https://logo.clearbit.com/reinet.co.uk');
+        }
+        if (cleanTicker === 'NPH') {
+            urls.push('https://northamplatinum.com/wp-content/uploads/2022/08/Northam-Platinum-Logo.png');
+            urls.push('https://logo.clearbit.com/northamplatinum.com');
+        }
+        
         if (domain) {
             urls.push(`https://logo.clearbit.com/${domain}`);
             urls.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);

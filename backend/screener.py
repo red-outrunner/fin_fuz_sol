@@ -349,12 +349,74 @@ def screen_stocks(
     return clean_data(results)
 
 
-def get_sector_performance() -> List[Dict[str, Any]]:
+def _calculate_price_change(ticker: str, period: str = "1d") -> float:
+    """
+    Calculate price change percentage for a given period.
+    
+    Args:
+        ticker: Stock ticker symbol
+        period: Time period ("1d", "7d", "1mo", "ytd")
+    
+    Returns:
+        Percentage change (can be negative)
+    """
+    try:
+        t = yf.Ticker(ticker)
+        
+        # For YTD, we need special handling - fetch from January 1st
+        if period == "ytd":
+            current_year = datetime.now().year
+            start_date = datetime(current_year, 1, 1).strftime("%Y-%m-%d")
+            end_date = datetime.now().strftime("%Y-%m-%d")
+            hist = t.history(start=start_date, end=end_date)
+        else:
+            # Map period to yfinance history period
+            period_map = {
+                "1d": "2d",    # Fetch 2 days to compare yesterday vs today
+                "7d": "7d",
+                "1mo": "1mo",
+            }
+            
+            yf_period = period_map.get(period, "2d")
+            hist = t.history(period=yf_period)
+        
+        if len(hist) < 2:
+            return 0.0
+        
+        # For 1-day change, compare the previous close to the most recent close
+        # For other periods, compare the first close to the last close
+        if period == "1d":
+            # Use the second-to-last close as "previous" and last as "current"
+            # This gives us the actual 1-day change
+            if len(hist) >= 2:
+                prev_close = hist['Close'].iloc[-2]
+                current_close = hist['Close'].iloc[-1]
+            else:
+                return 0.0
+        else:
+            # For longer periods (7d, 1mo, ytd), compare start to end
+            prev_close = hist['Close'].iloc[0]
+            current_close = hist['Close'].iloc[-1]
+        
+        if prev_close == 0:
+            return 0.0
+        
+        change_pct = ((current_close - prev_close) / prev_close) * 100
+        return change_pct
+    except Exception as e:
+        logger.error(f"Error calculating {period} change for {ticker}: {e}")
+        return 0.0
+
+
+def get_sector_performance(period: str = "1d") -> List[Dict[str, Any]]:
     """
     Calculates sector performance for JSE heatmap.
     Returns performance data by sector for treemap visualization.
+    
+    Args:
+        period: Time period for change calculation ("1d", "7d", "1mo", "ytd")
     """
-    logger.info("Calculating JSE sector performance...")
+    logger.info(f"Calculating JSE sector performance for period: {period}")
 
     sector_data = {}
 
@@ -381,16 +443,8 @@ def get_sector_performance() -> List[Dict[str, Any]]:
                         "count": 0
                     }
 
-                # Calculate 1-day change (approximate from recent data)
-                try:
-                    t = yf.Ticker(data['ticker'])
-                    hist = t.history(period="5d")
-                    if len(hist) >= 2:
-                        day_change = ((hist['Close'].iloc[-1] - hist['Close'].iloc[0]) / hist['Close'].iloc[0]) * 100
-                    else:
-                        day_change = 0
-                except Exception:
-                    day_change = 0
+                # Calculate price change for the specified period
+                change_pct = _calculate_price_change(data['ticker'], period)
 
                 # Include ALL fundamental data for display in heatmap detail panel
                 stock_info = {
@@ -399,7 +453,7 @@ def get_sector_performance() -> List[Dict[str, Any]]:
                     "website": data.get('website', ''),
                     "sector": data.get('sector', 'Other'),
                     "market_cap": data.get('market_cap') or 0,
-                    "change_percent": day_change,
+                    "change_percent": change_pct,
                     "current_price": data.get('current_price'),
                     # Fundamental metrics
                     "pe_ratio": data.get('pe_ratio'),
@@ -414,7 +468,7 @@ def get_sector_performance() -> List[Dict[str, Any]]:
 
                 sector_data[sector]["stocks"].append(stock_info)
                 sector_data[sector]["total_market_cap"] += data.get('market_cap') or 0
-                sector_data[sector]["performance_sum"] += day_change
+                sector_data[sector]["performance_sum"] += change_pct
                 sector_data[sector]["count"] += 1
 
             except Exception as e:

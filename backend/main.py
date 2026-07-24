@@ -672,10 +672,10 @@ def stock_screener(request: Request, screener_request: ScreenerRequest):
 
 @app.get("/api/screener/heatmap")
 @limiter.limit("30/minute")
-def sector_heatmap(request: Request):
+def sector_heatmap(request: Request, period: str = "1d"):
     """Get sector performance data for heatmap visualization."""
-    logger.info("Fetching sector heatmap data")
-    sectors = get_sector_performance()
+    logger.info(f"Fetching sector heatmap data for period: {period}")
+    sectors = get_sector_performance(period=period)
     return {"sectors": sectors}
 
 @app.get("/api/screener/ideas")

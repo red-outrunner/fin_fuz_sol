@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
-import { Activity, RefreshCcw, X, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Activity, RefreshCcw, X, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
 import CompanyLogo from './CompanyLogo';
 
 /**
@@ -58,12 +58,15 @@ const JSEHeatmap = ({ onSelectTicker }) => {
     const [hover, setHover] = useState(null);
     const [layout, setLayout] = useState('map'); // map | list
     const [updatedAt, setUpdatedAt] = useState(null);
+    const [timePeriod, setTimePeriod] = useState('1d'); // 1d, 7d, 1mo, ytd
 
     const fetchHeatmapData = async () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/screener/heatmap`);
+            const response = await axios.get(`${API_BASE_URL}/api/screener/heatmap`, {
+                params: { period: timePeriod }
+            });
             setSectors(response.data.sectors || []);
             setUpdatedAt(new Date());
         } catch (err) {
@@ -76,7 +79,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
 
     useEffect(() => {
         fetchHeatmapData();
-    }, []);
+    }, [timePeriod]);
 
     const allStocks = useMemo(
         () => sectors.flatMap((s) => s.stocks || []),
@@ -94,7 +97,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
             else flat += 1;
         });
         return { up, down, flat, total: allStocks.length };
-    }, [allStocks]);
+    }, [allStocks, timePeriod]);
 
     const marketAvg = useMemo(() => {
         if (!allStocks.length) return 0;
@@ -103,7 +106,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
             return allStocks.reduce((a, s) => a + (s.change_percent || 0), 0) / allStocks.length;
         }
         return allStocks.reduce((a, s) => a + (s.change_percent || 0) * (s.market_cap || 0), 0) / w;
-    }, [allStocks]);
+    }, [allStocks, timePeriod]);
 
     const leaders = useMemo(() => {
         const sorted = [...allStocks].sort((a, b) => (b.change_percent || 0) - (a.change_percent || 0));
@@ -117,7 +120,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 ? sectors.reduce((w, s) => ((s.change_percent || 0) < (w.change_percent || 0) ? s : w))
                 : null,
         };
-    }, [allStocks, sectors]);
+    }, [allStocks, sectors, timePeriod]);
 
     if (loading) {
         return (
@@ -153,6 +156,13 @@ const JSEHeatmap = ({ onSelectTicker }) => {
     const tip = hover; // reserved for future pinned HUD variants — hover drives floating card
     void tip;
 
+    const periodLabels = {
+        '1d': '1-Day',
+        '7d': '7-Day',
+        '1mo': '1-Month',
+        'ytd': 'YTD',
+    };
+
     return (
         <div className=" -mx-2 md:-mx-4">
             {/* Terminal header */}
@@ -168,7 +178,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                             </span>
                         </div>
                         <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
-                            Cap-weighted mosaic · session change
+                            Cap-weighted mosaic · {periodLabels[timePeriod]} change
                             {updatedAt && (
                                 <> · as of {updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
                             )}
@@ -177,6 +187,19 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
+                    <div className="relative">
+                        <select
+                            value={timePeriod}
+                            onChange={(e) => setTimePeriod(e.target.value)}
+                            className="appearance-none bg-slate-900 border border-slate-700 text-[10px] font-bold uppercase tracking-wider text-slate-300 px-3 py-1.5 pr-8 rounded focus:outline-none focus:border-gold/40 hover:border-gold/40 transition cursor-pointer"
+                        >
+                            <option value="1d">1-Day</option>
+                            <option value="7d">7-Day</option>
+                            <option value="1mo">1-Month</option>
+                            <option value="ytd">YTD</option>
+                        </select>
+                        <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
                     <div className="flex rounded border border-slate-700 overflow-hidden text-[10px] font-bold uppercase tracking-wider">
                         <button
                             type="button"
@@ -417,7 +440,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div className="border border-slate-800 rounded bg-[#0b1220] p-3">
                         <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-emerald-500/80 mb-2">
-                            Top gainers
+                            Top gainers ({periodLabels[timePeriod]})
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                             {leaders.best.map((s) => {
@@ -439,7 +462,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                     </div>
                     <div className="border border-slate-800 rounded bg-[#0b1220] p-3">
                         <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-rose-500/80 mb-2">
-                            Top losers
+                            Top losers ({periodLabels[timePeriod]})
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                             {leaders.worst.map((s) => {
