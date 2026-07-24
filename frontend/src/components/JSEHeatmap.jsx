@@ -1,7 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import html2canvas from 'html2canvas';
+import JSZip from 'jszip';
 import { API_BASE_URL } from '../api';
-import { Activity, RefreshCcw, X, ArrowUpRight, ArrowDownRight, ChevronDown } from 'lucide-react';
+import { Activity, RefreshCcw, X, ArrowUpRight, ArrowDownRight, ChevronDown, Download } from 'lucide-react';
 import CompanyLogo from './CompanyLogo';
 
 /**
@@ -59,6 +61,211 @@ const JSEHeatmap = ({ onSelectTicker }) => {
     const [layout, setLayout] = useState('map'); // map | list
     const [updatedAt, setUpdatedAt] = useState(null);
     const [timePeriod, setTimePeriod] = useState('1d'); // 1d, 7d, 1mo, ytd
+    const [exportQuality, setExportQuality] = useState('social'); // social, print, custom
+    const heatmapRef = useRef(null);
+
+    const exportPresets = {
+        social: { width: 1920, height: 1080, scale: 2, name: 'Social Media (1920x1080)' },
+        print: { width: 1920, height: 1080, scale: 4, name: 'Print Quality (300 DPI)' },
+        custom: { width: 1920, height: 1080, scale: 3, name: 'Custom (1920x1080)' },
+    };
+
+    const renderHeatmapToCanvas = (ctx, preset, startSector = 0, endSector = null) => {
+        const width = preset.width;
+        const height = preset.height;
+        
+        // Background
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Header background
+        ctx.fillStyle = '#0b1220';
+        ctx.fillRect(0, 0, width, 100);
+        
+        // Title
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 28px Inter, system-ui, sans-serif';
+        ctx.fillText('JSE Market Map', 40, 45);
+        
+        // Top 40 badge
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 14px Inter, system-ui, sans-serif';
+        ctx.fillText('TOP 40', 220, 45);
+        
+        // Subtitle
+        ctx.fillStyle = '#64748b';
+        ctx.font = '16px Inter, system-ui, sans-serif';
+        const periodLabel = periodLabels[timePeriod];
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        ctx.fillText(`Cap-weighted mosaic · ${periodLabel} change · as of ${timeStr}`, 40, 75);
+        
+        // Get sectors to render
+        const sectorsToRender = sectors.slice(startSector, endSector);
+        if (sectorsToRender.length === 0) return;
+        
+        // Calculate layout based on TOTAL sectors to maintain consistent sizing
+        const totalSectors = endSector ? (endSector - startSector) : sectors.length;
+        const sectorsInThisPart = sectorsToRender.length;
+        
+        // Draw sectors in 3 columns
+        const margin = 40;
+        const cols = 3;
+        const rows = Math.ceil(sectorsInThisPart / cols);
+        const colWidth = (width - margin * 2 - margin * (cols - 1)) / cols;
+        const rowHeight = (height - 180 - margin * (rows - 1)) / rows;
+        
+        sectorsToRender.forEach((sector, idx) => {
+            const col = idx % cols;
+            const row = Math.floor(idx / cols);
+            const x = margin + col * (colWidth + margin);
+            const y = 120 + row * (rowHeight + margin);
+            
+            const sectorColor = heatColor(sector.change_percent);
+            
+            // Sector container
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(x, y, colWidth, rowHeight - 10);
+            
+            // Sector header
+            ctx.fillStyle = sectorColor.bg;
+            ctx.fillRect(x, y, colWidth, 35);
+            
+            // Sector name
+            ctx.fillStyle = sectorColor.fg;
+            ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+            ctx.fillText(sector.name.toUpperCase(), x + 10, y + 22);
+            
+            // Sector change
+            ctx.font = '13px monospace';
+            const changeSign = sector.change_percent >= 0 ? '+' : '';
+            ctx.textAlign = 'right';
+            ctx.fillText(
+                `${changeSign}${sector.change_percent?.toFixed(2)}%`,
+                x + colWidth - 10,
+                y + 22
+            );
+            ctx.textAlign = 'left';
+            
+            // Draw stocks in grid
+            const stocks = [...(sector.stocks || [])].sort(
+                (a, b) => (b.market_cap || 0) - (a.market_cap || 0)
+            );
+            const stockGridY = y + 45;
+            const stockGridHeight = rowHeight - 55;
+            const stocksPerRow = 2;
+            const stockWidth = (colWidth - 10) / stocksPerRow;
+            const stockHeight = Math.min(50, stockGridHeight / Math.ceil(stocks.length / stocksPerRow));
+            
+            stocks.forEach((stock, sIdx) => {
+                const sRow = Math.floor(sIdx / stocksPerRow);
+                const sCol = sIdx % stocksPerRow;
+                const sx = x + 5 + sCol * (stockWidth + 5);
+                const sy = stockGridY + sRow * (stockHeight + 2);
+                
+                const stockColor = heatColor(stock.change_percent);
+                
+                // Stock tile background
+                ctx.fillStyle = stockColor.bg;
+                ctx.fillRect(sx, sy, stockWidth - 2, stockHeight - 2);
+                
+                // Stock ticker
+                ctx.fillStyle = stockColor.fg;
+                ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+                ctx.fillText(stock.ticker.replace('.JO', ''), sx + 8, sy + 18);
+                
+                // Stock change
+                ctx.font = 'bold 12px monospace';
+                const stockChangeSign = stock.change_percent >= 0 ? '+' : '';
+                ctx.textAlign = 'right';
+                ctx.fillText(
+                    `${stockChangeSign}${stock.change_percent?.toFixed(2)}%`,
+                    sx + stockWidth - 8,
+                    sy + 18
+                );
+                ctx.textAlign = 'left';
+                
+                // Stock name (smaller)
+                ctx.font = '10px Inter, system-ui, sans-serif';
+                ctx.fillStyle = stockColor.fg;
+                ctx.globalAlpha = 0.8;
+                ctx.fillText(
+                    stock.name.substring(0, 15) + (stock.name.length > 15 ? '...' : ''),
+                    sx + 8,
+                    sy + 35
+                );
+                ctx.globalAlpha = 1.0;
+            });
+        });
+        
+        // Add part indicator
+        const halfPoint = Math.ceil(sectors.length / 2);
+        const totalParts = 2;
+        const currentPart = startSector < halfPoint ? 1 : 2;
+        if (totalParts > 1) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '14px Inter, system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Part ${currentPart} of ${totalParts}`, width / 2, height - 30);
+            ctx.textAlign = 'left';
+        }
+    };
+
+    const exportToPNG = async () => {
+        const preset = exportPresets[exportQuality];
+        if (!preset || sectors.length === 0) return;
+
+        try {
+            // Split sectors into two halves
+            const halfPoint = Math.ceil(sectors.length / 2);
+            const parts = [
+                { start: 0, end: halfPoint, name: 'part1' },
+                { start: halfPoint, end: null, name: 'part2' }
+            ].filter(part => part.start < sectors.length);
+
+            // Create ZIP file
+            const zip = new JSZip();
+
+            // Generate each part
+            for (const part of parts) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size based on preset
+                canvas.width = preset.width * preset.scale;
+                canvas.height = preset.height * preset.scale;
+                
+                // Scale context for high DPI
+                ctx.scale(preset.scale, preset.scale);
+                
+                // Render heatmap to canvas
+                renderHeatmapToCanvas(ctx, preset, part.start, part.end);
+                
+                // Convert to PNG blob
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+                
+                // Add to ZIP
+                const timestamp = Date.now();
+                const filename = `JSE-Heatmap-${timePeriod}-${timestamp}-${part.name}.png`;
+                zip.file(filename, blob, { binary: true });
+            }
+
+            // Generate and download ZIP
+            const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+            const zipUrl = URL.createObjectURL(zipBlob);
+            
+            const link = document.createElement('a');
+            link.href = zipUrl;
+            link.download = `JSE-Heatmap-${timePeriod}-${Date.now()}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(zipUrl);
+        } catch (err) {
+            console.error('Failed to export heatmap:', err);
+            alert('Failed to export heatmap. Please try again.');
+        }
+    };
 
     const fetchHeatmapData = async () => {
         setLoading(true);
@@ -164,7 +371,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
     };
 
     return (
-        <div className=" -mx-2 md:-mx-4">
+        <div ref={heatmapRef} className=" -mx-2 md:-mx-4">
             {/* Terminal header */}
             <header className="border border-slate-800/80 dark:border-white/10 rounded-t-lg bg-[#0b1220] text-slate-200 px-4 md:px-5 py-3 flex flex-wrap items-center gap-3 justify-between">
                 <div className="flex items-center gap-3 min-w-0">
@@ -187,6 +394,27 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
+                    <div className="relative">
+                        <select
+                            value={exportQuality}
+                            onChange={(e) => setExportQuality(e.target.value)}
+                            className="appearance-none bg-slate-900 border border-slate-700 text-[10px] font-bold uppercase tracking-wider text-slate-300 px-3 py-1.5 pr-8 rounded focus:outline-none focus:border-gold/40 hover:border-gold/40 transition cursor-pointer"
+                            title="Export quality preset"
+                        >
+                            <option value="social">Social (1920x1080)</option>
+                            <option value="print">Print (300 DPI)</option>
+                            <option value="custom">Custom (1920x1080)</option>
+                        </select>
+                        <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+                    <button
+                        type="button"
+                        onClick={exportToPNG}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gold/40 bg-gold/10 text-[10px] font-bold uppercase tracking-wider text-gold hover:bg-gold/20 transition"
+                        title="Export heatmap as PNG"
+                    >
+                        <Download className="w-3 h-3" /> Export
+                    </button>
                     <div className="relative">
                         <select
                             value={timePeriod}
