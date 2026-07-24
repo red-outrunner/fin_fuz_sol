@@ -12,6 +12,11 @@ const Watchlist = ({ onSelectTicker }) => {
     const [loading, setLoading] = useState(false);
     const [draft, setDraft] = useState('');
 
+    // Sync local state with context watchlist
+    useEffect(() => {
+        setTickers(watchlist);
+    }, [watchlist]);
+
     const refresh = async (list = tickers) => {
         if (!list.length) {
             setSeries({});
@@ -29,23 +34,28 @@ const Watchlist = ({ onSelectTicker }) => {
     };
 
     useEffect(() => {
-        refresh(tickers);
+        if (tickers.length > 0) {
+            refresh(tickers);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [tickers.length]); // Only refresh when count changes to avoid loops
 
     const persist = (next) => {
-        setTickers(next);
         updateWatchlist(next);
         refresh(next);
     };
 
-    const remove = (ticker) => persist(tickers.filter((t) => t !== ticker));
+    const remove = (ticker) => {
+        const next = tickers.filter((t) => t !== ticker);
+        persist(next);
+    };
 
     const add = (e) => {
         e.preventDefault();
         const t = draft.trim().toUpperCase();
         if (!t || tickers.includes(t)) return;
-        persist([...tickers, t].slice(0, 20));
+        const next = [...tickers, t].slice(0, 20);
+        persist(next);
         setDraft('');
     };
 

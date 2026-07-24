@@ -7,6 +7,7 @@ const STORAGE_KEY = 'ubomvu_theme';
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(() => {
         if (typeof window === 'undefined') return 'light';
+        // Load immediately from localStorage for faster initial render
         return localStorage.getItem(STORAGE_KEY) || 'light';
     });
 
@@ -19,6 +20,7 @@ export const ThemeProvider = ({ children }) => {
             root.classList.remove('dark');
             root.style.colorScheme = 'light';
         }
+        // Save immediately for fast reloads
         localStorage.setItem(STORAGE_KEY, theme);
     }, [theme]);
 

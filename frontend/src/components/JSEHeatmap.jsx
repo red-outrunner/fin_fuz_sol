@@ -60,19 +60,34 @@ const JSEHeatmap = ({ onSelectTicker }) => {
     const [error, setError] = useState(null);
     const [selected, setSelected] = useState(null);
     const [hover, setHover] = useState(null);
-    const [layout, setLayout] = useState('map'); // map | list
+    const [layout, setLayout] = useState('map');
     const [updatedAt, setUpdatedAt] = useState(null);
-    const [timePeriod, setTimePeriod] = useState(preferences.heatmapTimePeriod || '1d'); // 1d, 7d, 1mo, ytd
-    const [exportQuality, setExportQuality] = useState(preferences.exportQuality || 'social'); // social, print, custom
+    const [timePeriod, setTimePeriod] = useState(() => {
+        // Load from preferences or default
+        if (typeof preferences !== 'undefined' && preferences.heatmapTimePeriod) {
+            return preferences.heatmapTimePeriod;
+        }
+        return '1d';
+    });
+    const [exportQuality, setExportQuality] = useState(() => {
+        if (typeof preferences !== 'undefined' && preferences.exportQuality) {
+            return preferences.exportQuality;
+        }
+        return 'social';
+    });
     const heatmapRef = useRef(null);
 
     // Save preferences when they change
     useEffect(() => {
-        updatePreference('heatmapTimePeriod', timePeriod);
+        if (timePeriod) {
+            updatePreference('heatmapTimePeriod', timePeriod);
+        }
     }, [timePeriod, updatePreference]);
 
     useEffect(() => {
-        updatePreference('exportQuality', exportQuality);
+        if (exportQuality) {
+            updatePreference('exportQuality', exportQuality);
+        }
     }, [exportQuality, updatePreference]);
 
     const exportPresets = {

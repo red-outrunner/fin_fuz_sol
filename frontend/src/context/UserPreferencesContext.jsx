@@ -53,23 +53,21 @@ export const UserPreferencesProvider = ({ children }) => {
     const [watchlist, setWatchlist] = useState([]);
     const [loaded, setLoaded] = useState(false);
 
-    // Load user data on mount
+    // Load user data on mount - runs once
     useEffect(() => {
         const consent = getCookie(STORAGE_KEYS.CONSENT);
         const hasConsent = consent === 'accepted';
-        
+
         setConsentGiven(hasConsent);
         setConsentShown(hasConsent || localStorage.getItem(STORAGE_KEYS.CONSENT + '_shown') === 'true');
 
-        if (hasConsent || localStorage.getItem(STORAGE_KEYS.CONSENT + '_shown') === 'true') {
-            // Load preferences
-            const savedPrefs = getFromStorage(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
-            setPreferences(savedPrefs);
+        // Always load from localStorage if available (regardless of consentShown)
+        // This ensures returning users get their data immediately
+        const savedPrefs = getFromStorage(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
+        setPreferences(savedPrefs);
 
-            // Load watchlist
-            const savedWatchlist = getFromStorage(STORAGE_KEYS.WATCHLIST, []);
-            setWatchlist(savedWatchlist);
-        }
+        const savedWatchlist = getFromStorage(STORAGE_KEYS.WATCHLIST, []);
+        setWatchlist(savedWatchlist);
 
         setLoaded(true);
     }, []);
@@ -81,7 +79,7 @@ export const UserPreferencesProvider = ({ children }) => {
         setConsentGiven(true);
         setConsentShown(true);
 
-        // Load existing data or initialize
+        // Reload existing data
         const savedPrefs = getFromStorage(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
         setPreferences(savedPrefs);
 
@@ -107,24 +105,22 @@ export const UserPreferencesProvider = ({ children }) => {
         setWatchlist([]);
     }, []);
 
-    // Update preferences
+    // Update preferences - saves immediately
     const updatePreference = useCallback((key, value) => {
         setPreferences(prev => {
             const next = { ...prev, [key]: value };
-            if (consentGiven) {
-                saveToStorage(STORAGE_KEYS.PREFERENCES, next);
-            }
+            // Always save to localStorage (user may have accepted before)
+            saveToStorage(STORAGE_KEYS.PREFERENCES, next);
             return next;
         });
-    }, [consentGiven]);
+    }, []);
 
-    // Update watchlist
+    // Update watchlist - saves immediately
     const updateWatchlist = useCallback((list) => {
         setWatchlist(list);
-        if (consentGiven) {
-            saveToStorage(STORAGE_KEYS.WATCHLIST, list);
-        }
-    }, [consentGiven]);
+        // Always save to localStorage (user may have accepted before)
+        saveToStorage(STORAGE_KEYS.WATCHLIST, list);
+    }, []);
 
     // Clear all user data
     const clearUserData = useCallback(() => {
