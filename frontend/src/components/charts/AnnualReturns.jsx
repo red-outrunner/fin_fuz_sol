@@ -1,9 +1,11 @@
-
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { getChartColors, isDarkMode } from '../../utils/chartTheme';
 
 const AnnualReturns = ({ data }) => {
-    // data: {year: 2020, value: 0.15}
+    const isDark = isDarkMode();
+    const colors = getChartColors(isDark);
+    
     if (!data) return null;
 
     return (
@@ -11,23 +13,33 @@ const AnnualReturns = ({ data }) => {
             <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} vertical={false} />
                         <XAxis
                             dataKey="year"
-                            stroke="#8C735A"
+                            stroke={colors.axisColor}
+                            tick={{ fill: colors.tickColor, fontSize: 12 }}
                         />
                         <YAxis
-                            stroke="#8C735A"
+                            stroke={colors.axisColor}
+                            tick={{ fill: colors.tickColor, fontSize: 12 }}
                             tickFormatter={(val) => `${(val * 100).toFixed(0)}%`}
                         />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059' }}
-                            cursor={{ fill: '#F0EBE0', opacity: 0.4 }}
+                            contentStyle={{ 
+                                backgroundColor: colors.tooltipBg, 
+                                borderColor: colors.tooltipBorder,
+                                color: colors.tooltipText
+                            }}
+                            itemStyle={{ color: colors.tooltipText }}
+                            cursor={{ fill: colors.cursorBg, opacity: 0.4 }}
                             formatter={(value) => [`${(value * 100).toFixed(2)}%`, 'Return']}
                         />
                         <Bar dataKey="value" radius={[2, 2, 0, 0]}>
                             {data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.value >= 0 ? '#4A7C59' : '#8C4A4A'} />
+                                <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={entry.value >= 0 ? colors.barPositive : colors.barNegative} 
+                                />
                             ))}
                         </Bar>
                     </BarChart>

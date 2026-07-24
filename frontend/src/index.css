@@ -54,10 +54,22 @@ html.dark {
     --surface: #1A2433;
     --surface-muted: #111827;
     --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.12);
 
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 40px -3px rgba(0, 0, 0, 0.5);
+
+    /* Chart-specific dark mode colors */
+    --chart-grid: rgba(255, 255, 255, 0.08);
+    --chart-axis: #94a3b8;
+    --chart-tooltip-bg: #1E293B;
+    --chart-tooltip-border: rgba(255, 255, 255, 0.12);
+    --chart-cursor: rgba(255, 255, 255, 0.05);
+    --chart-area-fill: rgba(212, 175, 55, 0.2);
+    --chart-line-gold: #D4AF37;
+    --chart-line-green: #10B981;
+    --chart-line-red: #EF4444;
 
     color-scheme: dark;
 }
@@ -170,6 +182,28 @@ html.dark .bg-white,
 html.dark .bg-beige,
 html.dark .bg-beige-light {
     color: var(--text-primary);
+}
+
+/* Dark mode borders */
+html.dark .border,
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-gray-200,
+html.dark .border-gray-300 {
+    border-color: var(--border-strong) !important;
+}
+
+html.dark .border-t,
+html.dark .border-r,
+html.dark .border-b,
+html.dark .border-l {
+    border-color: var(--border-strong) !important;
+}
+
+html.dark .divide-y > div,
+html.dark .divide-slate-200 > div,
+html.dark .divide-gray-200 > div {
+    border-color: var(--border-strong) !important;
 }
 
 /* Light mode: ensure cream/white surfaces use dark ink by default */
