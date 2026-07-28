@@ -148,31 +148,42 @@ const StockSearchModal = ({ isOpen, onClose, onSelectTicker }) => {
                     {/* Search Results */}
                     {searchResults.length > 0 && (
                         <div className="p-2">
-                            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 px-2">
-                                Search Results
+                            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 px-2 flex items-center gap-1">
+                                <span className="w-2 h-2 bg-gold rounded-full"></span>
+                                JSE Top 40 Results
                             </div>
-                            {searchResults.slice(0, 8).map((result) => (
-                                <button
-                                    key={result.symbol}
-                                    onClick={() => handleSelectTicker(result.symbol, result.shortname)}
-                                    className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors group"
-                                >
-                                    <div className="text-left">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-gold dark:text-gold">
-                                                {result.symbol}
-                                            </span>
-                                            <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-full uppercase">
-                                                {result.exchange}
-                                            </span>
+                            {searchResults.slice(0, 8).map((result) => {
+                                const isJSE = result.symbol?.includes('.JO') || result.exchange?.includes('JSE');
+                                return (
+                                    <button
+                                        key={result.symbol}
+                                        onClick={() => handleSelectTicker(result.symbol, result.shortname)}
+                                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors group border-l-2 border-transparent hover:border-gold"
+                                    >
+                                        <div className="text-left flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-bold text-gold dark:text-gold">
+                                                    {result.symbol}
+                                                </span>
+                                                {isJSE && (
+                                                    <span className="text-[9px] text-gold font-bold bg-gold/10 dark:bg-gold/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                        JSE
+                                                    </span>
+                                                )}
+                                                {!isJSE && (
+                                                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-full uppercase">
+                                                        {result.exchange}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-sm text-slate-600 dark:text-slate-400 truncate">
+                                                {result.shortname}
+                                            </div>
                                         </div>
-                                        <div className="text-sm text-slate-600 dark:text-slate-400 truncate">
-                                            {result.shortname}
-                                        </div>
-                                    </div>
-                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-gold transition-colors opacity-0 group-hover:opacity-100" />
-                                </button>
-                            ))}
+                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-gold transition-colors opacity-0 group-hover:opacity-100" />
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
 

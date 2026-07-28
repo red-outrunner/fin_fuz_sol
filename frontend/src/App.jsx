@@ -7,11 +7,10 @@ import JSEHeatmap from './components/JSEHeatmap';
 import StockIdeasFeed from './components/StockIdeasFeed';
 import Watchlist from './components/Watchlist';
 import Sidebar from './components/Sidebar';
-import StockSearchModal from './components/StockSearchModal';
 import ConsentToast from './components/ConsentToast';
 import { useTheme } from './context/ThemeContext';
 import { UserPreferencesProvider, useUserPreferences } from './context/UserPreferencesContext';
-import { Moon, Sun, Search } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 
 function AppContent() {
     const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
@@ -34,7 +33,6 @@ function AppContent() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [dashboardTab, setDashboardTab] = useState('summary');
     const [terminalRefreshing, setTerminalRefreshing] = useState(false);
-    const [showSearchModal, setShowSearchModal] = useState(false);
 
     useEffect(() => {
         const handleHashChange = () => {
@@ -51,29 +49,24 @@ function AppContent() {
     }, []);
 
     const focusSearch = useCallback(() => {
-        setShowSearchModal(true);
+        setSidebarOpen(true);
+        window.setTimeout(() => {
+            searchInputRef.current?.focus();
+            searchInputRef.current?.select?.();
+        }, 120);
     }, []);
 
-    const handleSelectTickerFromSearch = useCallback((ticker) => {
-        setTicker(ticker);
-        window.location.hash = '#/';
-    }, []);
-
-    // Keyboard shortcuts: Ctrl/Cmd+K → search modal, G → sidebar search, R → reports, D → toggle dark
+    // Keyboard shortcuts: G → search, R → reports, D → toggle dark
     useEffect(() => {
         const onKey = (e) => {
             const tag = (e.target?.tagName || '').toLowerCase();
             if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) {
                 return;
             }
-            
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+
             const key = e.key.toLowerCase();
-            
-            // Ctrl/Cmd + K for search modal
-            if ((e.ctrlKey || e.metaKey) && key === 'k') {
-                e.preventDefault();
-                setShowSearchModal(prev => !prev);
-            } else if (key === 'g' && !e.ctrlKey && !e.metaKey) {
+            if (key === 'g') {
                 e.preventDefault();
                 focusSearch();
             } else if (key === 'r') {
@@ -272,26 +265,6 @@ function AppContent() {
 
                 {renderRoute()}
             </main>
-            
-            {/* Floating Search Button */}
-            <button
-                onClick={() => setShowSearchModal(true)}
-                className="fixed bottom-6 right-6 z-40 bg-gold hover:bg-gold-light text-navy p-4 rounded-full shadow-2xl transition-all hover:scale-110 group"
-                title="Search stocks (Ctrl/Cmd+K)"
-            >
-                <Search className="w-6 h-6" />
-                <span className="absolute -top-8 right-0 bg-navy dark:bg-navy-light text-cream text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    Search Stocks
-                </span>
-            </button>
-            
-            {/* Search Modal */}
-            <StockSearchModal
-                isOpen={showSearchModal}
-                onClose={() => setShowSearchModal(false)}
-                onSelectTicker={handleSelectTickerFromSearch}
-            />
-            
             <ConsentToast />
         </div>
     );

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import { useUserPreferences } from '../context/UserPreferencesContext';
+import { Clock, TrendingUp, X } from 'lucide-react';
 
 const Sidebar = ({
     ticker, setTicker,
@@ -36,7 +38,7 @@ const Sidebar = ({
         };
     }, []);
 
-    // Debounce Search
+    // Debounce Search with JSE-first sorting
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
             if (searchQuery.length > 2) {
@@ -45,7 +47,21 @@ const Sidebar = ({
                     const response = await axios.post(`${API_BASE_URL}/api/search`, {
                         query: searchQuery
                     });
-                    setSearchResults(response.data);
+                    
+                    // Sort results: JSE stocks (.JO) first, then others
+                    const sortedResults = (response.data || []).sort((a, b) => {
+                        const aIsJSE = a.symbol?.includes('.JO') || a.exchange?.includes('JSE');
+                        const bIsJSE = b.symbol?.includes('.JO') || b.exchange?.includes('JSE');
+                        
+                        // Both JSE or both non-JSE - keep original order
+                        if (aIsJSE && bIsJSE) return 0;
+                        if (!aIsJSE && !bIsJSE) return 0;
+                        
+                        // JSE stocks come first
+                        return aIsJSE ? -1 : 1;
+                    });
+                    
+                    setSearchResults(sortedResults);
                     setShowResults(true);
                 } catch (error) {
                     console.error("Search failed", error);
@@ -149,20 +165,33 @@ const Sidebar = ({
                                 )}
 
                                 {showResults && searchResults.length > 0 && (
-                                    <div className="absolute left-0 right-0 mt-3 bg-[#1e293b] border border-white/10 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto custom-scrollbar animate-fade-in">
-                                        {searchResults.map((result) => (
-                                            <div
-                                                key={result.symbol}
-                                                onClick={() => handleSelectTicker(result.symbol)}
-                                                className="p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
-                                            >
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="font-bold text-gold text-sm tracking-tight">{result.symbol}</span>
-                                                    <span className="text-[9px] text-slate-500 font-bold bg-white/5 px-2 py-0.5 rounded-full uppercase">{result.exchange}</span>
+                                    <div className="absolute left-0 right-0 mt-3 bg-[#1e293b] dark:bg-navy-light border border-white/10 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto custom-scrollbar animate-fade-in">
+                                        {searchResults.map((result) => {
+                                            const isJSE = result.symbol?.includes('.JO') || result.exchange?.includes('JSE');
+                                            return (
+                                                <div
+                                                    key={result.symbol}
+                                                    onClick={() => handleSelectTicker(result.symbol)}
+                                                    className="p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
+                                                >
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-gold text-sm tracking-tight">{result.symbol}</span>
+                                                            {isJSE ? (
+                                                                <span className="text-[9px] text-gold font-bold bg-gold/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                                                    JSE
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[9px] text-slate-500 font-bold bg-white/5 px-2 py-0.5 rounded-full uppercase">
+                                                                    {result.exchange}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-xs text-slate-400 truncate font-medium">{result.shortname}</div>
                                                 </div>
-                                                <div className="text-xs text-slate-400 truncate font-medium">{result.shortname}</div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
