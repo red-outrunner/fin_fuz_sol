@@ -40,7 +40,7 @@ const StockScreener = () => {
     const [screenerName, setScreenerName] = useState('');
     const [sortBy, setSortBy] = useState('market_cap');
     const [sortOrder, setSortOrder] = useState('desc');
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
+    const [viewMode, setViewMode] = useState('grid');
 
     // Load saved screeners on mount
     useEffect(() => {
@@ -77,8 +77,8 @@ const StockScreener = () => {
             }
         });
 
-        ['min_market_cap', 'max_market_cap', 'min_pe', 'max_pe', 'min_dividend_yield', 
-         'min_roe', 'max_debt_equity', 'min_beta', 'max_beta', 'min_revenue_growth', 
+        ['min_market_cap', 'max_market_cap', 'min_pe', 'max_pe', 'min_dividend_yield',
+         'min_roe', 'max_debt_equity', 'min_beta', 'max_beta', 'min_revenue_growth',
          'min_profit_margin'].forEach(key => {
             if (apiFilters[key] !== undefined) {
                 apiFilters[key] = parseFloat(apiFilters[key]);
@@ -98,13 +98,13 @@ const StockScreener = () => {
 
     const saveScreener = () => {
         if (!screenerName.trim()) return;
-        
+
         const newScreener = {
             id: Date.now(),
             name: screenerName,
             filters: { ...filters }
         };
-        
+
         const updated = [...savedScreeners, newScreener];
         setSavedScreeners(updated);
         localStorage.setItem('savedScreeners', JSON.stringify(updated));
@@ -185,21 +185,21 @@ const StockScreener = () => {
         }));
     };
 
-    const hasActiveFilters = Object.values(filters).some(v => 
+    const hasActiveFilters = Object.values(filters).some(v =>
         v !== '' && v !== false && v !== null && (Array.isArray(v) ? v.length > 0 : true)
     );
 
     return (
-        <div className="min-h-screen bg-cream">
+        <div className="min-h-screen bg-cream dark:bg-navy">
             {/* Top Bar */}
-            <div className="bg-white/60 backdrop-blur-md border-b border-white/60 sticky top-0 z-30">
+            <div className="bg-white/60 dark:bg-navy-light/60 backdrop-blur-md border-b border-white/60 dark:border-white/10 sticky top-0 z-30">
                 <div className="max-w-[1600px] mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <h1 className="text-3xl font-serif font-bold text-gold">
+                            <h1 className="text-3xl font-serif font-bold text-gold dark:text-cream">
                                 Stock Screener
                             </h1>
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-gold/10 px-3 py-1 rounded-full">
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest bg-gold/10 dark:bg-gold/20 px-3 py-1 rounded-full">
                                 JSE Top 40
                             </span>
                         </div>
@@ -207,7 +207,7 @@ const StockScreener = () => {
                             {hasActiveFilters && (
                                 <button
                                     onClick={clearFilters}
-                                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 hover:text-error uppercase tracking-wider transition-colors"
+                                    className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-error dark:hover:text-red-400 uppercase tracking-wider transition-colors"
                                 >
                                     <X className="w-4 h-4" />
                                     Clear All
@@ -239,10 +239,10 @@ const StockScreener = () => {
                 <div className="grid grid-cols-12 gap-6">
                     {/* Filters Panel */}
                     <div className="col-span-3">
-                        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-5 sticky top-20">
+                        <div className="bg-white/40 dark:bg-navy-light/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-white/10 shadow-sm p-5 sticky top-20">
                             {/* Preset Filters */}
                             <div className="mb-5">
-                                <label className="text-[9px] font-bold text-slate-500 mb-3 block uppercase tracking-widest">
+                                <label className="text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-3 block uppercase tracking-widest">
                                     Quick Presets
                                 </label>
                                 <div className="flex flex-wrap gap-2">
@@ -250,7 +250,7 @@ const StockScreener = () => {
                                         <button
                                             key={preset}
                                             onClick={() => applyPreset(preset)}
-                                            className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-gold/10 text-gold rounded-lg hover:bg-gold/20 transition"
+                                            className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider bg-gold/10 dark:bg-gold/20 text-gold dark:text-gold rounded-lg hover:bg-gold/20 dark:hover:bg-gold/30 transition"
                                         >
                                             {preset}
                                         </button>
@@ -258,48 +258,48 @@ const StockScreener = () => {
                                 </div>
                             </div>
 
-                            <div className="border-t border-white/60 my-4"></div>
+                            <div className="border-t border-white/60 dark:border-white/10 my-4"></div>
 
                             {/* Filter Sections */}
                             <div className="space-y-5 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
                                 {/* Valuation */}
                                 <div>
-                                    <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <h3 className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <DollarSign className="w-3 h-3" />
                                         Valuation
                                     </h3>
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
-                                                <label className="text-[9px] font-semibold text-slate-600 block mb-1">Min P/E</label>
+                                                <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Min P/E</label>
                                                 <input
                                                     type="number"
                                                     value={filters.min_pe}
                                                     onChange={(e) => handleFilterChange('min_pe', e.target.value)}
                                                     placeholder="0"
-                                                    className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                    className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[9px] font-semibold text-slate-600 block mb-1">Max P/E</label>
+                                                <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Max P/E</label>
                                                 <input
                                                     type="number"
                                                     value={filters.max_pe}
                                                     onChange={(e) => handleFilterChange('max_pe', e.target.value)}
                                                     placeholder="50"
-                                                    className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                    className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[9px] font-semibold text-slate-600 block mb-1">Min Div Yield (%)</label>
+                                            <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Min Div Yield (%)</label>
                                             <input
                                                 type="number"
                                                 value={filters.min_dividend_yield}
                                                 onChange={(e) => handleFilterChange('min_dividend_yield', e.target.value)}
                                                 placeholder="0.03"
                                                 step="0.01"
-                                                className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                             />
                                         </div>
                                     </div>
@@ -307,42 +307,42 @@ const StockScreener = () => {
 
                                 {/* Quality */}
                                 <div>
-                                    <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <h3 className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <TrendingUp className="w-3 h-3" />
                                         Quality
                                     </h3>
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="text-[9px] font-semibold text-slate-600 block mb-1">Min ROE (%)</label>
+                                            <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Min ROE (%)</label>
                                             <input
                                                 type="number"
                                                 value={filters.min_roe}
                                                 onChange={(e) => handleFilterChange('min_roe', e.target.value)}
                                                 placeholder="0.15"
                                                 step="0.01"
-                                                className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-[9px] font-semibold text-slate-600 block mb-1">Max D/E</label>
+                                            <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Max D/E</label>
                                             <input
                                                 type="number"
                                                 value={filters.max_debt_equity}
                                                 onChange={(e) => handleFilterChange('max_debt_equity', e.target.value)}
                                                 placeholder="0.5"
                                                 step="0.1"
-                                                className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-[9px] font-semibold text-slate-600 block mb-1">Min Profit Margin</label>
+                                            <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Min Profit Margin</label>
                                             <input
                                                 type="number"
                                                 value={filters.min_profit_margin}
                                                 onChange={(e) => handleFilterChange('min_profit_margin', e.target.value)}
                                                 placeholder="0.10"
                                                 step="0.01"
-                                                className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                             />
                                         </div>
                                     </div>
@@ -350,42 +350,42 @@ const StockScreener = () => {
 
                                 {/* Size & Risk */}
                                 <div>
-                                    <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <h3 className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                         <Activity className="w-3 h-3" />
                                         Size & Risk
                                     </h3>
                                     <div className="space-y-3">
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
-                                                <label className="text-[9px] font-semibold text-slate-600 block mb-1">Min Cap</label>
+                                                <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Min Cap</label>
                                                 <input
                                                     type="number"
                                                     value={filters.min_market_cap}
                                                     onChange={(e) => handleFilterChange('min_market_cap', e.target.value)}
                                                     placeholder="0"
-                                                    className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                    className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[9px] font-semibold text-slate-600 block mb-1">Max Cap</label>
+                                                <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Max Cap</label>
                                                 <input
                                                     type="number"
                                                     value={filters.max_market_cap}
                                                     onChange={(e) => handleFilterChange('max_market_cap', e.target.value)}
                                                     placeholder="100B"
-                                                    className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                    className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="text-[9px] font-semibold text-slate-600 block mb-1">Max Beta</label>
+                                            <label className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Max Beta</label>
                                             <input
                                                 type="number"
                                                 value={filters.max_beta}
                                                 onChange={(e) => handleFilterChange('max_beta', e.target.value)}
                                                 placeholder="1.5"
                                                 step="0.1"
-                                                className="w-full bg-white/50 border border-white/60 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20"
+                                                className="w-full bg-white/50 dark:bg-navy-light/50 border border-white/60 dark:border-white/10 rounded-lg px-3 py-2 text-xs text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 placeholder-slate-400 dark:placeholder-slate-500"
                                             />
                                         </div>
                                     </div>
@@ -393,102 +393,69 @@ const StockScreener = () => {
 
                                 {/* Sectors */}
                                 <div>
-                                    <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3">
+                                    <h3 className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
                                         Sectors
                                     </h3>
                                     <div className="space-y-2">
                                         {SECTORS.map(sector => (
-                                            <label key={sector} className="flex items-center cursor-pointer group">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={filters.sectors.includes(sector)}
-                                                    onChange={() => handleSectorToggle(sector)}
-                                                    className="mr-2 w-3.5 h-3.5 rounded border-white/60 text-gold focus:ring-gold/20"
-                                                />
-                                                <span className="text-[10px] font-medium text-slate-600 group-hover:text-navy transition-colors">
-                                                    {sector}
-                                                </span>
-                                            </label>
+                                            <button
+                                                key={sector}
+                                                onClick={() => handleSectorToggle(sector)}
+                                                className={`w-full text-left px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+                                                    filters.sectors.includes(sector)
+                                                        ? 'bg-gold/20 dark:bg-gold/30 text-gold dark:text-gold border border-gold/30 dark:border-gold/40'
+                                                        : 'bg-white/40 dark:bg-navy-light/40 text-slate-600 dark:text-slate-400 border border-white/60 dark:border-white/10 hover:border-gold/30 dark:hover:border-gold/40'
+                                                }`}
+                                            >
+                                                {sector}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Toggles */}
-                                <div className="border-t border-white/60 pt-4">
-                                    <label className="flex items-center cursor-pointer group mb-3">
-                                        <input
-                                            type="checkbox"
-                                            checked={filters.undervalued_only}
-                                            onChange={(e) => handleFilterChange('undervalued_only', e.target.checked)}
-                                            className="mr-2 w-3.5 h-3.5 rounded border-white/60 text-gold focus:ring-gold/20"
-                                        />
-                                        <span className="text-[10px] font-medium text-slate-600 group-hover:text-navy transition-colors">
-                                            Undervalued Only
-                                        </span>
-                                    </label>
-                                    <label className="flex items-center cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={filters.dividend_growers_only}
-                                            onChange={(e) => handleFilterChange('dividend_growers_only', e.target.checked)}
-                                            className="mr-2 w-3.5 h-3.5 rounded border-white/60 text-gold focus:ring-gold/20"
-                                        />
-                                        <span className="text-[10px] font-medium text-slate-600 group-hover:text-navy transition-colors">
-                                            Dividend Payers Only
-                                        </span>
-                                    </label>
+                                {/* Toggle Switches */}
+                                <div>
+                                    <h3 className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
+                                        Filters
+                                    </h3>
+                                    <div className="space-y-3">
+                                        <label className="flex items-center justify-between cursor-pointer">
+                                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Undervalued Only</span>
+                                            <input
+                                                type="checkbox"
+                                                checked={filters.undervalued_only}
+                                                onChange={(e) => handleFilterChange('undervalued_only', e.target.checked)}
+                                                className="w-4 h-4 accent-gold"
+                                            />
+                                        </label>
+                                        <label className="flex items-center justify-between cursor-pointer">
+                                            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Dividend Growers</span>
+                                            <input
+                                                type="checkbox"
+                                                checked={filters.dividend_growers_only}
+                                                onChange={(e) => handleFilterChange('dividend_growers_only', e.target.checked)}
+                                                className="w-4 h-4 accent-gold"
+                                            />
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Saved Screeners */}
-                            {savedScreeners.length > 0 && (
-                                <div className="border-t border-white/60 mt-5 pt-5">
-                                    <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center">
-                                        <FolderOpen className="w-3 h-3 mr-2" />
-                                        Saved ({savedScreeners.length})
-                                    </h3>
-                                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                                        {savedScreeners.map(screener => (
-                                            <div key={screener.id} className="flex items-center justify-between p-2.5 bg-white/50 rounded-lg border border-white/60">
-                                                <button
-                                                    onClick={() => loadScreener(screener)}
-                                                    className="text-[10px] font-bold text-gold hover:text-navy transition-colors flex-1 text-left"
-                                                >
-                                                    {screener.name}
-                                                </button>
-                                                <button
-                                                    onClick={() => deleteScreener(screener.id)}
-                                                    className="text-red-500 hover:text-red-700 p-1 transition-colors"
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
 
                     {/* Results Panel */}
                     <div className="col-span-9">
-                        {/* Results Header */}
-                        <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-5 mb-6">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <h2 className="text-xl font-serif font-bold text-gold">
-                                        Results
-                                    </h2>
-                                    {results.length > 0 && (
-                                        <span className="text-xs font-bold text-slate-500 bg-white/60 px-3 py-1 rounded-full">
-                                            {results.length} stocks found
-                                        </span>
-                                    )}
-                                </div>
+                        {/* Controls */}
+                        <div className="bg-white/40 dark:bg-navy-light/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-white/10 shadow-sm p-5 mb-6">
+                            <div className="flex items-center justify-between flex-wrap gap-4">
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => setViewMode('grid')}
-                                        className={`p-2 rounded-lg transition ${viewMode === 'grid' ? 'bg-gold/20 text-gold' : 'text-slate-400 hover:text-navy'}`}
+                                        className={`p-2 rounded-lg transition-colors ${
+                                            viewMode === 'grid'
+                                                ? 'bg-gold text-navy dark:bg-gold dark:text-navy'
+                                                : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-white/10'
+                                        }`}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -496,17 +463,21 @@ const StockScreener = () => {
                                     </button>
                                     <button
                                         onClick={() => setViewMode('table')}
-                                        className={`p-2 rounded-lg transition ${viewMode === 'table' ? 'bg-gold/20 text-gold' : 'text-slate-400 hover:text-navy'}`}
+                                        className={`p-2 rounded-lg transition-colors ${
+                                            viewMode === 'table'
+                                                ? 'bg-gold text-navy dark:bg-gold dark:text-navy'
+                                                : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-white/10'
+                                        }`}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                                         </svg>
                                     </button>
                                 </div>
+                                {error && (
+                                    <p className="text-red-600 dark:text-red-400 text-sm font-medium mt-3">{error}</p>
+                                )}
                             </div>
-                            {error && (
-                                <p className="text-red-600 text-sm font-medium mt-3">{error}</p>
-                            )}
                         </div>
 
                         {/* Results Content */}
@@ -514,39 +485,39 @@ const StockScreener = () => {
                             viewMode === 'grid' ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {sortedResults.map((stock) => (
-                                        <div key={stock.ticker} className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-5 hover:shadow-lg hover:border-gold/30 transition-all duration-300 group cursor-pointer">
+                                        <div key={stock.ticker} className="bg-white/40 dark:bg-navy-light/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-white/10 shadow-sm p-5 hover:shadow-lg hover:border-gold/30 dark:hover:border-gold/40 transition-all duration-300 group cursor-pointer">
                                             <div className="flex items-start justify-between mb-4">
                                                 <div>
-                                                    <h3 className="text-lg font-serif font-bold text-gold group-hover:text-navy transition-colors">
+                                                    <h3 className="text-lg font-serif font-bold text-gold dark:text-gold group-hover:text-navy dark:group-hover:text-cream transition-colors">
                                                         {stock.ticker.replace('.JO', '')}
                                                     </h3>
-                                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                                                         {stock.name}
                                                     </p>
                                                 </div>
-                                                <span className="text-[10px] font-bold text-slate-500 bg-white/60 px-2 py-1 rounded">
+                                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white/60 dark:bg-navy-light/60 px-2 py-1 rounded border border-white/60 dark:border-white/10">
                                                     {stock.sector}
                                                 </span>
                                             </div>
-                                            
+
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div className="bg-white/50 rounded-xl p-3">
-                                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Market Cap</p>
-                                                    <p className="text-sm font-bold text-navy">{formatNumber(stock.market_cap)}</p>
+                                                <div className="bg-white/50 dark:bg-navy-light/50 rounded-xl p-3">
+                                                    <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Market Cap</p>
+                                                    <p className="text-sm font-bold text-navy dark:text-cream">{formatNumber(stock.market_cap)}</p>
                                                 </div>
-                                                <div className="bg-white/50 rounded-xl p-3">
-                                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">P/E Ratio</p>
-                                                    <p className="text-sm font-bold text-navy">{stock.pe_ratio?.toFixed(1) || 'N/A'}</p>
+                                                <div className="bg-white/50 dark:bg-navy-light/50 rounded-xl p-3">
+                                                    <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">P/E Ratio</p>
+                                                    <p className="text-sm font-bold text-navy dark:text-cream">{stock.pe_ratio?.toFixed(1) || 'N/A'}</p>
                                                 </div>
-                                                <div className="bg-white/50 rounded-xl p-3">
-                                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Div Yield</p>
-                                                    <p className={`text-sm font-bold ${stock.dividend_yield && stock.dividend_yield > 0.04 ? 'text-green-600' : 'text-navy'}`}>
+                                                <div className="bg-white/50 dark:bg-navy-light/50 rounded-xl p-3">
+                                                    <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Div Yield</p>
+                                                    <p className={`text-sm font-bold ${stock.dividend_yield && stock.dividend_yield > 0.04 ? 'text-green-600 dark:text-green-400' : 'text-navy dark:text-cream'}`}>
                                                         {stock.dividend_yield ? formatPercent(stock.dividend_yield) : 'N/A'}
                                                     </p>
                                                 </div>
-                                                <div className="bg-white/50 rounded-xl p-3">
-                                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">ROE</p>
-                                                    <p className={`text-sm font-bold ${stock.return_on_equity && stock.return_on_equity > 0.15 ? 'text-green-600' : 'text-navy'}`}>
+                                                <div className="bg-white/50 dark:bg-navy-light/50 rounded-xl p-3">
+                                                    <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">ROE</p>
+                                                    <p className={`text-sm font-bold ${stock.return_on_equity && stock.return_on_equity > 0.15 ? 'text-green-600 dark:text-green-400' : 'text-navy dark:text-cream'}`}>
                                                         {stock.return_on_equity ? formatPercent(stock.return_on_equity) : 'N/A'}
                                                     </p>
                                                 </div>
@@ -555,55 +526,55 @@ const StockScreener = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm overflow-hidden">
+                                <div className="bg-white/40 dark:bg-navy-light/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-white/10 shadow-sm overflow-hidden">
                                     <table className="w-full">
-                                        <thead className="bg-white/60">
+                                        <thead className="bg-white/60 dark:bg-navy-light/60">
                                             <tr>
-                                                <th className="px-5 py-4 text-left text-[9px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-gold transition-colors" onClick={() => handleSort('ticker')}>
+                                                <th className="px-5 py-4 text-left text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-gold dark:hover:text-gold transition-colors" onClick={() => handleSort('ticker')}>
                                                     Ticker {sortBy === 'ticker' && (sortOrder === 'desc' ? '↓' : '↑')}
                                                 </th>
-                                                <th className="px-5 py-4 text-left text-[9px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-gold transition-colors" onClick={() => handleSort('name')}>
+                                                <th className="px-5 py-4 text-left text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-gold dark:hover:text-gold transition-colors" onClick={() => handleSort('name')}>
                                                     Name {sortBy === 'name' && (sortOrder === 'desc' ? '↓' : '↑')}
                                                 </th>
-                                                <th className="px-5 py-4 text-left text-[9px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-gold transition-colors" onClick={() => handleSort('sector')}>
+                                                <th className="px-5 py-4 text-left text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-gold dark:hover:text-gold transition-colors" onClick={() => handleSort('sector')}>
                                                     Sector {sortBy === 'sector' && (sortOrder === 'desc' ? '↓' : '↑')}
                                                 </th>
-                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-gold transition-colors" onClick={() => handleSort('market_cap')}>
+                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-gold dark:hover:text-gold transition-colors" onClick={() => handleSort('market_cap')}>
                                                     Market Cap {sortBy === 'market_cap' && (sortOrder === 'desc' ? '↓' : '↑')}
                                                 </th>
-                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-gold transition-colors" onClick={() => handleSort('pe_ratio')}>
+                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-gold dark:hover:text-gold transition-colors" onClick={() => handleSort('pe_ratio')}>
                                                     P/E {sortBy === 'pe_ratio' && (sortOrder === 'desc' ? '↓' : '↑')}
                                                 </th>
-                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-gold transition-colors" onClick={() => handleSort('dividend_yield')}>
+                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-gold dark:hover:text-gold transition-colors" onClick={() => handleSort('dividend_yield')}>
                                                     Div % {sortBy === 'dividend_yield' && (sortOrder === 'desc' ? '↓' : '↑')}
                                                 </th>
-                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-gold transition-colors" onClick={() => handleSort('return_on_equity')}>
+                                                <th className="px-5 py-4 text-right text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:text-gold dark:hover:text-gold transition-colors" onClick={() => handleSort('return_on_equity')}>
                                                     ROE % {sortBy === 'return_on_equity' && (sortOrder === 'desc' ? '↓' : '↑')}
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-white/60">
+                                        <tbody className="divide-y divide-white/60 dark:divide-white/10">
                                             {sortedResults.map((stock) => (
-                                                <tr key={stock.ticker} className="hover:bg-white/60 transition-colors">
-                                                    <td className="px-5 py-4 text-sm font-bold text-gold">
+                                                <tr key={stock.ticker} className="hover:bg-white/60 dark:hover:bg-navy-light/60 transition-colors">
+                                                    <td className="px-5 py-4 text-sm font-bold text-gold dark:text-gold">
                                                         {stock.ticker.replace('.JO', '')}
                                                     </td>
-                                                    <td className="px-5 py-4 text-sm font-medium text-navy">
+                                                    <td className="px-5 py-4 text-sm font-medium text-navy dark:text-cream">
                                                         {stock.name}
                                                     </td>
-                                                    <td className="px-5 py-4 text-sm text-slate-600">
+                                                    <td className="px-5 py-4 text-sm text-slate-600 dark:text-slate-400">
                                                         {stock.sector}
                                                     </td>
-                                                    <td className="px-5 py-4 text-sm text-right font-bold text-navy">
+                                                    <td className="px-5 py-4 text-sm text-right font-bold text-navy dark:text-cream">
                                                         {formatNumber(stock.market_cap)}
                                                     </td>
-                                                    <td className="px-5 py-4 text-sm text-right font-medium text-slate-700">
+                                                    <td className="px-5 py-4 text-sm text-right font-medium text-slate-700 dark:text-slate-300">
                                                         {stock.pe_ratio?.toFixed(2) || 'N/A'}
                                                     </td>
-                                                    <td className="px-5 py-4 text-sm text-right font-medium">
+                                                    <td className="px-5 py-4 text-sm text-right font-medium text-navy dark:text-cream">
                                                         {stock.dividend_yield ? formatPercent(stock.dividend_yield) : 'N/A'}
                                                     </td>
-                                                    <td className="px-5 py-4 text-sm text-right font-medium">
+                                                    <td className="px-5 py-4 text-sm text-right font-medium text-navy dark:text-cream">
                                                         {stock.return_on_equity ? formatPercent(stock.return_on_equity) : 'N/A'}
                                                     </td>
                                                 </tr>
@@ -613,19 +584,19 @@ const StockScreener = () => {
                                 </div>
                             )
                         ) : (
-                            <div className="bg-white/40 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm p-16 text-center">
-                                <div className="w-20 h-20 bg-white/60 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/60 shadow-sm">
-                                    <Search className="w-10 h-10 text-gold" />
+                            <div className="bg-white/40 dark:bg-navy-light/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-white/10 shadow-sm p-16 text-center">
+                                <div className="w-20 h-20 bg-white/60 dark:bg-navy-light/60 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/60 dark:border-white/10 shadow-sm">
+                                    <Search className="w-10 h-10 text-gold dark:text-gold" />
                                 </div>
-                                <p className="text-xl font-serif font-bold text-navy mb-2">
+                                <p className="text-xl font-serif font-bold text-navy dark:text-cream mb-2">
                                     No stocks match your criteria
                                 </p>
-                                <p className="text-slate-500 font-medium mb-6">
+                                <p className="text-slate-500 dark:text-slate-400 font-medium mb-6">
                                     Try adjusting your filters or use a preset
                                 </p>
                                 <button
                                     onClick={clearFilters}
-                                    className="inline-flex items-center gap-2 text-gold font-bold uppercase tracking-wider hover:text-navy transition-colors"
+                                    className="inline-flex items-center gap-2 text-gold dark:text-gold font-bold uppercase tracking-wider hover:text-navy dark:hover:text-cream transition-colors"
                                 >
                                     <RefreshCcw className="w-4 h-4" />
                                     Reset Filters
@@ -639,20 +610,20 @@ const StockScreener = () => {
             {/* Save Modal */}
             {showSaveModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-                    <div className="bg-white/90 backdrop-blur-md rounded-2xl p-8 max-w-md w-full mx-4 border border-white/60 shadow-2xl">
-                        <h3 className="text-2xl font-serif font-bold text-gold mb-6">Save Screener</h3>
+                    <div className="bg-white/90 dark:bg-navy-light/90 backdrop-blur-md rounded-2xl p-8 max-w-md w-full mx-4 border border-white/60 dark:border-white/10 shadow-2xl">
+                        <h3 className="text-2xl font-serif font-bold text-gold dark:text-cream mb-6">Save Screener</h3>
                         <input
                             type="text"
                             value={screenerName}
                             onChange={(e) => setScreenerName(e.target.value)}
                             placeholder="Enter screener name..."
-                            className="w-full px-5 py-4 border border-white/60 rounded-xl mb-6 bg-white/50 focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20 transition-all"
+                            className="w-full px-5 py-4 border border-white/60 dark:border-white/10 rounded-xl mb-6 bg-white/50 dark:bg-navy-light/50 text-navy dark:text-cream focus:outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20 transition-all placeholder-slate-400 dark:placeholder-slate-500"
                             autoFocus
                         />
                         <div className="flex gap-4 justify-end">
                             <button
                                 onClick={() => setShowSaveModal(false)}
-                                className="px-6 py-3 text-navy font-bold uppercase tracking-widest hover:bg-white/60 rounded-xl transition-colors"
+                                className="px-6 py-3 text-navy dark:text-cream font-bold uppercase tracking-widest hover:bg-white/60 dark:hover:bg-white/10 rounded-xl transition-colors"
                             >
                                 Cancel
                             </button>
