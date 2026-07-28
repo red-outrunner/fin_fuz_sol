@@ -809,7 +809,7 @@ class HoldingRequest(BaseModel):
 
 @app.get("/api/portfolio/holdings")
 @limiter.limit("60/minute")
-def get_holdings(request: Request, client_key: str = "default"):
+def get_holdings(request: Request, client_key: str = "default", db: Session = Depends(get_db)):
     """Get all portfolio holdings for a client."""
     logger.info(f"Fetching portfolio holdings for {client_key}")
     holdings = db.query(models.PortfolioHolding).filter(
@@ -847,10 +847,10 @@ def get_holdings(request: Request, client_key: str = "default"):
 
 @app.post("/api/portfolio/holdings")
 @limiter.limit("30/minute")
-def add_holding(request: Request, holding_req: HoldingRequest, client_key: str = "default"):
+def add_holding(request: Request, holding_req: HoldingRequest, client_key: str = "default", db: Session = Depends(get_db)):
     """Add or update a portfolio holding."""
     logger.info(f"Adding holding {holding_req.ticker} for {client_key}")
-    
+
     # Check if holding exists
     existing = db.query(models.PortfolioHolding).filter(
         models.PortfolioHolding.client_key == client_key,
@@ -881,13 +881,13 @@ def add_holding(request: Request, holding_req: HoldingRequest, client_key: str =
 
 @app.delete("/api/portfolio/holdings/{holding_id}")
 @limiter.limit("30/minute")
-def delete_holding(request: Request, holding_id: int):
+def delete_holding(request: Request, holding_id: int, db: Session = Depends(get_db)):
     """Delete a portfolio holding."""
     logger.info(f"Deleting holding {holding_id}")
     holding = db.query(models.PortfolioHolding).filter(
         models.PortfolioHolding.id == holding_id
     ).first()
-    
+
     if not holding:
         raise HTTPException(status_code=404, detail="Holding not found")
     
@@ -897,13 +897,13 @@ def delete_holding(request: Request, holding_id: int):
 
 @app.get("/api/portfolio/performance")
 @limiter.limit("30/minute")
-def portfolio_performance(request: Request, client_key: str = "default"):
+def portfolio_performance(request: Request, client_key: str = "default", db: Session = Depends(get_db)):
     """Get portfolio performance metrics."""
     logger.info(f"Fetching portfolio performance for {client_key}")
     holdings = db.query(models.PortfolioHolding).filter(
         models.PortfolioHolding.client_key == client_key
     ).all()
-    
+
     total_value = 0
     total_cost = 0
     sector_allocation = {}
