@@ -16,6 +16,7 @@ import os
 import asyncio
 import json
 from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers, get_dividend_yield
+import yfinance as yf
 from reports import PDFReportGenerator
 from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe
 from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
@@ -796,6 +797,150 @@ def stock_of_the_day(request: Request):
         "change_pct_30d": change_pct,
         "sparkline": prices,
         "blurb": blurb,
+    })
+
+
+# === Portfolio Tracking Endpoints ===
+
+class HoldingRequest(BaseModel):
+    ticker: str
+    quantity: float
+    avg_cost: float
+
+@app.get("/api/portfolio/holdings")
+@limiter.limit("60/minute")
+def get_holdings(request: Request, client_key: str = "default"):
+    """Get all portfolio holdings for a client."""
+    logger.info(f"Fetching portfolio holdings for {client_key}")
+    holdings = db.query(models.PortfolioHolding).filter(
+        models.PortfolioHolding.client_key == client_key
+    ).all()
+    
+    result = []
+    for h in holdings:
+        # Get current price
+        try:
+            t = yf.Ticker(h.ticker)
+            current_price = t.info.get('currentPrice', t.info.get('regularMarketPrice', 0))
+        except:
+            current_price = 0
+        
+        current_value = h.quantity * current_price if current_price else 0
+        cost_basis = h.quantity * h.avg_cost
+        pnl = current_value - cost_basis
+        pnl_pct = (pnl / cost_basis * 100) if cost_basis > 0 else 0
+        
+        result.append({
+            "id": h.id,
+            "ticker": h.ticker,
+            "quantity": h.quantity,
+            "avg_cost": h.avg_cost,
+            "current_price": current_price,
+            "current_value": current_value,
+            "cost_basis": cost_basis,
+            "pnl": pnl,
+            "pnl_pct": pnl_pct,
+            "created_at": h.created_at.isoformat() if h.created_at else None,
+        })
+    
+    return {"holdings": result, "count": len(result)}
+
+@app.post("/api/portfolio/holdings")
+@limiter.limit("30/minute")
+def add_holding(request: Request, holding_req: HoldingRequest, client_key: str = "default"):
+    """Add or update a portfolio holding."""
+    logger.info(f"Adding holding {holding_req.ticker} for {client_key}")
+    
+    # Check if holding exists
+    existing = db.query(models.PortfolioHolding).filter(
+        models.PortfolioHolding.client_key == client_key,
+        models.PortfolioHolding.ticker == holding_req.ticker
+    ).first()
+    
+    if existing:
+        # Update existing holding (average in)
+        total_qty = existing.quantity + holding_req.quantity
+        total_cost = (existing.quantity * existing.avg_cost) + (holding_req.quantity * holding_req.avg_cost)
+        existing.avg_cost = total_cost / total_qty if total_qty > 0 else 0
+        existing.quantity = total_qty
+        db.commit()
+        db.refresh(existing)
+        return {"status": "updated", "holding_id": existing.id}
+    else:
+        # Create new holding
+        new_holding = models.PortfolioHolding(
+            client_key=client_key,
+            ticker=holding_req.ticker,
+            quantity=holding_req.quantity,
+            avg_cost=holding_req.avg_cost
+        )
+        db.add(new_holding)
+        db.commit()
+        db.refresh(new_holding)
+        return {"status": "created", "holding_id": new_holding.id}
+
+@app.delete("/api/portfolio/holdings/{holding_id}")
+@limiter.limit("30/minute")
+def delete_holding(request: Request, holding_id: int):
+    """Delete a portfolio holding."""
+    logger.info(f"Deleting holding {holding_id}")
+    holding = db.query(models.PortfolioHolding).filter(
+        models.PortfolioHolding.id == holding_id
+    ).first()
+    
+    if not holding:
+        raise HTTPException(status_code=404, detail="Holding not found")
+    
+    db.delete(holding)
+    db.commit()
+    return {"status": "deleted"}
+
+@app.get("/api/portfolio/performance")
+@limiter.limit("30/minute")
+def portfolio_performance(request: Request, client_key: str = "default"):
+    """Get portfolio performance metrics."""
+    logger.info(f"Fetching portfolio performance for {client_key}")
+    holdings = db.query(models.PortfolioHolding).filter(
+        models.PortfolioHolding.client_key == client_key
+    ).all()
+    
+    total_value = 0
+    total_cost = 0
+    sector_allocation = {}
+    
+    for h in holdings:
+        try:
+            t = yf.Ticker(h.ticker)
+            current_price = t.info.get('currentPrice', t.info.get('regularMarketPrice', 0))
+            sector = t.info.get('sector', 'Other')
+        except:
+            current_price = 0
+            sector = 'Other'
+        
+        value = h.quantity * current_price if current_price else 0
+        cost = h.quantity * h.avg_cost
+        total_value += value
+        total_cost += cost
+        
+        if sector not in sector_allocation:
+            sector_allocation[sector] = 0
+        sector_allocation[sector] += value
+    
+    total_pnl = total_value - total_cost
+    total_pnl_pct = (total_pnl / total_cost * 100) if total_cost > 0 else 0
+    
+    # Calculate allocation percentages
+    allocation_pct = {}
+    for sector, value in sector_allocation.items():
+        allocation_pct[sector] = (value / total_value * 100) if total_value > 0 else 0
+    
+    return clean_data({
+        "total_value": total_value,
+        "total_cost": total_cost,
+        "total_pnl": total_pnl,
+        "total_pnl_pct": total_pnl_pct,
+        "holdings_count": len(holdings),
+        "sector_allocation": allocation_pct,
     })
 
 

@@ -28,3 +28,16 @@ class Alert(Base):
     triggered = Column(Boolean, default=False)
     last_triggered_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PortfolioHolding(Base):
+    """Client-scoped portfolio holdings (no login required)."""
+    __tablename__ = "portfolio_holdings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_key = Column(String, index=True, nullable=False)
+    ticker = Column(String, index=True, nullable=False)
+    quantity = Column(Float, nullable=False, default=0.0)
+    avg_cost = Column(Float, nullable=False, default=0.0)  # Average cost per share
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
