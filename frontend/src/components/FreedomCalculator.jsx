@@ -47,7 +47,7 @@ const FreedomCalculator = ({ ticker }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Input Section */}
-                <div className="bg-white p-8 rounded-lg shadow-soft border border-beige-dark/20 h-fit">
+                <div className="card-premium p-8 h-fit">
                     <h3 className="text-lg font-serif font-bold text-navy mb-6 flex items-center gap-2">
                         <Target className="w-5 h-5 text-gold" />
                         Set Your Goal

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import InfoTip from './InfoTip';
+import { useChartColors } from '../utils/chartTheme';
 
 const RiskAnalysis = ({ stats }) => {
+    const colors = useChartColors();
     if (!stats) return null;
 
     // Prepare Drawdown Data
@@ -30,7 +32,7 @@ const RiskAnalysis = ({ stats }) => {
         }
 
         return (
-            <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 flex flex-col items-center justify-center relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="bg-white p-6 rounded-lg shadow-soft border border-beige-dark/20 flex flex-col items-center justify-center relative overflow-hidden group hover:shadow-md transition-shadow card-premium">
                 <div className={`absolute top-0 left-0 w-1 h-full ${barColor} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
                 <span className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-3">{label}</span>
 
@@ -93,7 +95,7 @@ const RiskAnalysis = ({ stats }) => {
             </div>
 
             {/* Drawdown Chart */}
-            <div className="bg-white p-4 md:p-6 rounded-lg shadow-soft border border-beige-dark/20 h-96">
+            <div className="card-premium p-4 md:p-6 h-96">
                 <h3 className="text-lg font-serif font-bold text-navy mb-6 flex items-center gap-2">
                     Historical Drawdown
                     <InfoTip title="Historical Drawdown">
@@ -110,14 +112,15 @@ const RiskAnalysis = ({ stats }) => {
                                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                        <XAxis dataKey="date" stroke="#94A3B8" tick={{ fontSize: 12 }} tickFormatter={(val) => val.substring(0, 4)} />
-                        <YAxis stroke="#94A3B8" tick={{ fontSize: 12 }} tickFormatter={(val) => `${(val * 100).toFixed(0)}%`} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
+                        <XAxis dataKey="date" stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} tickFormatter={(val) => val.substring(0, 4)} />
+                        <YAxis stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} tickFormatter={(val) => `${(val * 100).toFixed(0)}%`} />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0' }}
+                            contentStyle={{ backgroundColor: colors.tooltipBg, borderColor: colors.tooltipBorder, color: colors.tooltipText }}
+                            itemStyle={{ color: colors.tooltipText }}
                             formatter={(value) => [`${(value * 100).toFixed(2)}%`, 'Drawdown']}
                         />
-                        <Area type="monotone" dataKey="value" stroke="#ef4444" fillOpacity={1} fill="url(#colorDrawdown)" />
+                        <Area type="monotone" dataKey="value" stroke={colors.lineRed} fillOpacity={1} fill="url(#colorDrawdown)" />
                     </AreaChart>
                 </ResponsiveContainer>
             </div>

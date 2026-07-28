@@ -115,7 +115,7 @@ const ValuationLab = ({ ticker }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Controls Area */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white p-6 rounded-lg shadow-soft border border-gold/20">
+                    <div className="card-premium p-6 rounded-lg shadow-soft border border-gold/20">
                         <h3 className="text-sm font-bold text-navy uppercase tracking-widest mb-6">Assumptions</h3>
 
                         <div className="space-y-6">
@@ -198,7 +198,7 @@ const ValuationLab = ({ ticker }) => {
 
                 {/* Results Area */}
                 <div className="lg:col-span-2 flex flex-col justify-center">
-                    <div className="bg-white p-12 rounded-lg shadow-xl border border-beige-dark/20 text-center relative overflow-hidden">
+                    <div className="card-premium p-12 text-center relative overflow-hidden">
 
                         {/* Status Badge */}
                         <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${isUndervalued ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

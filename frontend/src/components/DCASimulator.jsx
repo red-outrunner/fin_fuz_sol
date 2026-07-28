@@ -5,8 +5,10 @@ import { TrendingUp } from 'lucide-react';
 import InfoTip from './InfoTip';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import { useChartColors } from '../utils/chartTheme';
 
 const DCASimulator = ({ ticker, startYear, endDate }) => {
+    const colors = useChartColors();
     const [contribution, setContribution] = useState(500);
     const [simulationData, setSimulationData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -32,7 +34,7 @@ const DCASimulator = ({ ticker, startYear, endDate }) => {
     };
 
     return (
-        <div className="bg-white p-8 rounded-lg shadow-soft border border-beige-dark/50 space-y-8">
+        <div className="card-premium p-8 space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-beige-light pb-6">
                 <div>
                     <h3 className="text-xl font-serif font-bold text-navy flex items-center gap-2 mb-2">
@@ -101,48 +103,50 @@ const DCASimulator = ({ ticker, startYear, endDate }) => {
                     <div className="h-[400px] w-full bg-slate-50/50 rounded-lg p-4 border border-beige-light">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={simulationData.dca_series} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={colors.gridColor} vertical={false} />
                                 <XAxis
                                     dataKey="date"
-                                    stroke="#94a3b8"
+                                    stroke={colors.axisColor}
                                     fontSize={12}
                                     tickLine={false}
                                     axisLine={false}
+                                    tick={{ fill: colors.tickColor }}
                                     minTickGap={50}
                                     tickFormatter={(str) => str.substring(0, 4)}
                                 />
                                 <YAxis
-                                    stroke="#94a3b8"
+                                    stroke={colors.axisColor}
                                     fontSize={12}
                                     tickLine={false}
                                     axisLine={false}
+                                    tick={{ fill: colors.tickColor }}
                                     tickFormatter={(value) => `R${(value / 1000).toFixed(0)}k`}
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#F9F7F2', borderColor: '#C5A059', borderRadius: '0.5rem', fontFamily: 'Inter', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                    itemStyle={{ color: '#1A2433' }}
-                                    labelStyle={{ color: '#64748b', marginBottom: '0.5rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+                                    contentStyle={{ backgroundColor: colors.tooltipBg, borderColor: colors.tooltipBorder, borderRadius: '0.5rem', fontFamily: 'Inter', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                    itemStyle={{ color: colors.tooltipText }}
+                                    labelStyle={{ color: colors.tickColor, marginBottom: '0.5rem', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
                                     formatter={(value) => [`R${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, ""]}
                                 />
-                                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                <Legend wrapperStyle={{ paddingTop: '20px', color: colors.tickColor }} />
                                 <Line
                                     type="monotone"
                                     dataKey="value"
                                     name="Portfolio Value"
-                                    stroke="#4A7C59"
+                                    stroke={colors.lineGreen}
                                     strokeWidth={3}
                                     dot={false}
-                                    activeDot={{ r: 6, strokeWidth: 0, fill: '#4A7C59' }}
+                                    activeDot={{ r: 6, strokeWidth: 0, fill: colors.lineGreen }}
                                 />
                                 <Line
                                     type="monotone"
                                     dataKey="invested"
                                     name="Total Invested"
-                                    stroke="#94a3b8"
+                                    stroke={colors.axisColor}
                                     strokeWidth={2}
                                     strokeDasharray="5 5"
                                     dot={false}
-                                    activeDot={{ r: 4, fill: '#94a3b8' }}
+                                    activeDot={{ r: 4, fill: colors.axisColor }}
                                 />
                             </LineChart>
                         </ResponsiveContainer>

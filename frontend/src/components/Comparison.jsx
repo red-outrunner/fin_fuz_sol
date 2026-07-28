@@ -3,8 +3,10 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import InfoTip from './InfoTip';
+import { useChartColors } from '../utils/chartTheme';
 
 const Comparison = ({ ticker, startYear, endDate }) => {
+    const chartColors = useChartColors();
     const [benchmarkStats, setBenchmarkStats] = useState({});
     const [comparisonTicker, setComparisonTicker] = useState('');
     const [activeComparisons, setActiveComparisons] = useState([ticker]);
@@ -98,7 +100,7 @@ const Comparison = ({ ticker, startYear, endDate }) => {
         }
     }
 
-    const colors = ['#1A2433', '#C5A059', '#4A7C59', '#8C735A', '#2C3E50'];
+    const lineColors = [chartColors.tooltipText, chartColors.lineGold, chartColors.lineGreen, chartColors.areaStroke, chartColors.axisColor];
 
     // Helper to find best value for highlighting
     const getBest = (metric) => {
@@ -230,21 +232,21 @@ const Comparison = ({ ticker, startYear, endDate }) => {
                 <h3 className="text-lg font-serif font-bold text-navy mb-6">Seasonal Returns (Monthly Avg)</h3>
                 <ResponsiveContainer width="100%" height="90%">
                     <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                        <XAxis dataKey="name" stroke="#94A3B8" tick={{ fill: '#64748B', fontSize: 12 }} />
-                        <YAxis stroke="#94A3B8" tick={{ fill: '#64748B', fontSize: 12 }} tickFormatter={(val) => `${val}%`} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.gridColor} />
+                        <XAxis dataKey="name" stroke={chartColors.axisColor} tick={{ fill: chartColors.tickColor, fontSize: 12 }} />
+                        <YAxis stroke={chartColors.axisColor} tick={{ fill: chartColors.tickColor, fontSize: 12 }} tickFormatter={(val) => `${val}%`} />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                            itemStyle={{ fontSize: 12 }}
+                            contentStyle={{ backgroundColor: chartColors.tooltipBg, borderColor: chartColors.tooltipBorder, color: chartColors.tooltipText, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                            itemStyle={{ fontSize: 12, color: chartColors.tooltipText }}
                         />
-                        <Legend wrapperStyle={{ paddingTop: 20 }} />
+                        <Legend wrapperStyle={{ paddingTop: 20, color: chartColors.tickColor }} />
                         {activeComparisons.map((t, index) => (
                             <Line
                                 key={t}
                                 type="monotone"
                                 dataKey={t}
-                                stroke={colors[index % colors.length]}
-                                activeDot={{ r: 6, fill: colors[index % colors.length], stroke: '#fff', strokeWidth: 2 }}
+                                stroke={lineColors[index % lineColors.length]}
+                                activeDot={{ r: 6, fill: lineColors[index % lineColors.length], stroke: chartColors.tooltipBg, strokeWidth: 2 }}
                                 strokeWidth={2}
                                 dot={false}
                             />

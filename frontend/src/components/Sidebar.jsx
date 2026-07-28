@@ -184,8 +184,16 @@ const Sidebar = ({
                         </h2>
 
                         {/* Inflation Toggle */}
-                        <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-all cursor-pointer group" onClick={() => setInflationAdjusted(!inflationAdjusted)}>
-                            <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-200 transition-colors">Adjust for Inflation</span>
+                        <div
+                            className={`flex items-center justify-between p-4 bg-white/5 rounded-xl border transition-all cursor-pointer group ${loading ? 'opacity-60 pointer-events-none' : 'border-white/5 hover:border-white/10'}`}
+                            onClick={() => !loading && setInflationAdjusted(!inflationAdjusted)}
+                        >
+                            <span className="text-xs font-semibold text-slate-400 group-hover:text-slate-200 transition-colors">
+                                Adjust for Inflation
+                                {loading && (
+                                    <span className="block text-[9px] text-gold/70 mt-0.5 normal-case tracking-normal">Recalculating…</span>
+                                )}
+                            </span>
                             <div className={`w-9 h-5 flex items-center rounded-full p-1 transition-all duration-500 ${inflationAdjusted ? 'bg-gold' : 'bg-slate-700/50 shadow-inner'}`}>
                                 <div className={`bg-white w-3 h-3 rounded-full shadow-lg transform duration-500 ${inflationAdjusted ? 'translate-x-4' : 'translate-x-0'}`}></div>
                             </div>

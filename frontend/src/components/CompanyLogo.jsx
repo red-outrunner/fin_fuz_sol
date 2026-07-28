@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
-// Domain mapping dictionary for JSE and major companies
+// Preferred logo domains — takes precedence over yfinance website for logo lookup
 const TICKER_DOMAINS = {
     'ABG.JO': 'absa.africa',
     'AGL.JO': 'angloamerican.com',
@@ -8,7 +8,7 @@ const TICKER_DOMAINS = {
     'ANH.JO': 'ab-inbev.com',
     'APN.JO': 'aspenpharma.com',
     'BHG.JO': 'bhp.com',
-    'BID.JO': 'bidcorp.com',
+    'BID.JO': 'bidcorpgroup.com',
     'BTI.JO': 'bat.com',
     'BVT.JO': 'bidvest.co.za',
     'CFR.JO': 'richemont.com',
@@ -29,7 +29,7 @@ const TICKER_DOMAINS = {
     'MRP.JO': 'mrpricegroup.com',
     'MTN.JO': 'mtn.com',
     'NED.JO': 'nedbank.co.za',
-    'NPH.JO': 'northamplatinum.com',
+    'NPH.JO': 'northam.co.za',
     'NPN.JO': 'naspers.com',
     'NRP.JO': 'rockcastle.co.za',
     'OMU.JO': 'oldmutual.com',
@@ -39,7 +39,7 @@ const TICKER_DOMAINS = {
     'PRX.JO': 'prosus.com',
     'REM.JO': 'remgro.com',
     'RMI.JO': 'outsurance.co.za',
-    'RNI.JO': 'reinet.co.uk',
+    'RNI.JO': 'reinet.com',
     'SBK.JO': 'standardbank.co.za',
     'SHP.JO': 'shopriteholdings.co.za',
     'SLM.JO': 'sanlam.co.za',
@@ -48,6 +48,29 @@ const TICKER_DOMAINS = {
     'VAL.JO': 'valterra.com',
     'VOD.JO': 'vodacom.com',
     'WHL.JO': 'woolworthsholdings.co.za',
+};
+
+// Verified direct logo URLs for tickers where generic sources fail
+const DIRECT_LOGO_URLS = {
+    FSR: [
+        'https://assets.parqet.com/logos/symbol/FSR.JO',
+        'https://financialmodelingprep.com/image-stock/FSR.JO.png',
+    ],
+    BID: [
+        'https://assets.parqet.com/logos/symbol/BID.JO',
+        'https://www.google.com/s2/favicons?domain=bidcorpgroup.com&sz=128',
+    ],
+    NPH: [
+        'https://assets.parqet.com/logos/symbol/NPH.JO',
+        'https://financialmodelingprep.com/image-stock/NPH.JO.png',
+    ],
+    RNI: [
+        'https://financialmodelingprep.com/image-stock/RNI.JO.png',
+    ],
+    SOL: [
+        'https://assets.parqet.com/logos/symbol/SOL.JO',
+        'https://financialmodelingprep.com/image-stock/SOL.JO.png',
+    ],
 };
 
 // Brand accent colors for fallbacks
@@ -111,51 +134,55 @@ const getInitials = (ticker = '', name = '') => {
     return 'CO';
 };
 
-const CompanyLogo = ({ ticker = '', name = '', website = '', size = 'md', className = '' }) => {
+const CompanyLogo = ({ ticker = '', name = '', website = '', size = 'md', variant = 'default', className = '' }) => {
     const cleanTicker = ticker.replace('.JO', '').trim().toUpperCase();
+    const jseTicker = `${cleanTicker}.JO`;
 
-    // Determine domain
     const domain = useMemo(() => {
+        const mapped = TICKER_DOMAINS[ticker] || TICKER_DOMAINS[jseTicker];
+        if (mapped) return mapped;
         if (website) {
             try {
                 const url = website.startsWith('http') ? website : `https://${website}`;
                 return new URL(url).hostname.replace('www.', '');
-            } catch (e) {
-                // fallback
+            } catch {
+                // fall through
             }
         }
-        return TICKER_DOMAINS[ticker] || TICKER_DOMAINS[`${cleanTicker}.JO`] || null;
-    }, [website, ticker, cleanTicker]);
+        return null;
+    }, [website, ticker, jseTicker]);
 
-    // Build candidate image sources
     const candidateUrls = useMemo(() => {
         const urls = [];
-        
-        // Direct logo URLs for problematic companies (prioritized)
-        if (cleanTicker === 'SOL') {
-            urls.push('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Sasol_Logo_2021.svg/120px-Sasol_Logo_2021.svg.png');
-            urls.push('https://logo.clearbit.com/sasol.com');
-        }
-        if (cleanTicker === 'RNI') {
-            urls.push('https://reinet.co.uk/wp-content/themes/reinet/images/logo.png');
-            urls.push('https://logo.clearbit.com/reinet.co.uk');
-        }
-        if (cleanTicker === 'NPH') {
-            urls.push('https://northamplatinum.com/wp-content/uploads/2022/08/Northam-Platinum-Logo.png');
-            urls.push('https://logo.clearbit.com/northamplatinum.com');
-        }
-        
+        const seen = new Set();
+        const add = (url) => {
+            if (url && !seen.has(url)) {
+                seen.add(url);
+                urls.push(url);
+            }
+        };
+
+        (DIRECT_LOGO_URLS[cleanTicker] || []).forEach(add);
+
         if (domain) {
-            urls.push(`https://logo.clearbit.com/${domain}`);
-            urls.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
+            add(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
         }
-        urls.push(`https://assets.parqet.com/logos/symbol/${cleanTicker}`);
-        urls.push(`https://financialmodelingprep.com/image-stock/${cleanTicker}.png`);
+
+        add(`https://assets.parqet.com/logos/symbol/${jseTicker}`);
+        add(`https://assets.parqet.com/logos/symbol/${cleanTicker}`);
+        add(`https://financialmodelingprep.com/image-stock/${jseTicker}.png`);
+        add(`https://financialmodelingprep.com/image-stock/${cleanTicker}.png`);
+
         return urls;
-    }, [domain, cleanTicker]);
+    }, [domain, cleanTicker, jseTicker]);
 
     const [candidateIndex, setCandidateIndex] = useState(0);
     const [failedAll, setFailedAll] = useState(false);
+
+    useEffect(() => {
+        setCandidateIndex(0);
+        setFailedAll(false);
+    }, [candidateUrls]);
 
     const handleError = () => {
         if (candidateIndex + 1 < candidateUrls.length) {
@@ -177,6 +204,10 @@ const CompanyLogo = ({ ticker = '', name = '', website = '', size = 'md', classN
     const brandGradient = BRAND_COLORS[cleanTicker] || 'from-amber-600 to-amber-800 text-white';
     const initials = getInitials(ticker, name);
 
+    const backdropClass = variant === 'heatmap'
+        ? 'absolute inset-0 rounded-full bg-white/85 dark:bg-[#1A2433]/75 ring-1 ring-black/15 dark:ring-white/20'
+        : 'absolute inset-0 rounded-full bg-white/95 dark:bg-[#1A2433]/90 ring-1 ring-black/8 dark:ring-white/10';
+
     if (failedAll || candidateUrls.length === 0) {
         return (
             <div
@@ -190,12 +221,12 @@ const CompanyLogo = ({ ticker = '', name = '', website = '', size = 'md', classN
 
     return (
         <div className={`relative inline-flex items-center justify-center shrink-0 ${dimensionClass} ${className}`}>
-            <div className="absolute inset-0 bg-white/90 rounded-full" />
+            <div className={backdropClass} />
             <img
                 src={candidateUrls[candidateIndex]}
                 alt={`${name || ticker} logo`}
                 onError={handleError}
-                className="relative w-full h-full object-contain rounded-full p-1 shadow-sm transition-opacity duration-200"
+                className="relative w-full h-full object-contain rounded-full p-0.5 shadow-sm transition-opacity duration-200"
                 loading="lazy"
             />
         </div>

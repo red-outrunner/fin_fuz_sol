@@ -3,8 +3,10 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import InfoTip from './InfoTip';
+import { useChartColors } from '../utils/chartTheme';
 
 const WealthProjection = ({ ticker, startYear, endDate }) => {
+    const colors = useChartColors();
     const [projectionData, setProjectionData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -60,7 +62,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                 </p>
             </div>
 
-            <div className="bg-white p-8 rounded-lg shadow-xl border border-beige-dark/20 relative overflow-hidden">
+            <div className="card-premium p-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-gold text-navy text-[10px] font-bold px-3 py-1 uppercase tracking-widest rounded-bl-lg">
                     Premium Analysis
                 </div>
@@ -101,43 +103,44 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                             <AreaChart data={projectionData}>
                                 <defs>
                                     <linearGradient id="colorP90" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8C735A" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#8C735A" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={colors.lineGold} stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor={colors.lineGold} stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorP50" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#1A2433" stopOpacity={0.5} />
-                                        <stop offset="95%" stopColor="#1A2433" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={colors.tooltipText} stopOpacity={0.5} />
+                                        <stop offset="95%" stopColor={colors.tooltipText} stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorP10" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2} />
-                                        <stop offset="95%" stopColor="#94A3B8" stopOpacity={0} />
+                                        <stop offset="5%" stopColor={colors.axisColor} stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor={colors.axisColor} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
                                 <XAxis
                                     dataKey="date"
-                                    stroke="#94A3B8"
-                                    tick={{ fontSize: 12 }}
+                                    stroke={colors.axisColor}
+                                    tick={{ fill: colors.tickColor, fontSize: 12 }}
                                     tickFormatter={(val) => val.substring(0, 4)}
                                     minTickGap={30}
                                 />
                                 <YAxis
-                                    stroke="#94A3B8"
-                                    tick={{ fontSize: 12 }}
+                                    stroke={colors.axisColor}
+                                    tick={{ fill: colors.tickColor, fontSize: 12 }}
                                     tickFormatter={(val) => `R${val / 1000}k`}
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0' }}
+                                    contentStyle={{ backgroundColor: colors.tooltipBg, borderColor: colors.tooltipBorder, color: colors.tooltipText }}
+                                    itemStyle={{ color: colors.tooltipText }}
                                     formatter={(value, name) => [
                                         new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value),
                                         name === 'p90' ? '90th Percentile' : name === 'p50' ? 'Median Outcome' : '10th Percentile'
                                     ]}
-                                    labelStyle={{ color: '#1A2433', fontWeight: 'bold' }}
+                                    labelStyle={{ color: colors.tooltipText, fontWeight: 'bold' }}
                                 />
                                 <Area
                                     type="monotone"
                                     dataKey="p90"
-                                    stroke="#8C735A"
+                                    stroke={colors.lineGold}
                                     strokeWidth={1}
                                     strokeDasharray="5 5"
                                     fillOpacity={1}
@@ -147,7 +150,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                                 <Area
                                     type="monotone"
                                     dataKey="p50"
-                                    stroke="#1A2433"
+                                    stroke={colors.tooltipText}
                                     strokeWidth={3}
                                     fillOpacity={1}
                                     fill="url(#colorP50)"
@@ -156,7 +159,7 @@ const WealthProjection = ({ ticker, startYear, endDate }) => {
                                 <Area
                                     type="monotone"
                                     dataKey="p10"
-                                    stroke="#94A3B8"
+                                    stroke={colors.axisColor}
                                     strokeWidth={1}
                                     strokeDasharray="5 5"
                                     fillOpacity={1}

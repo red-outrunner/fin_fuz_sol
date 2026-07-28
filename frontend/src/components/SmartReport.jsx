@@ -67,7 +67,7 @@ const SmartReport = ({ ticker, data, profile }) => {
                 </button>
             </div>
 
-            <div className="bg-white p-10 rounded-none shadow-lg border-t-8 border-gold print:shadow-none">
+            <div className="card-premium p-10 rounded-none border-t-8 border-gold print:shadow-none">
                 {/* Report Header */}
                 <div className="flex justify-between mb-8">
                     <div>

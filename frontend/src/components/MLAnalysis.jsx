@@ -3,6 +3,8 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import InfoTip from './InfoTip';
+import { useChartColors } from '../utils/chartTheme';
+import { useTheme } from '../context/ThemeContext';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -17,17 +19,17 @@ const COLORS = ['#1A2433', '#C5A059', '#4A7C59', '#8C735A']; // Navy, Gold, Gree
 const COLOR_NAMES = ['Navy', 'Gold', 'Green', 'Bronze'];
 
 // Shared tooltip: names the month instead of raw x/y values.
-const PatternTooltip = ({ active, payload }) => {
+const PatternTooltip = ({ active, payload, colors = COLORS }) => {
     if (!(active && payload && payload.length)) return null;
     const d = payload[0].payload;
     return (
-        <div className="bg-[#1A2433] p-4 rounded-xl shadow-2xl animate-fade-in">
+        <div className="bg-[#1A2433] dark:bg-[#1E293B] p-4 rounded-xl shadow-2xl animate-fade-in border border-white/10">
             <p className="text-[#C5A059] text-[10px] font-bold uppercase tracking-widest mb-2 pb-2 border-b border-white/10">
                 {d.month}
             </p>
             <div className="space-y-1.5 text-xs">
                 <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: COLORS[d.cluster % COLORS.length] }} />
+                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: colors[d.cluster % colors.length] }} />
                     <span className="text-slate-300">Regime: <span className="text-[#F9F7F2] font-bold">{COLOR_NAMES[d.cluster % COLOR_NAMES.length]} group</span></span>
                 </div>
                 <p className={d.isAnomaly ? 'text-red-400 font-bold' : 'text-slate-400'}>
@@ -39,6 +41,11 @@ const PatternTooltip = ({ active, payload }) => {
 };
 
 const MLAnalysis = ({ ticker, startYear, endDate }) => {
+    const chartColors = useChartColors();
+    const { isDark } = useTheme();
+    const scatterColors = isDark
+        ? ['#E8E6DF', '#D4AF37', '#10B981', '#C5A059']
+        : COLORS;
     const [mlData, setMlData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -123,13 +130,13 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
-                                <XAxis type="number" dataKey="x" stroke="#8C735A" tick={false} axisLine={false} label={{ value: 'Months that behaved alike sit close together', position: 'insideBottom', fill: '#8C735A', fontSize: 11 }} />
-                                <YAxis type="number" dataKey="y" stroke="#8C735A" tick={false} axisLine={false} />
-                                <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<PatternTooltip />} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.gridColor} />
+                                <XAxis type="number" dataKey="x" stroke={chartColors.axisColor} tick={false} axisLine={false} label={{ value: 'Months that behaved alike sit close together', position: 'insideBottom', fill: chartColors.axisColor, fontSize: 11 }} />
+                                <YAxis type="number" dataKey="y" stroke={chartColors.axisColor} tick={false} axisLine={false} />
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<PatternTooltip colors={scatterColors} />} />
                                 <Scatter name="Market States" data={clusterData} fill="#8884d8">
                                     {clusterData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[entry.cluster % COLORS.length]} />
+                                        <Cell key={`cell-${index}`} fill={scatterColors[entry.cluster % scatterColors.length]} />
                                     ))}
                                 </Scatter>
                             </ScatterChart>
@@ -143,7 +150,7 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
                             Each dot is one month, from {firstMonth} to {lastPoint?.month}. The AI sorted these{' '}
                             {clusterData.length} months into {regimeCount} groups of look-alike behaviour.
                             The newest month ({lastPoint?.month}) sits in the{' '}
-                            <span className="font-bold" style={{ color: COLORS[lastPoint?.cluster % COLORS.length] }}>
+                            <span className="font-bold" style={{ color: scatterColors[lastPoint?.cluster % scatterColors.length] }}>
                                 {COLOR_NAMES[lastPoint?.cluster % COLOR_NAMES.length]} group
                             </span>
                             , so right now the market is acting like the other months in that group.
@@ -194,10 +201,10 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#F0EBE0" />
-                                <XAxis type="number" dataKey="x" stroke="#8C735A" tick={false} axisLine={false} label={{ value: 'Red = month that broke the normal pattern', position: 'insideBottom', fill: '#8C735A', fontSize: 11 }} />
-                                <YAxis type="number" dataKey="y" stroke="#8C735A" tick={false} axisLine={false} />
-                                <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<PatternTooltip />} />
+                                <CartesianGrid strokeDasharray="3 3" stroke={chartColors.gridColor} />
+                                <XAxis type="number" dataKey="x" stroke={chartColors.axisColor} tick={false} axisLine={false} label={{ value: 'Red = month that broke the normal pattern', position: 'insideBottom', fill: chartColors.axisColor, fontSize: 11 }} />
+                                <YAxis type="number" dataKey="y" stroke={chartColors.axisColor} tick={false} axisLine={false} />
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<PatternTooltip colors={scatterColors} />} />
                                 {/* Anomalies get a bigger dot + dark ring, so they stand out by size and shape too (not colour alone). */}
                                 <Scatter
                                     name="Anomalies"
@@ -207,9 +214,9 @@ const MLAnalysis = ({ ticker, startYear, endDate }) => {
                                             cx={props.cx}
                                             cy={props.cy}
                                             r={props.payload.isAnomaly ? 6 : 3.5}
-                                            fill={props.payload.isAnomaly ? '#EF4444' : '#CBD5E1'}
+                                            fill={props.payload.isAnomaly ? chartColors.lineRed : (isDark ? 'rgba(148,163,184,0.5)' : '#CBD5E1')}
                                             fillOpacity={props.payload.isAnomaly ? 1 : 0.5}
-                                            stroke={props.payload.isAnomaly ? '#1A2433' : 'none'}
+                                            stroke={props.payload.isAnomaly ? chartColors.tooltipText : 'none'}
                                             strokeWidth={props.payload.isAnomaly ? 1.5 : 0}
                                         />
                                     )}

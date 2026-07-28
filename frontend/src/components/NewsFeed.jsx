@@ -1,54 +1,58 @@
 import React from 'react';
 import InfoTip from './InfoTip';
 
-const NewsFeed = ({ news, onRead }) => {
+const NewsFeed = ({ news, onRead, totalCount }) => {
+    const count = totalCount ?? news?.length ?? 0;
+
     if (!news || news.length === 0) {
         return (
-            <div className="bg-gray-800 rounded-lg p-4 shadow-lg h-full">
-                <h3 className="text-gray-400 text-sm font-semibold mb-3 uppercase tracking-wider border-b border-gray-700 pb-2">News</h3>
-                <p className="text-gray-500 text-sm">No recent news available.</p>
+            <div className="h-full flex flex-col bg-transparent p-4">
+                <h3 className="text-gold/80 text-[10px] font-bold mb-3 uppercase tracking-widest border-b border-white/10 pb-2">
+                    Top News
+                </h3>
+                <p className="text-slate-500 text-sm flex-1 flex items-center justify-center text-center px-4">
+                    {count === 0 ? 'No recent news available for this ticker.' : 'No headlines match your filter.'}
+                </p>
             </div>
         );
     }
 
     return (
-        <div className="bg-gray-800 rounded-lg p-4 shadow-lg h-full overflow-y-auto custom-scrollbar">
-            <h3 className="text-orange-400 text-sm font-semibold mb-3 uppercase tracking-wider border-b border-gray-700 pb-2 flex justify-between items-center">
+        <div className="h-full flex flex-col bg-transparent overflow-hidden">
+            <h3 className="text-gold text-[10px] font-bold px-4 pt-3 pb-2 uppercase tracking-widest border-b border-white/10 flex justify-between items-center shrink-0">
                 <span className="flex items-center gap-2">
                     Top News
                     <InfoTip dark align="left" title="News Feed">
-                        Fresh headlines about this company. News moves prices — check here for
-                        the "why" behind a jump or a drop. Click "Read Article" to read it
-                        right here without leaving the app.
+                        Fresh headlines about this company. Click Read to open in-app, or the title to visit the source.
                     </InfoTip>
                 </span>
-                <span className="text-xs text-gray-500">{news.length} items</span>
+                <span className="text-slate-500 font-mono">{news.length}{count !== news.length ? ` / ${count}` : ''}</span>
             </h3>
-            <ul className="space-y-3">
+            <ul className="flex-1 overflow-y-auto custom-scrollbar px-2 py-2 space-y-1">
                 {news.map((item, index) => (
-                    <li key={index} className="group cursor-pointer hover:bg-gray-750 p-2 -mx-2 rounded transition-colors duration-200">
-                        <a href={item.link} target="_blank" rel="noopener noreferrer" className="block">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-xs text-blue-400 font-medium truncate max-w-[120px]">{item.publisher}</span>
-                                <span className="text-xs text-gray-500 whitespace-nowrap">{item.date}</span>
-                            </div>
-                            <h4 className="text-sm text-gray-200 group-hover:text-blue-300 font-medium leading-tight mb-1">
-                                {item.title}
-                            </h4>
-
-                            <div className="flex gap-2 mt-1">
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        onRead(item);
-                                    }}
-                                    className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-colors"
-                                >
-                                    Read Article
-                                </button>
-                            </div>
+                    <li
+                        key={`${item.link}-${index}`}
+                        className="group rounded-lg border border-transparent hover:border-white/10 hover:bg-white/5 p-2.5 transition-colors"
+                    >
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                            <span className="text-[10px] text-gold/70 font-medium truncate">{item.publisher}</span>
+                            <span className="text-[10px] text-slate-500 whitespace-nowrap shrink-0">{item.date}</span>
+                        </div>
+                        <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-slate-200 group-hover:text-cream font-medium leading-snug line-clamp-3 block mb-2"
+                        >
+                            {item.title}
                         </a>
+                        <button
+                            type="button"
+                            onClick={() => onRead(item)}
+                            className="text-[10px] font-bold uppercase tracking-wider bg-white/5 hover:bg-gold/20 text-slate-300 hover:text-gold px-2 py-1 rounded border border-white/10 transition-colors"
+                        >
+                            Read
+                        </button>
                     </li>
                 ))}
             </ul>

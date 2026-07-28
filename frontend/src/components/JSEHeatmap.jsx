@@ -624,7 +624,8 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                             name={stock.name}
                                                             website={stock.website}
                                                             size={span ? 'md' : 'sm'}
-                                                            className="shadow-sm border border-black/20 shrink-0"
+                                                            variant="heatmap"
+                                                            className="shadow-sm shrink-0"
                                                         />
                                                         <span className="font-mono text-[9px] md:text-[10px] font-bold opacity-80 uppercase tracking-tight ml-auto">
                                                             {stock.ticker.replace('.JO', '')}
@@ -688,6 +689,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                                 name={stock.name}
                                                                 website={stock.website}
                                                                 size="sm"
+                                                                variant="heatmap"
                                                             />
                                                             <span className="font-mono text-xs font-bold text-gold">
                                                                 {stock.ticker.replace('.JO', '')}
@@ -736,7 +738,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                         className="px-2 py-1 rounded font-mono text-[10px] font-bold inline-flex items-center gap-1.5 shadow-sm transition hover:scale-105"
                                         style={{ background: c.bg, color: c.fg }}
                                     >
-                                        <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" />
+                                        <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" variant="heatmap" />
                                         <span>{s.ticker.replace('.JO', '')} +{s.change_percent?.toFixed(2)}%</span>
                                     </button>
                                 );
@@ -758,7 +760,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                         className="px-2 py-1 rounded font-mono text-[10px] font-bold inline-flex items-center gap-1.5 shadow-sm transition hover:scale-105"
                                         style={{ background: c.bg, color: c.fg }}
                                     >
-                                        <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" />
+                                        <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" variant="heatmap" />
                                         <span>{s.ticker.replace('.JO', '')} {s.change_percent?.toFixed(2)}%</span>
                                     </button>
                                 );

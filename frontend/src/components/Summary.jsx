@@ -8,15 +8,20 @@ import WealthProjection from './WealthProjection';
 import ProtectedComponent from './ProtectedComponent';
 import InfoTip from './InfoTip';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { buildMonthSeries } from '../utils/monthSeasonality';
+import { getSeasonalCellClasses } from '../utils/chartTheme';
 
-const Summary = ({ data, profile, onUpgrade }) => {
+const Summary = ({ data, profile, onUpgrade, inflationAdjusted }) => {
     const { user } = useAuth();
+    const { isDark } = useTheme();
 
     if (!data || !data.stats) {
         return <div className="p-12 text-center text-slate-500 italic">No summary statistics available for this period.</div>;
     }
 
     const { stats, ticker } = data;
+    const monthRows = buildMonthSeries(stats, 'month_avg', false);
 
     return (
         <div className="space-y-12 animate-fade-in-up">
@@ -100,35 +105,49 @@ const Summary = ({ data, profile, onUpgrade }) => {
                     <span className="w-8 h-px bg-gold/30"></span>
                     Seasonal Performance Matrix
                     <InfoTip title="Seasonal Matrix">
-                        The average return of each calendar month across all years.
-                        Arrows up = the month usually gains; arrows down = it usually loses.
-                        Handy for timing regular buys or knowing when dips are common.
+                        The average nominal monthly return of each calendar month across all years
+                        in your selected range (not inflation-adjusted). Arrows up = the month
+                        usually gains; arrows down = it usually loses. Handy for timing regular
+                        buys or knowing when dips are common.
                     </InfoTip>
                 </h3>
                 <div className="overflow-x-auto rounded-none border-y border-navy/5">
-                    <table className="min-w-full divide-y divide-navy/5">
+                    <table className="min-w-full">
                         <thead>
-                            <tr className="bg-beige/30">
-                                {Object.keys(stats.month_avg || {}).map(month => (
-                                    <th key={month} className="px-4 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                        {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(month) - 1]}
+                            <tr>
+                                {monthRows.map(({ month, name }) => (
+                                    <th
+                                        key={month}
+                                        className="px-3 py-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-navy/5"
+                                    >
+                                        {name}
                                     </th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-navy/5">
+                        <tbody>
                             <tr>
-                                {Object.values(stats.month_avg || {}).map((val, idx) => (
-                                    <td key={idx} className={`px-4 py-6 whitespace-nowrap text-sm font- serif font-bold ${val >= 0 ? 'text-navy' : 'text-red-800'}`}>
-                                        {val !== null ? `${(val * 100).toFixed(2)}%` : 'N/A'}
-                                        {val >= 0 && val !== null && <span className="text-[10px] text-green-600 ml-1">↑</span>}
-                                        {val < 0 && val !== null && <span className="text-[10px] text-red-600 ml-1">↓</span>}
-                                    </td>
-                                ))}
+                                {monthRows.map(({ month, raw }) => {
+                                    const cell = getSeasonalCellClasses(raw, isDark);
+                                    return (
+                                        <td
+                                            key={month}
+                                            className={`px-3 py-5 text-center whitespace-nowrap text-sm font-serif font-bold border-b border-navy/5 ${cell.bg} ${cell.text}`}
+                                        >
+                                            {raw !== null ? `${(raw * 100).toFixed(2)}%` : 'N/A'}
+                                            {raw > 0 && <span className="text-[10px] ml-1 opacity-70">↑</span>}
+                                            {raw < 0 && <span className="text-[10px] ml-1 opacity-70">↓</span>}
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         </tbody>
                     </table>
                 </div>
+                <p className="text-[10px] text-slate-400 mt-4 italic">
+                    Average nominal monthly return across all years in range.
+                    {inflationAdjusted && ' KPIs and wealth chart above use inflation-adjusted (real) returns; this table stays nominal.'}
+                </p>
             </div>
         </div>
     );

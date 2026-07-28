@@ -4,8 +4,10 @@ import { API_BASE_URL } from '../api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { DollarSign, TrendingUp, Calendar, Percent } from 'lucide-react';
 import InfoTip from './InfoTip';
+import { useChartColors } from '../utils/chartTheme';
 
 const DividendAnalysis = ({ ticker, startYear }) => {
+    const colors = useChartColors();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -114,14 +116,15 @@ const DividendAnalysis = ({ ticker, startYear }) => {
                     </h3>
                     <ResponsiveContainer width="100%" height="85%">
                         <BarChart data={data.annual}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                            <XAxis dataKey="year" stroke="#94A3B8" tick={{ fontSize: 12 }} />
-                            <YAxis stroke="#94A3B8" tick={{ fontSize: 12 }} tickFormatter={(val) => `$${val}`} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
+                            <XAxis dataKey="year" stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} />
+                            <YAxis stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} tickFormatter={(val) => `$${val}`} />
                             <Tooltip
-                                contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0' }}
+                                contentStyle={{ backgroundColor: colors.tooltipBg, borderColor: colors.tooltipBorder, color: colors.tooltipText }}
+                                itemStyle={{ color: colors.tooltipText }}
                                 formatter={(value) => [`$${value.toFixed(2)}`, 'Total Annual Dividend']}
                             />
-                            <Bar dataKey="value" fill="#4A7C59" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="value" fill={colors.barPositive} radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
@@ -138,14 +141,15 @@ const DividendAnalysis = ({ ticker, startYear }) => {
                     </h3>
                     <ResponsiveContainer width="100%" height="85%">
                         <LineChart data={data.annual}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                            <XAxis dataKey="year" stroke="#94A3B8" tick={{ fontSize: 12 }} />
-                            <YAxis stroke="#94A3B8" tick={{ fontSize: 12 }} tickFormatter={(val) => `${(val * 100).toFixed(0)}%`} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
+                            <XAxis dataKey="year" stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} />
+                            <YAxis stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} tickFormatter={(val) => `${(val * 100).toFixed(0)}%`} />
                             <Tooltip
-                                contentStyle={{ backgroundColor: '#FDFCF8', borderColor: '#E2E8F0' }}
+                                contentStyle={{ backgroundColor: colors.tooltipBg, borderColor: colors.tooltipBorder, color: colors.tooltipText }}
+                                itemStyle={{ color: colors.tooltipText }}
                                 formatter={(value) => [`${(value * 100).toFixed(2)}%`, 'YOY Growth']}
                             />
-                            <Line type="monotone" dataKey="growth" stroke="#C5A059" strokeWidth={2} dot={{ r: 4, fill: '#C5A059' }} />
+                            <Line type="monotone" dataKey="growth" stroke={colors.lineGold} strokeWidth={2} dot={{ r: 4, fill: colors.lineGold }} />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>

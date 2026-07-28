@@ -6,9 +6,7 @@ import BarChart from './charts/BarChart';
 import Heatmap from './charts/Heatmap';
 import ScatterPlot from './charts/ScatterPlot';
 import DCASimulator from './DCASimulator';
-import NewsFeed from './NewsFeed';
-import KeyStats from './KeyStats';
-import EarningsCalendar from './EarningsCalendar';
+import MarketTerminal from './MarketTerminal';
 
 import InfoTip from './InfoTip';
 import RiskAnalysis from './RiskAnalysis';
@@ -60,6 +58,8 @@ const Dashboard = ({
     onSelectTicker,
     activeTab: controlledTab,
     setActiveTab: setControlledTab,
+    onRefreshTerminal,
+    terminalRefreshing,
 }) => {
     const { user } = useAuth();
 
@@ -205,6 +205,11 @@ const Dashboard = ({
             {data && !loading && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <LiveQuoteStrip tickers={[ticker]} />
+                    {inflationAdjusted && (
+                        <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/30 text-[10px] font-bold uppercase tracking-widest text-gold">
+                            Real returns · 5% inflation
+                        </div>
+                    )}
                     <header className="flex flex-col xl:flex-row xl:justify-between xl:items-center mb-12 pb-6 border-b border-navy/5 dark:border-white/10 gap-4">
                         {/* Mobile Dropdown */}
                         <div className="w-full xl:hidden relative z-20">
@@ -297,7 +302,16 @@ const Dashboard = ({
                         </div>
                     </header>
 
-                    {activeTab === 'summary' && <div className="animate-in fade-in duration-300"><Summary data={data} profile={profileData} onUpgrade={handleOpenUpgrade} /></div>}
+                    {activeTab === 'summary' && (
+                        <div className="animate-in fade-in duration-300">
+                            <Summary
+                                data={data}
+                                profile={profileData}
+                                onUpgrade={handleOpenUpgrade}
+                                inflationAdjusted={inflationAdjusted}
+                            />
+                        </div>
+                    )}
                     {activeTab === 'technical' && (
                         <div className="animate-in fade-in duration-300">
                             <TechnicalAnalysis ticker={ticker} />
@@ -410,26 +424,15 @@ const Dashboard = ({
                     {activeTab === 'terminal' && (
                         <ProtectedComponent currentTier={user?.tier} requiredTier="institutional" featureName="Market Terminal" onUpgrade={() => handleOpenUpgrade('institutional')}>
                             <div className="animate-in fade-in duration-300">
-                                <h3 className="text-xl font-serif font-bold mb-6 text-navy flex items-center gap-2">
-                                    Market Terminal
-                                    <InfoTip title="Market Terminal">
-                                        Your trading-floor view: latest news on the left, the company's
-                                        key numbers in the middle, and coming events (like earnings dates)
-                                        on the right. Use it to catch news and dates that can move the
-                                        price — before they surprise you.
-                                    </InfoTip>
-                                </h3>
-                                <div className="grid grid-cols-12 gap-6 h-[70vh]">
-                                    <div className="col-span-12 lg:col-span-3 h-full">
-                                        <NewsFeed news={news} onRead={handleReadNews} />
-                                    </div>
-                                    <div className="col-span-12 lg:col-span-7 h-full">
-                                        <KeyStats stats={fundamentals} />
-                                    </div>
-                                    <div className="col-span-12 lg:col-span-2 h-full">
-                                        <EarningsCalendar events={calendar} />
-                                    </div>
-                                </div>
+                                <MarketTerminal
+                                    ticker={ticker}
+                                    news={news}
+                                    fundamentals={fundamentals}
+                                    calendar={calendar}
+                                    onRead={handleReadNews}
+                                    onRefresh={onRefreshTerminal}
+                                    refreshing={terminalRefreshing}
+                                />
                             </div>
                         </ProtectedComponent>
                     )}
