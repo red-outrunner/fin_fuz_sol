@@ -376,6 +376,25 @@ const Sidebar = ({
                                     <div className="text-[9px] text-slate-500">Sparklines & tracking</div>
                                 </div>
                             </button>
+
+                            <button
+                                onClick={() => { window.location.hash = '#/portfolio'; }}
+                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
+                                    currentRoute === '#/portfolio'
+                                        ? 'bg-gold/10 border-gold/30'
+                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
+                                }`}
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-cream">Portfolio</div>
+                                    <div className="text-[9px] text-slate-500">Track holdings & P&L</div>
+                                </div>
+                            </button>
                         </div>
                         <p className="text-[9px] text-slate-600 px-1 tracking-wide">
                             Shortcuts: <span className="text-gold/70">G</span> search ·{' '}

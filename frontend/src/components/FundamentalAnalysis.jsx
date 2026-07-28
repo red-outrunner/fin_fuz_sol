@@ -84,8 +84,20 @@ const FinancialStatements = ({ ticker }) => {
         );
     }
 
-    const currentData = statements[`${activeTab}_statement`];
+    // Fix: API returns 'income_statement', 'balance_sheet', 'cash_flow' (not with _statement suffix)
+    const statementKey = activeTab === 'income' ? 'income_statement' : activeTab === 'balance' ? 'balance_sheet' : 'cash_flow';
+    const currentData = statements[statementKey] || {};
     const years = statements.years || [];
+    
+    // Safety check for empty data
+    if (!currentData || Object.keys(currentData).length === 0) {
+        return (
+            <div className="text-center p-12">
+                <FileText className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <p className="text-navy font-medium">No {activeTab} data available</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

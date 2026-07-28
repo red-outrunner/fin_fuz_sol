@@ -6,6 +6,7 @@ import StockScreener from './components/StockScreener';
 import JSEHeatmap from './components/JSEHeatmap';
 import StockIdeasFeed from './components/StockIdeasFeed';
 import Watchlist from './components/Watchlist';
+import PortfolioTracker from './components/PortfolioTracker';
 import Sidebar from './components/Sidebar';
 import ConsentToast from './components/ConsentToast';
 import { useTheme } from './context/ThemeContext';
@@ -178,6 +179,8 @@ function AppContent() {
                 return <StockIdeasFeed onSelectTicker={handleSelectTicker} />;
             case '#/watchlist':
                 return <Watchlist onSelectTicker={handleSelectTicker} />;
+            case '#/portfolio':
+                return <PortfolioTracker />;
             case '#/':
             default:
                 return (

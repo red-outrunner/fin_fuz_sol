@@ -24,13 +24,12 @@ import TechnicalAnalysis from './TechnicalAnalysis';
 import AlertsPanel from './AlertsPanel';
 import LiveQuoteStrip from './LiveQuoteStrip';
 import FundamentalAnalysis from './FundamentalAnalysis';
-import PortfolioTracker from './PortfolioTracker';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 
 const TABS = [
-    'summary', 'charts', 'technical', 'alerts', 'fundamentals', 'portfolio', 'freedom', 'peers', 'report',
+    'summary', 'charts', 'technical', 'alerts', 'fundamentals', 'freedom', 'peers', 'report',
     'valuation', 'comparison', 'projection', 'risk', 'dividends', 'patterns', 'dca', 'terminal',
 ];
 
@@ -41,7 +40,6 @@ const tabLabel = (tab) => {
     if (tab === 'technical') return 'Technical';
     if (tab === 'alerts') return 'Alerts';
     if (tab === 'fundamentals') return 'Fundamentals';
-    if (tab === 'portfolio') return 'Portfolio';
     return tab.charAt(0).toUpperCase() + tab.slice(1);
 };
 
@@ -329,11 +327,6 @@ const Dashboard = ({
                     {activeTab === 'fundamentals' && (
                         <div className="animate-in fade-in duration-300">
                             <FundamentalAnalysis ticker={ticker} />
-                        </div>
-                    )}
-                    {activeTab === 'portfolio' && (
-                        <div className="animate-in fade-in duration-300">
-                            <PortfolioTracker />
                         </div>
                     )}
                     {activeTab === 'charts' && (
