@@ -96,7 +96,10 @@ const PortfolioTracker = () => {
 
     const formatCurrency = (value) => {
         if (value === null || value === undefined) return 'N/A';
-        return `R${value.toFixed(2)}`;
+        // Fix: South African stocks are in cents (ZAc), convert to Rands (ZAR)
+        // If value is > 1000, it's likely in cents and needs conversion
+        const rands = value > 1000 ? value / 100 : value;
+        return `R${rands.toFixed(2)}`;
     };
 
     const formatPercent = (value) => {
@@ -221,10 +224,11 @@ const PortfolioTracker = () => {
                                 step="0.01"
                                 value={newHolding.avg_cost}
                                 onChange={(e) => setNewHolding({...newHolding, avg_cost: e.target.value})}
-                                placeholder="0.00"
+                                placeholder="e.g., 272.32"
                                 className="w-full px-3 py-2 border border-white/60 dark:border-white/10 rounded-lg bg-white/50 dark:bg-navy/50"
                                 required
                             />
+                            <p className="text-[9px] text-slate-500 mt-1">Enter price in Rands (e.g., R272.32 not 27232 cents)</p>
                         </div>
                         <div className="flex items-end">
                             <button
