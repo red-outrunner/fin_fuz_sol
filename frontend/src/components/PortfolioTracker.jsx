@@ -96,10 +96,8 @@ const PortfolioTracker = () => {
 
     const formatCurrency = (value) => {
         if (value === null || value === undefined) return 'N/A';
-        // Fix: South African stocks are in cents (ZAc), convert to Rands (ZAR)
-        // If value is > 1000, it's likely in cents and needs conversion
-        const rands = value > 1000 ? value / 100 : value;
-        return `R${rands.toFixed(2)}`;
+        // Backend now returns correct ZAR values, no conversion needed
+        return `R${value.toFixed(2)}`;
     };
 
     const formatPercent = (value) => {
