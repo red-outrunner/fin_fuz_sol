@@ -822,9 +822,14 @@ def get_holdings(request: Request, client_key: str = "default", db: Session = De
         try:
             t = yf.Ticker(h.ticker)
             current_price = t.info.get('currentPrice', t.info.get('regularMarketPrice', 0))
+            # Fix: JSE stocks return price in cents (ZAc), convert to Rands (ZAR)
+            # If price > 1000, it's likely in cents
+            if current_price and current_price > 1000:
+                current_price = current_price / 100
         except:
             current_price = 0
-        
+
+        # Calculate values (all in Rands now)
         current_value = h.quantity * current_price if current_price else 0
         cost_basis = h.quantity * h.avg_cost
         pnl = current_value - cost_basis
@@ -912,11 +917,15 @@ def portfolio_performance(request: Request, client_key: str = "default", db: Ses
         try:
             t = yf.Ticker(h.ticker)
             current_price = t.info.get('currentPrice', t.info.get('regularMarketPrice', 0))
+            # Fix: JSE stocks return price in cents (ZAc), convert to Rands (ZAR)
+            if current_price and current_price > 1000:
+                current_price = current_price / 100
             sector = t.info.get('sector', 'Other')
         except:
             current_price = 0
             sector = 'Other'
-        
+
+        # Calculate values (all in Rands now)
         value = h.quantity * current_price if current_price else 0
         cost = h.quantity * h.avg_cost
         total_value += value
