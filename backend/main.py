@@ -821,11 +821,12 @@ def get_holdings(request: Request, client_key: str = "default", db: Session = De
         # Get current price
         try:
             t = yf.Ticker(h.ticker)
-            current_price = t.info.get('currentPrice', t.info.get('regularMarketPrice', 0))
-            # Fix: JSE stocks return price in cents (ZAc), convert to Rands (ZAR)
-            # If price > 1000, it's likely in cents
-            if current_price and current_price > 1000:
-                current_price = current_price / 100
+            info = t.info
+            current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
+            # Fix: yfinance returns JSE prices in ZAc (cents), ALWAYS convert to ZAR (Rands)
+            currency = info.get('currency', '')
+            if currency == 'ZAc' and current_price:
+                current_price = current_price / 100  # Convert cents to Rands
         except:
             current_price = 0
 
@@ -916,11 +917,13 @@ def portfolio_performance(request: Request, client_key: str = "default", db: Ses
     for h in holdings:
         try:
             t = yf.Ticker(h.ticker)
-            current_price = t.info.get('currentPrice', t.info.get('regularMarketPrice', 0))
-            # Fix: JSE stocks return price in cents (ZAc), convert to Rands (ZAR)
-            if current_price and current_price > 1000:
-                current_price = current_price / 100
-            sector = t.info.get('sector', 'Other')
+            info = t.info
+            current_price = info.get('currentPrice', info.get('regularMarketPrice', 0))
+            # Fix: yfinance returns JSE prices in ZAc (cents), ALWAYS convert to ZAR (Rands)
+            currency = info.get('currency', '')
+            if currency == 'ZAc' and current_price:
+                current_price = current_price / 100  # Convert cents to Rands
+            sector = info.get('sector', 'Other')
         except:
             current_price = 0
             sector = 'Other'
