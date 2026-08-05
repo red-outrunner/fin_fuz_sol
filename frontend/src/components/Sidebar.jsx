@@ -4,6 +4,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { useUserPreferences } from '../context/UserPreferencesContext';
 import { Clock, TrendingUp, X } from 'lucide-react';
+import { getListingMeta, displayCompanyName } from '../utils/listingMeta';
 
 const Sidebar = ({
     ticker, setTicker,
@@ -38,30 +39,16 @@ const Sidebar = ({
         };
     }, []);
 
-    // Debounce Search with JSE-first sorting
+    // Debounce search — backend ranks by company name / ticker relevance
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
-            if (searchQuery.length > 2) {
+            if (searchQuery.trim().length >= 2) {
                 setIsSearching(true);
                 try {
                     const response = await axios.post(`${API_BASE_URL}/api/search`, {
-                        query: searchQuery
+                        query: searchQuery.trim()
                     });
-                    
-                    // Sort results: JSE stocks (.JO) first, then others
-                    const sortedResults = (response.data || []).sort((a, b) => {
-                        const aIsJSE = a.symbol?.includes('.JO') || a.exchange?.includes('JSE');
-                        const bIsJSE = b.symbol?.includes('.JO') || b.exchange?.includes('JSE');
-                        
-                        // Both JSE or both non-JSE - keep original order
-                        if (aIsJSE && bIsJSE) return 0;
-                        if (!aIsJSE && !bIsJSE) return 0;
-                        
-                        // JSE stocks come first
-                        return aIsJSE ? -1 : 1;
-                    });
-                    
-                    setSearchResults(sortedResults);
+                    setSearchResults(response.data || []);
                     setShowResults(true);
                 } catch (error) {
                     console.error("Search failed", error);
@@ -72,7 +59,7 @@ const Sidebar = ({
                 setSearchResults([]);
                 setShowResults(false);
             }
-        }, 500);
+        }, 300);
 
         return () => clearTimeout(delayDebounceFn);
     }, [searchQuery]);
@@ -81,6 +68,12 @@ const Sidebar = ({
         setTicker(symbol);
         setSearchQuery('');
         setShowResults(false);
+        setIsOpen(false);
+    };
+
+    const navigateTo = (hash) => {
+        window.location.hash = hash;
+        setIsOpen(false);
     };
 
     const tickerOptions = {
@@ -112,7 +105,7 @@ const Sidebar = ({
                 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 <div 
-                    onClick={() => { window.location.hash = '#/'; }}
+                    onClick={() => navigateTo('#/')}
                     className="p-10 pb-8 border-b border-white/5 cursor-pointer group hover:bg-white/5 transition-all"
                 >
                     <h1 className="text-3xl font-serif font-bold text-gold tracking-tight group-hover:text-gold-light transition-colors">
@@ -153,7 +146,7 @@ const Sidebar = ({
                                     ref={inputRef}
                                     type="text"
                                     value={searchQuery}
-                                    placeholder="Search symbol or company... (G)"
+                                    placeholder="Search by company name... (G)"
                                     className="w-full bg-white/5 border border-white/5 rounded-xl p-3.5 text-sm text-cream placeholder-slate-600 focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/20 transition-all hover:border-white/10"
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
@@ -165,30 +158,35 @@ const Sidebar = ({
                                 )}
 
                                 {showResults && searchResults.length > 0 && (
-                                    <div className="absolute left-0 right-0 mt-3 bg-[#1e293b] dark:bg-navy-light border border-white/10 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto custom-scrollbar animate-fade-in">
+                                    <div className="absolute left-0 right-0 mt-3 bg-[#1e293b] dark:bg-navy-light border border-white/10 rounded-xl shadow-2xl z-50 max-h-72 overflow-y-auto custom-scrollbar animate-fade-in">
                                         {searchResults.map((result) => {
-                                            const isJSE = result.symbol?.includes('.JO') || result.exchange?.includes('JSE');
+                                            const meta = getListingMeta(result);
+                                            const isJSE = meta.venue === 'JSE' || result.symbol?.includes('.JO');
                                             return (
                                                 <div
                                                     key={result.symbol}
                                                     onClick={() => handleSelectTicker(result.symbol)}
                                                     className="p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0 transition-colors"
                                                 >
-                                                    <div className="flex justify-between items-center mb-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-gold text-sm tracking-tight">{result.symbol}</span>
-                                                            {isJSE ? (
-                                                                <span className="text-[9px] text-gold font-bold bg-gold/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                                                    JSE
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-[9px] text-slate-500 font-bold bg-white/5 px-2 py-0.5 rounded-full uppercase">
-                                                                    {result.exchange}
-                                                                </span>
-                                                            )}
+                                                    <div className="flex justify-between items-center mb-1 gap-2">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <span className="font-bold text-gold text-sm tracking-tight shrink-0">{result.symbol}</span>
+                                                            <span
+                                                                className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider shrink-0 ${
+                                                                    isJSE
+                                                                        ? 'text-gold bg-gold/10'
+                                                                        : 'text-slate-400 bg-white/5'
+                                                                }`}
+                                                                title={meta.venue}
+                                                            >
+                                                                <span className="text-[11px] leading-none" aria-hidden>{meta.flag}</span>
+                                                                <span className="uppercase">{meta.venue}</span>
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                    <div className="text-xs text-slate-400 truncate font-medium">{result.shortname}</div>
+                                                    <div className="text-xs text-slate-400 truncate font-medium">
+                                                        {displayCompanyName(result)}
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -254,7 +252,10 @@ const Sidebar = ({
                 {/* Actions */}
                 <div className="p-6 border-t border-white/10 bg-navy-dark/50 backdrop-blur-md">
                     <button
-                        onClick={onAnalyze}
+                        onClick={() => {
+                            setIsOpen(false);
+                            onAnalyze();
+                        }}
                         disabled={loading}
                         className={`
                         w-full py-4 px-6 rounded-lg font-bold tracking-widest uppercase text-xs shadow-lg transition-all duration-300 
@@ -283,7 +284,7 @@ const Sidebar = ({
                         </h2>
                         <div className="space-y-3">
                             <button
-                                onClick={() => { window.location.hash = '#/'; }}
+                                onClick={() => navigateTo('#/')}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
                                     currentRoute === '#/' || currentRoute === ''
                                         ? 'bg-gold/10 border-gold/30'
@@ -302,7 +303,7 @@ const Sidebar = ({
                             </button>
 
                             <button
-                                onClick={() => { window.location.hash = '#/screener'; }}
+                                onClick={() => navigateTo('#/screener')}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
                                     currentRoute === '#/screener'
                                         ? 'bg-gold/10 border-gold/30'
@@ -321,7 +322,7 @@ const Sidebar = ({
                             </button>
 
                             <button
-                                onClick={() => { window.location.hash = '#/heatmap'; }}
+                                onClick={() => navigateTo('#/heatmap')}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
                                     currentRoute === '#/heatmap'
                                         ? 'bg-gold/10 border-gold/30'
@@ -340,7 +341,7 @@ const Sidebar = ({
                             </button>
 
                             <button
-                                onClick={() => { window.location.hash = '#/ideas'; }}
+                                onClick={() => navigateTo('#/ideas')}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
                                     currentRoute === '#/ideas'
                                         ? 'bg-gold/10 border-gold/30'
@@ -359,7 +360,7 @@ const Sidebar = ({
                             </button>
 
                             <button
-                                onClick={() => { window.location.hash = '#/watchlist'; }}
+                                onClick={() => navigateTo('#/watchlist')}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
                                     currentRoute === '#/watchlist'
                                         ? 'bg-gold/10 border-gold/30'
@@ -378,7 +379,7 @@ const Sidebar = ({
                             </button>
 
                             <button
-                                onClick={() => { window.location.hash = '#/portfolio'; }}
+                                onClick={() => navigateTo('#/portfolio')}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
                                     currentRoute === '#/portfolio'
                                         ? 'bg-gold/10 border-gold/30'

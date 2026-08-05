@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUserPreferences } from '../context/UserPreferencesContext';
 import { Search, TrendingUp, Clock, X, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../api';
+import { getListingMeta, displayCompanyName } from '../utils/listingMeta';
 
 const QUICK_ACCESS_STOCKS = [
     { symbol: 'NPN.JO', name: 'Naspers Ltd', sector: 'Technology' },
@@ -42,30 +44,16 @@ const StockSearchModal = ({ isOpen, onClose, onSelectTicker }) => {
     // Search on query change
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
-            if (searchQuery.length > 1) {
+            if (searchQuery.trim().length >= 2) {
                 setIsSearching(true);
                 try {
-                    const response = await fetch('/api/search', {
+                    const response = await fetch(`${API_BASE_URL}/api/search`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: searchQuery })
+                        body: JSON.stringify({ query: searchQuery.trim() })
                     });
                     const data = await response.json();
-                    
-                    // Sort results: JSE stocks (.JO) first, then others
-                    const sortedResults = (data || []).sort((a, b) => {
-                        const aIsJSE = a.symbol?.includes('.JO') || a.exchange?.includes('JSE');
-                        const bIsJSE = b.symbol?.includes('.JO') || b.exchange?.includes('JSE');
-                        
-                        // Both are JSE or both are not JSE - keep original order
-                        if (aIsJSE && bIsJSE) return 0;
-                        if (!aIsJSE && !bIsJSE) return 0;
-                        
-                        // JSE stocks come first
-                        return aIsJSE ? -1 : 1;
-                    });
-                    
-                    setSearchResults(sortedResults);
+                    setSearchResults(data || []);
                 } catch (error) {
                     console.error("Search failed", error);
                 } finally {
@@ -150,37 +138,40 @@ const StockSearchModal = ({ isOpen, onClose, onSelectTicker }) => {
                         <div className="p-2">
                             <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 px-2 flex items-center gap-1">
                                 <span className="w-2 h-2 bg-gold rounded-full"></span>
-                                JSE Top 40 Results
+                                Results
                             </div>
-                            {searchResults.slice(0, 8).map((result) => {
-                                const isJSE = result.symbol?.includes('.JO') || result.exchange?.includes('JSE');
+                            {searchResults.slice(0, 10).map((result) => {
+                                const meta = getListingMeta(result);
+                                const isJSE = meta.venue === 'JSE' || result.symbol?.includes('.JO');
+                                const name = displayCompanyName(result);
                                 return (
                                     <button
                                         key={result.symbol}
-                                        onClick={() => handleSelectTicker(result.symbol, result.shortname)}
+                                        onClick={() => handleSelectTicker(result.symbol, name)}
                                         className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors group border-l-2 border-transparent hover:border-gold"
                                     >
-                                        <div className="text-left flex-1">
+                                        <div className="text-left flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="font-bold text-gold dark:text-gold">
                                                     {result.symbol}
                                                 </span>
-                                                {isJSE && (
-                                                    <span className="text-[9px] text-gold font-bold bg-gold/10 dark:bg-gold/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                                        JSE
-                                                    </span>
-                                                )}
-                                                {!isJSE && (
-                                                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold bg-slate-100 dark:bg-white/10 px-2 py-0.5 rounded-full uppercase">
-                                                        {result.exchange}
-                                                    </span>
-                                                )}
+                                                <span
+                                                    className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider ${
+                                                        isJSE
+                                                            ? 'text-gold bg-gold/10 dark:bg-gold/20'
+                                                            : 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/10'
+                                                    }`}
+                                                    title={meta.venue}
+                                                >
+                                                    <span className="text-[11px] leading-none" aria-hidden>{meta.flag}</span>
+                                                    <span className="uppercase">{meta.venue}</span>
+                                                </span>
                                             </div>
                                             <div className="text-sm text-slate-600 dark:text-slate-400 truncate">
-                                                {result.shortname}
+                                                {name}
                                             </div>
                                         </div>
-                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-gold transition-colors opacity-0 group-hover:opacity-100" />
+                                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-gold transition-colors opacity-0 group-hover:opacity-100 shrink-0" />
                                     </button>
                                 );
                             })}

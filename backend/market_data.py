@@ -658,46 +658,378 @@ def get_dividend_history(ticker: str, start_year: int = 2010):
         return None
 
 
+# Local JSE catalog so users can find SA stocks by company name without knowing the ticker.
+_JSE_NAME_CATALOG = [
+    ("ABG.JO", "Absa Group Ltd", ["absa"]),
+    ("AGL.JO", "Anglo American", ["anglo american", "anglo"]),
+    ("ANG.JO", "AngloGold Ashanti", ["anglogold", "anglo gold"]),
+    ("ANH.JO", "Anheuser-Busch InBev", ["ab inbev", "inbev", "anheuser"]),
+    ("APN.JO", "Aspen Pharmacare", ["aspen"]),
+    ("BHG.JO", "BHP Group", ["bhp"]),
+    ("BID.JO", "Bid Corp Ltd", ["bidcorp", "bid corp"]),
+    ("BTI.JO", "British American Tobacco", ["bat", "british american"]),
+    ("BVT.JO", "Bidvest Group", ["bidvest"]),
+    ("CFR.JO", "Compagnie Financiere Richemont", ["richemont"]),
+    ("CLS.JO", "Clicks Group", ["clicks"]),
+    ("CPI.JO", "Capitec Bank", ["capitec"]),
+    ("DSY.JO", "Discovery Ltd", ["discovery"]),
+    ("EXX.JO", "Exxaro Resources", ["exxaro"]),
+    ("FSR.JO", "FirstRand Ltd", ["firstrand", "first rand", "rmb"]),
+    ("GFI.JO", "Gold Fields Ltd", ["gold fields", "goldfields"]),
+    ("GLN.JO", "Glencore Plc", ["glencore"]),
+    ("GRT.JO", "Growthpoint Properties", ["growthpoint"]),
+    ("HAR.JO", "Harmony Gold Mining", ["harmony"]),
+    ("IMP.JO", "Impala Platinum", ["implats", "impala"]),
+    ("INL.JO", "Investec Ltd", ["investec"]),
+    ("INP.JO", "Investec Plc", ["investec plc"]),
+    ("MCG.JO", "MultiChoice Group", ["multichoice", "multi choice"]),
+    ("MNP.JO", "Murray & Roberts", ["murray"]),
+    ("MRP.JO", "Mr Price Group", ["mr price", "mrprice"]),
+    ("MTN.JO", "MTN Group", ["mtn"]),
+    ("NED.JO", "Nedbank Group", ["nedbank"]),
+    ("NPH.JO", "Northam Platinum", ["northam"]),
+    ("NPN.JO", "Naspers Ltd", ["naspers"]),
+    ("NRP.JO", "NEPI Rockcastle", ["nepi", "rockcastle"]),
+    ("OMU.JO", "Old Mutual Ltd", ["old mutual"]),
+    ("OUT.JO", "OUTsurance Group", ["outsurance"]),
+    ("PAN.JO", "Pan African Resources", ["pan african"]),
+    ("PPH.JO", "Pepkor Holdings", ["pepkor", "pep"]),
+    ("PRX.JO", "Prosus NV", ["prosus"]),
+    ("REM.JO", "Remgro Ltd", ["remgro"]),
+    ("RMI.JO", "Rand Merchant Investment", ["rmi"]),
+    ("RNI.JO", "Reinet Investments", ["reinet"]),
+    ("SBK.JO", "Standard Bank Group", ["standard bank", "stanbic"]),
+    ("SHP.JO", "Shoprite Holdings", ["shoprite"]),
+    ("SLM.JO", "Sanlam Ltd", ["sanlam"]),
+    ("SOL.JO", "Sasol Ltd", ["sasol"]),
+    ("SSW.JO", "Sibanye Stillwater", ["sibanye"]),
+    ("VAL.JO", "Valterra Platinum", ["valterra"]),
+    ("VOD.JO", "Vodacom Group", ["vodacom"]),
+    ("WHL.JO", "Woolworths Holdings", ["woolworths", "woolies"]),
+]
+
+# Yahoo exchange / MIC-like codes → (ISO country, flag emoji, short venue label)
+_EXCHANGE_COUNTRY = {
+    "JNB": ("ZA", "🇿🇦", "JSE"),
+    "JSE": ("ZA", "🇿🇦", "JSE"),
+    "NMS": ("US", "🇺🇸", "NASDAQ"),
+    "NGM": ("US", "🇺🇸", "NASDAQ"),
+    "NCM": ("US", "🇺🇸", "NASDAQ"),
+    "NAS": ("US", "🇺🇸", "NASDAQ"),
+    "NYQ": ("US", "🇺🇸", "NYSE"),
+    "NYSE": ("US", "🇺🇸", "NYSE"),
+    "ASE": ("US", "🇺🇸", "NYSE"),
+    "PCX": ("US", "🇺🇸", "NYSE"),
+    "PNK": ("US", "🇺🇸", "OTC"),
+    "OEM": ("US", "🇺🇸", "OTC"),
+    "OQB": ("US", "🇺🇸", "OTC"),
+    "OQX": ("US", "🇺🇸", "OTC"),
+    "BTS": ("US", "🇺🇸", "CBOE"),
+    "YHD": ("US", "🇺🇸", "US"),
+    "LSE": ("GB", "🇬🇧", "LSE"),
+    "LON": ("GB", "🇬🇧", "LSE"),
+    "IOB": ("GB", "🇬🇧", "LSE"),
+    "GER": ("DE", "🇩🇪", "XETRA"),
+    "FRA": ("DE", "🇩🇪", "Frankfurt"),
+    "MUN": ("DE", "🇩🇪", "Munich"),
+    "STU": ("DE", "🇩🇪", "Stuttgart"),
+    "BER": ("DE", "🇩🇪", "Berlin"),
+    "HAM": ("DE", "🇩🇪", "Hamburg"),
+    "DUS": ("DE", "🇩🇪", "Dusseldorf"),
+    "EUX": ("DE", "🇩🇪", "Eurex"),
+    "PAR": ("FR", "🇫🇷", "Euronext"),
+    "EPA": ("FR", "🇫🇷", "Euronext"),
+    "AMS": ("NL", "🇳🇱", "Euronext"),
+    "AEX": ("NL", "🇳🇱", "Euronext"),
+    "BRU": ("BE", "🇧🇪", "Euronext"),
+    "LIS": ("PT", "🇵🇹", "Euronext"),
+    "MIL": ("IT", "🇮🇹", "Borsa Italiana"),
+    "MTA": ("IT", "🇮🇹", "Borsa Italiana"),
+    "MAD": ("ES", "🇪🇸", "BME"),
+    "MCE": ("ES", "🇪🇸", "BME"),
+    "SWX": ("CH", "🇨🇭", "SIX"),
+    "EBS": ("CH", "🇨🇭", "SIX"),
+    "VIE": ("AT", "🇦🇹", "Vienna"),
+    "OSL": ("NO", "🇳🇴", "Oslo"),
+    "STO": ("SE", "🇸🇪", "Stockholm"),
+    "CPH": ("DK", "🇩🇰", "Copenhagen"),
+    "HEL": ("FI", "🇫🇮", "Helsinki"),
+    "WSE": ("PL", "🇵🇱", "Warsaw"),
+    "IST": ("TR", "🇹🇷", "Istanbul"),
+    "TYO": ("JP", "🇯🇵", "TSE"),
+    "JPX": ("JP", "🇯🇵", "TSE"),
+    "OSA": ("JP", "🇯🇵", "OSE"),
+    "HKG": ("HK", "🇭🇰", "HKEX"),
+    "SHH": ("CN", "🇨🇳", "SSE"),
+    "SHZ": ("CN", "🇨🇳", "SZSE"),
+    "SSE": ("CN", "🇨🇳", "SSE"),
+    "ASX": ("AU", "🇦🇺", "ASX"),
+    "TOR": ("CA", "🇨🇦", "TSX"),
+    "TSE": ("CA", "🇨🇦", "TSX"),
+    "VAN": ("CA", "🇨🇦", "TSXV"),
+    "CNQ": ("CA", "🇨🇦", "CSE"),
+    "SAO": ("BR", "🇧🇷", "B3"),
+    "BUE": ("AR", "🇦🇷", "BYMA"),
+    "MEX": ("MX", "🇲🇽", "BMV"),
+    "SET": ("TH", "🇹🇭", "SET"),
+    "SES": ("SG", "🇸🇬", "SGX"),
+    "KLS": ("MY", "🇲🇾", "Bursa"),
+    "TWO": ("TW", "🇹🇼", "TWSE"),
+    "TAI": ("TW", "🇹🇼", "TWSE"),
+    "KOE": ("KR", "🇰🇷", "KRX"),
+    "KSC": ("KR", "🇰🇷", "KRX"),
+    "NSI": ("IN", "🇮🇳", "NSE"),
+    "BSE": ("IN", "🇮🇳", "BSE"),
+    "NZE": ("NZ", "🇳🇿", "NZX"),
+}
+
+# Yahoo / yfinance ticker suffix → country
+_SUFFIX_COUNTRY = {
+    "JO": ("ZA", "🇿🇦", "JSE"),
+    "L": ("GB", "🇬🇧", "LSE"),
+    "IL": ("GB", "🇬🇧", "LSE"),
+    "DE": ("DE", "🇩🇪", "XETRA"),
+    "F": ("DE", "🇩🇪", "Frankfurt"),
+    "SG": ("DE", "🇩🇪", "Stuttgart"),
+    "PA": ("FR", "🇫🇷", "Euronext"),
+    "AS": ("NL", "🇳🇱", "Euronext"),
+    "BR": ("BE", "🇧🇪", "Euronext"),
+    "LS": ("PT", "🇵🇹", "Euronext"),
+    "MI": ("IT", "🇮🇹", "Borsa Italiana"),
+    "MC": ("ES", "🇪🇸", "BME"),
+    "SW": ("CH", "🇨🇭", "SIX"),
+    "VI": ("AT", "🇦🇹", "Vienna"),
+    "OL": ("NO", "🇳🇴", "Oslo"),
+    "ST": ("SE", "🇸🇪", "Stockholm"),
+    "CO": ("DK", "🇩🇰", "Copenhagen"),
+    "HE": ("FI", "🇫🇮", "Helsinki"),
+    "WA": ("PL", "🇵🇱", "Warsaw"),
+    "IS": ("TR", "🇹🇷", "Istanbul"),
+    "T": ("JP", "🇯🇵", "TSE"),
+    "HK": ("HK", "🇭🇰", "HKEX"),
+    "SS": ("CN", "🇨🇳", "SSE"),
+    "SZ": ("CN", "🇨🇳", "SZSE"),
+    "AX": ("AU", "🇦🇺", "ASX"),
+    "TO": ("CA", "🇨🇦", "TSX"),
+    "V": ("CA", "🇨🇦", "TSXV"),
+    "SA": ("BR", "🇧🇷", "B3"),
+    "BA": ("AR", "🇦🇷", "BYMA"),
+    "MX": ("MX", "🇲🇽", "BMV"),
+    "BK": ("TH", "🇹🇭", "SET"),
+    "SI": ("SG", "🇸🇬", "SGX"),
+    "KL": ("MY", "🇲🇾", "Bursa"),
+    "TW": ("TW", "🇹🇼", "TWSE"),
+    "TWO": ("TW", "🇹🇼", "TWSE"),
+    "KS": ("KR", "🇰🇷", "KRX"),
+    "KQ": ("KR", "🇰🇷", "KOSDAQ"),
+    "NS": ("IN", "🇮🇳", "NSE"),
+    "BO": ("IN", "🇮🇳", "BSE"),
+    "NZ": ("NZ", "🇳🇿", "NZX"),
+}
+
+
+def _listing_meta(symbol: str, exchange: str = ""):
+    """Resolve country flag + venue label from exchange code or ticker suffix."""
+    exch = (exchange or "").upper().strip()
+    if exch in _EXCHANGE_COUNTRY:
+        country, flag, venue = _EXCHANGE_COUNTRY[exch]
+        return {"country": country, "flag": flag, "venue": venue}
+
+    sym = (symbol or "").upper().strip()
+    if "." in sym:
+        suffix = sym.rsplit(".", 1)[-1]
+        # Index symbols like ^J203.JO
+        if suffix in _SUFFIX_COUNTRY:
+            country, flag, venue = _SUFFIX_COUNTRY[suffix]
+            return {"country": country, "flag": flag, "venue": venue}
+
+    # Bare US tickers (no suffix) default to US
+    if sym and not sym.startswith("^") and "." not in sym:
+        return {"country": "US", "flag": "🇺🇸", "venue": exch or "US"}
+
+    return {"country": "", "flag": "🌍", "venue": exch or "—"}
+
+
+def _name_match_score(query: str, symbol: str, shortname: str, longname: str) -> float:
+    """Higher = better match for company-name / ticker search."""
+    q = (query or "").strip().lower()
+    if not q:
+        return 0.0
+
+    sym = (symbol or "").lower()
+    short = (shortname or "").lower()
+    long = (longname or "").lower()
+    base = sym.split(".")[0]
+
+    score = 0.0
+    if sym == q or base == q:
+        score += 100
+    elif sym.startswith(q) or base.startswith(q):
+        score += 80
+    elif q in sym:
+        score += 40
+
+    for name in (short, long):
+        if not name:
+            continue
+        if name == q:
+            score += 95
+        elif name.startswith(q):
+            score += 70
+        elif q in name:
+            score += 50
+        else:
+            # Token overlap (e.g. "standard bank" vs "Standard Bank Group Limited")
+            q_tokens = [t for t in q.split() if len(t) > 1]
+            if q_tokens and all(t in name for t in q_tokens):
+                score += 65
+
+    return score
+
+
+def _is_south_african(result: dict) -> bool:
+    """True when the listing is on the JSE / ZA market."""
+    if (result.get("country") or "").upper() == "ZA":
+        return True
+    symbol = (result.get("symbol") or "").upper()
+    if symbol.endswith(".JO"):
+        return True
+    exchange = (result.get("exchange") or "").upper()
+    return exchange in {"JNB", "JSE"}
+
+
+def _local_jse_matches(query: str):
+    """Match local JSE catalog by ticker or company name aliases."""
+    q = (query or "").strip().lower()
+    if len(q) < 2:
+        return []
+
+    matches = []
+    for symbol, name, aliases in _JSE_NAME_CATALOG:
+        haystacks = [symbol.lower(), symbol.split(".")[0].lower(), name.lower(), *aliases]
+        hit = False
+        for h in haystacks:
+            if q == h or q in h or h.startswith(q):
+                hit = True
+                break
+            q_tokens = [t for t in q.split() if len(t) > 1]
+            if q_tokens and all(t in h for t in q_tokens):
+                hit = True
+                break
+        if hit:
+            meta = _listing_meta(symbol, "JNB")
+            matches.append({
+                "symbol": symbol,
+                "shortname": name,
+                "longname": name,
+                "exchange": "JNB",
+                "exchDisp": "Johannesburg",
+                "typeDisp": "Equity",
+                "country": meta["country"],
+                "flag": meta["flag"],
+                "venue": meta["venue"],
+                "_score": _name_match_score(q, symbol, name, name) + 25,  # boost local catalog
+            })
+    return matches
+
+
 def search_tickers(query: str):
     """
-    Searches for tickers using Yahoo Finance Autocomplete API.
+    Search tickers by company name or symbol.
+    Merges Yahoo Finance autocomplete with a local JSE name catalog, ranks
+    South African listings first then by name relevance, and attaches country
+    flag / venue (not city MIC codes).
     """
+    q = (query or "").strip()
+    if len(q) < 1:
+        return []
+
+    results_by_symbol = {}
+
+    # 1) Local JSE name catalog (works even when Yahoo ranks ADRs first)
+    for item in _local_jse_matches(q):
+        results_by_symbol[item["symbol"]] = item
+
+    # 2) Yahoo Finance autocomplete
     try:
         url = "https://query2.finance.yahoo.com/v1/finance/search"
         params = {
-            "q": query,
-            "quotesCount": 10,
+            "q": q,
+            "quotesCount": 20,
             "newsCount": 0,
             "enableFuzzyQuery": "true",
-            "enableCb": "false"
+            "enableCb": "false",
         }
-
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/91.0.4472.124 Safari/537.36"
+            )
         }
-
         response = requests.get(url, params=params, headers=headers, timeout=5)
         data = response.json()
+        quotes = data.get("quotes", [])
 
-        quotes = data.get('quotes', [])
+        preferred_types = {"EQUITY", "ETF", "INDEX", "MUTUALFUND", "FUND"}
 
-        results = []
         for quote in quotes:
-            # Filter out non-equity if desired, currently keeping most valid types
-            if 'symbol' not in quote: continue
+            symbol = quote.get("symbol")
+            if not symbol:
+                continue
 
-            results.append({
-                "symbol": quote['symbol'],
-                "shortname": quote.get('shortname', quote['symbol']),
-                "longname": quote.get('longname', ''),
-                "exchange": quote.get('exchange', ''),
-                "typeDisp": quote.get('typeDisp', '')
-            })
+            quote_type = (quote.get("quoteType") or "").upper()
+            type_disp = quote.get("typeDisp") or quote_type or ""
+            if quote_type and quote_type not in preferred_types and type_disp.upper() not in {
+                "EQUITY", "ETF", "INDEX", "FUND", "MUTUAL FUND"
+            }:
+                # Keep unknowns (Yahoo sometimes omits type); skip obvious junk
+                if quote_type in {"OPTION", "FUTURE", "CURRENCY", "CRYPTOCURRENCY"}:
+                    continue
 
-        return results
+            shortname = quote.get("shortname") or symbol
+            longname = quote.get("longname") or ""
+            exchange = quote.get("exchange") or ""
+            meta = _listing_meta(symbol, exchange)
+            score = _name_match_score(q, symbol, shortname, longname)
+
+            existing = results_by_symbol.get(symbol)
+            if existing and existing.get("_score", 0) >= score:
+                # Keep local catalog entry but enrich missing fields
+                if not existing.get("longname") and longname:
+                    existing["longname"] = longname
+                continue
+
+            results_by_symbol[symbol] = {
+                "symbol": symbol,
+                "shortname": shortname,
+                "longname": longname,
+                "exchange": exchange,
+                "exchDisp": quote.get("exchDisp") or meta["venue"],
+                "typeDisp": type_disp,
+                "country": meta["country"],
+                "flag": meta["flag"],
+                "venue": meta["venue"],
+                "_score": score,
+            }
     except Exception as e:
         logger.error(f"Error searching tickers for {query}: {e}")
-        return []
+
+    ranked = sorted(
+        results_by_symbol.values(),
+        key=lambda r: (
+            0 if _is_south_african(r) else 1,
+            -r.get("_score", 0),
+            r.get("symbol", ""),
+        ),
+    )
+
+    # Strip internal score before returning
+    cleaned = []
+    for r in ranked[:15]:
+        item = {k: v for k, v in r.items() if not k.startswith("_")}
+        cleaned.append(item)
+    return cleaned
 
 
 def get_financials(ticker: str):
