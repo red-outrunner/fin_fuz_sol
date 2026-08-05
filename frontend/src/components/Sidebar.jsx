@@ -3,8 +3,77 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { useUserPreferences } from '../context/UserPreferencesContext';
-import { Clock, TrendingUp, X } from 'lucide-react';
+import { X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { getListingMeta, displayCompanyName } from '../utils/listingMeta';
+
+const NAV_ITEMS = [
+    {
+        hash: '#/',
+        label: 'Wealth Analyser',
+        hint: 'Institutional analytics',
+        match: (r) => r === '#/' || r === '',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+        ),
+    },
+    {
+        hash: '#/screener',
+        label: 'Stock Screener',
+        hint: 'Filter & discover stocks',
+        match: (r) => r === '#/screener',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        ),
+    },
+    {
+        hash: '#/heatmap',
+        label: 'JSE Heatmap',
+        hint: 'Sector performance',
+        match: (r) => r === '#/heatmap',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+            </svg>
+        ),
+    },
+    {
+        hash: '#/ideas',
+        label: 'Stock Ideas',
+        hint: 'Curated opportunities',
+        match: (r) => r === '#/ideas',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+        ),
+    },
+    {
+        hash: '#/watchlist',
+        label: 'Watchlist',
+        hint: 'Sparklines & tracking',
+        match: (r) => r === '#/watchlist',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+        ),
+    },
+    {
+        hash: '#/portfolio',
+        label: 'Portfolio',
+        hint: 'Track holdings & P&L',
+        match: (r) => r === '#/portfolio',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+        ),
+    },
+];
 
 const Sidebar = ({
     ticker, setTicker,
@@ -13,6 +82,7 @@ const Sidebar = ({
     inflationAdjusted, setInflationAdjusted,
     onAnalyze, loading,
     isOpen, setIsOpen,
+    collapsed = false, setCollapsed = () => {},
     currentRoute,
     searchInputRef,
 }) => {
@@ -101,17 +171,97 @@ const Sidebar = ({
             )}
 
             <aside className={`
-                w-80 h-screen fixed left-0 top-0 overflow-y-auto z-50 font-sans glass-dark text-cream flex flex-col shadow-2xl border-r border-white/5 transition-all duration-500 ease-in-out
+                h-screen fixed left-0 top-0 overflow-y-auto z-50 font-sans glass-dark text-cream flex flex-col shadow-2xl border-r border-white/5 transition-all duration-500 ease-in-out
+                w-80 max-w-[85vw] ${collapsed ? 'lg:w-20 lg:max-w-none' : 'lg:w-80'}
                 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
-                <div 
-                    onClick={() => navigateTo('#/')}
-                    className="p-10 pb-8 border-b border-white/5 cursor-pointer group hover:bg-white/5 transition-all"
-                >
-                    <h1 className="text-3xl font-serif font-bold text-gold tracking-tight group-hover:text-gold-light transition-colors">
-                        Ubomvu
-                    </h1>
-                    <p className="text-[10px] text-slate-500 uppercase font-medium tracking-[0.2em] mt-2">Global Wealth Intelligence</p>
+                {/* Collapsed desktop rail — lg+ only */}
+                {collapsed ? (
+                    <div className="hidden lg:flex flex-col h-full py-4 items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setCollapsed(false)}
+                            className="p-2.5 rounded-xl text-gold hover:bg-white/10 transition-colors"
+                            title="Expand sidebar"
+                            aria-label="Expand sidebar"
+                        >
+                            <PanelLeftOpen className="w-5 h-5" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => navigateTo('#/')}
+                            className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center font-serif font-bold text-gold text-lg hover:bg-gold/20 transition-colors"
+                            title="Ubomvu home"
+                        >
+                            U
+                        </button>
+                        <div className="w-8 h-px bg-white/10 my-1" />
+                        <nav className="flex flex-col items-center gap-2 flex-1">
+                            {NAV_ITEMS.map((item) => {
+                                const active = item.match(currentRoute);
+                                return (
+                                    <button
+                                        key={item.hash}
+                                        type="button"
+                                        onClick={() => navigateTo(item.hash)}
+                                        title={item.label}
+                                        aria-label={item.label}
+                                        className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all ${
+                                            active
+                                                ? 'bg-gold/10 border-gold/30'
+                                                : 'bg-white/5 border-transparent hover:border-white/10 hover:bg-white/10'
+                                        }`}
+                                    >
+                                        {item.icon}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsOpen(false);
+                                onAnalyze();
+                            }}
+                            disabled={loading}
+                            title="Run Analysis"
+                            className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold to-yellow-600 text-navy-dark flex items-center justify-center font-bold text-xs disabled:opacity-50"
+                        >
+                            Go
+                        </button>
+                    </div>
+                ) : null}
+
+                {/* Full sidebar: always on mobile; hidden on desktop only when collapsed */}
+                <div className={`flex flex-col h-full ${collapsed ? 'lg:hidden' : ''}`}>
+                <div className="p-10 pb-8 border-b border-white/5 flex items-start justify-between gap-3">
+                    <div
+                        onClick={() => navigateTo('#/')}
+                        className="cursor-pointer group hover:opacity-90 transition-all min-w-0"
+                    >
+                        <h1 className="text-3xl font-serif font-bold text-gold tracking-tight group-hover:text-gold-light transition-colors">
+                            Ubomvu
+                        </h1>
+                        <p className="text-[10px] text-slate-500 uppercase font-medium tracking-[0.2em] mt-2">Global Wealth Intelligence</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setCollapsed(true)}
+                        className="hidden lg:inline-flex p-2 rounded-lg text-slate-500 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
+                        title="Minimize sidebar"
+                        aria-label="Minimize sidebar"
+                    >
+                        <PanelLeftClose className="w-4 h-4" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setIsOpen(false)}
+                        className="lg:hidden p-2 rounded-lg text-slate-500 hover:text-gold hover:bg-white/5 transition-colors shrink-0"
+                        title="Close menu"
+                        aria-label="Close menu"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
                 </div>
 
                 <div className="flex-1 px-6 py-8 space-y-10">
@@ -283,119 +433,29 @@ const Sidebar = ({
                             Navigation & Tools
                         </h2>
                         <div className="space-y-3">
-                            <button
-                                onClick={() => navigateTo('#/')}
-                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
-                                    currentRoute === '#/' || currentRoute === ''
-                                        ? 'bg-gold/10 border-gold/30'
-                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-cream">Wealth Analyser</div>
-                                    <div className="text-[9px] text-slate-500">Institutional analytics</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => navigateTo('#/screener')}
-                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
-                                    currentRoute === '#/screener'
-                                        ? 'bg-gold/10 border-gold/30'
-                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-cream">Stock Screener</div>
-                                    <div className="text-[9px] text-slate-500">Filter & discover stocks</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => navigateTo('#/heatmap')}
-                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
-                                    currentRoute === '#/heatmap'
-                                        ? 'bg-gold/10 border-gold/30'
-                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-cream">JSE Heatmap</div>
-                                    <div className="text-[9px] text-slate-500">Sector performance</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => navigateTo('#/ideas')}
-                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
-                                    currentRoute === '#/ideas'
-                                        ? 'bg-gold/10 border-gold/30'
-                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-cream">Stock Ideas</div>
-                                    <div className="text-[9px] text-slate-500">Curated opportunities</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => navigateTo('#/watchlist')}
-                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
-                                    currentRoute === '#/watchlist'
-                                        ? 'bg-gold/10 border-gold/30'
-                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-cream">Watchlist</div>
-                                    <div className="text-[9px] text-slate-500">Sparklines & tracking</div>
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => navigateTo('#/portfolio')}
-                                className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
-                                    currentRoute === '#/portfolio'
-                                        ? 'bg-gold/10 border-gold/30'
-                                        : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
-                                }`}
-                            >
-                                <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-cream">Portfolio</div>
-                                    <div className="text-[9px] text-slate-500">Track holdings & P&L</div>
-                                </div>
-                            </button>
+                            {NAV_ITEMS.map((item) => {
+                                const active = item.match(currentRoute);
+                                return (
+                                    <button
+                                        key={item.hash}
+                                        type="button"
+                                        onClick={() => navigateTo(item.hash)}
+                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all group w-full text-left ${
+                                            active
+                                                ? 'bg-gold/10 border-gold/30'
+                                                : 'bg-white/5 border-white/5 hover:border-gold/30 hover:bg-white/10'
+                                        }`}
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
+                                            {item.icon}
+                                        </div>
+                                        <div>
+                                            <div className="text-xs font-bold text-cream">{item.label}</div>
+                                            <div className="text-[9px] text-slate-500">{item.hint}</div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                         <p className="text-[9px] text-slate-600 px-1 tracking-wide">
                             Shortcuts: <span className="text-gold/70">G</span> search ·{' '}
@@ -423,6 +483,7 @@ const Sidebar = ({
                             </svg>
                         </a>
                     </div>
+                </div>
                 </div>
             </aside>
         </>
