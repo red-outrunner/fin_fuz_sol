@@ -18,7 +18,7 @@ import json
 from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers, get_dividend_yield
 import yfinance as yf
 from reports import PDFReportGenerator
-from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe
+from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe, get_stock_of_the_day
 from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
 from technical import build_technical_snapshot, run_backtest
 from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_provider
@@ -749,55 +749,13 @@ def watchlist_sparklines(request: Request, body: SparklineRequest):
 
 
 @app.get("/api/stock-of-the-day")
-@limiter.limit("30/minute")
+@limiter.limit("60/minute")
 def stock_of_the_day(request: Request):
     """
-    Deterministic featured equity for the calendar day — same pick for every user.
-    Rotates through the JSE Top 40 by date hash.
+    Featured JSE equity for the Africa/Johannesburg calendar day.
+    Day-cached; includes thesis bullets, theme, countdown target, and yesterday's pick.
     """
-    from screener import JSE_TOP_40, JSE_SECTORS
-    import hashlib
-
-    today = datetime.utcnow().strftime("%Y-%m-%d")
-    idx = int(hashlib.md5(today.encode()).hexdigest(), 16) % len(JSE_TOP_40)
-    ticker = JSE_TOP_40[idx]
-    details = get_ticker_details(ticker) or {"ticker": ticker, "name": ticker}
-    sector = JSE_SECTORS.get(ticker, details.get("sector", "Equity"))
-
-    # Lightweight sparkline for the card
-    end = datetime.now().strftime("%Y-%m-%d")
-    start = (datetime.now() - pd.Timedelta(days=45)).strftime("%Y-%m-%d")
-    prices = []
-    try:
-        data = download_data(ticker, start, end)
-        if data is not None and not data.empty:
-            closes = data["Adj Close"] if "Adj Close" in data.columns else data["Close"]
-            prices = [round(float(p), 4) for p in closes.dropna().tail(30).tolist()]
-    except Exception as e:
-        logger.warning(f"Stock-of-the-day sparkline failed: {e}")
-
-    change_pct = None
-    if len(prices) >= 2 and prices[0] != 0:
-        change_pct = round(((prices[-1] - prices[0]) / prices[0]) * 100, 2)
-
-    blurb = (
-        f"{details.get('name', ticker)} ({ticker}) is today's featured name in {sector}. "
-        f"Open the Wealth Analyser for full returns, risk, valuation and peer battle."
-    )
-
-    return clean_data({
-        "date": today,
-        "ticker": ticker,
-        "name": details.get("name", ticker),
-        "sector": sector,
-        "current_price": details.get("current_price"),
-        "pe_ratio": details.get("pe_ratio"),
-        "dividend_yield": details.get("dividend_yield"),
-        "market_cap": details.get("market_cap"),
-        "change_pct_30d": change_pct,
-        "sparkline": prices,
-        "blurb": blurb,
-    })
+    return get_stock_of_the_day()
 
 
 # === Portfolio Tracking Endpoints ===

@@ -572,3 +572,212 @@ def get_stock_ideas() -> Dict[str, List[Dict[str, Any]]]:
 def get_ticker_details(ticker: str) -> Optional[Dict[str, Any]]:
     """Gets detailed info for a single ticker."""
     return _fetch_ticker_info(ticker)
+
+
+# --- Stock of the Day (Africa/Johannesburg calendar, day-cached) ---
+
+_SOTD_CACHE: Dict[str, Any] = {"date": None, "payload": None}
+_THEME_FLAIR = {
+    "value": ("💎", "Value Spotlight"),
+    "dividend": ("💰", "Income Pick"),
+    "momentum": ("🚀", "Momentum Watch"),
+    "bargain": ("🎯", "Near the Lows"),
+    "growth": ("🌱", "Growth Angle"),
+    "featured": ("✨", "Featured Name"),
+}
+
+
+def _jhb_today() -> str:
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Africa/Johannesburg")).strftime("%Y-%m-%d")
+    except Exception:
+        return datetime.utcnow().strftime("%Y-%m-%d")
+
+
+def _jhb_next_midnight_iso() -> str:
+    try:
+        from zoneinfo import ZoneInfo
+        from datetime import timedelta
+        tz = ZoneInfo("Africa/Johannesburg")
+        now = datetime.now(tz)
+        nxt = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return nxt.isoformat()
+    except Exception:
+        from datetime import timedelta
+        nxt = (datetime.utcnow() + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        return nxt.isoformat() + "Z"
+
+
+def _date_index(date_str: str, n: int) -> int:
+    import hashlib
+    if n <= 0:
+        return 0
+    return int(hashlib.md5(date_str.encode()).hexdigest(), 16) % n
+
+
+def _build_why_bullets(details: Dict[str, Any]) -> tuple:
+    """Return (theme_key, bullets[]) from fundamentals — no extra API calls."""
+    bullets = []
+    pe = details.get("pe_ratio")
+    div = details.get("dividend_yield") or 0
+    pct_high = details.get("pct_from_high")
+    pct_low = details.get("pct_from_low")
+    growth = details.get("revenue_growth")
+    roe = details.get("return_on_equity")
+    sector = details.get("sector") or "Equity"
+
+    scores = {"value": 0, "dividend": 0, "momentum": 0, "bargain": 0, "growth": 0}
+
+    if pe and pe < 12:
+        scores["value"] += 3
+        bullets.append(f"Trading at a modest P/E of {pe:.1f} — classic value screen territory.")
+    elif pe and pe < 18:
+        scores["value"] += 1
+        bullets.append(f"P/E sits at {pe:.1f} within a reasonable valuation band.")
+
+    if div >= 0.05:
+        scores["dividend"] += 3
+        bullets.append(f"Dividend yield of {div * 100:.1f}% — income investors take note.")
+    elif div >= 0.03:
+        scores["dividend"] += 2
+        bullets.append(f"Yielding {div * 100:.1f}% — solid cash-return profile.")
+
+    if pct_low is not None and pct_low < 12:
+        scores["bargain"] += 3
+        bullets.append(f"Only {pct_low:.1f}% above its 52-week low — potential rebound zone.")
+    if pct_high is not None and pct_high > -8:
+        scores["momentum"] += 3
+        bullets.append(f"Sitting near the highs ({pct_high:.1f}% from peak) — momentum still in play.")
+
+    if growth and growth > 0.10:
+        scores["growth"] += 2
+        bullets.append(f"Revenue growth running at {growth * 100:.0f}% — expansion story.")
+    if roe and roe > 0.15:
+        scores["growth"] += 1
+        bullets.append(f"ROE of {roe * 100:.0f}% — capital is working hard.")
+
+    if not bullets:
+        bullets.append(f"Today's featured {sector} name — dig into returns, risk and peers in the Analyser.")
+
+    theme = max(scores, key=scores.get) if any(scores.values()) else "featured"
+    if scores[theme] == 0:
+        theme = "featured"
+
+    # Cap at 3 punchy reasons
+    return theme, bullets[:3]
+
+
+def _sparkline_and_change(ticker: str, days: int = 45, tail: int = 30):
+    end = datetime.now().strftime("%Y-%m-%d")
+    start = (datetime.now() - pd.Timedelta(days=days)).strftime("%Y-%m-%d")
+    prices = []
+    try:
+        data = download_data(ticker, start, end)
+        if data is not None and not data.empty:
+            closes = data["Adj Close"] if "Adj Close" in data.columns else data["Close"]
+            prices = [round(float(p), 4) for p in closes.dropna().tail(tail).tolist()]
+    except Exception as e:
+        logger.warning(f"SotD sparkline failed for {ticker}: {e}")
+    change_pct = None
+    if len(prices) >= 2 and prices[0] != 0:
+        change_pct = round(((prices[-1] - prices[0]) / prices[0]) * 100, 2)
+    return prices, change_pct
+
+
+def _day_change_since(ticker: str, since_date: str) -> Optional[float]:
+    """% change from the close on/after since_date to latest close."""
+    try:
+        end = datetime.now().strftime("%Y-%m-%d")
+        data = download_data(ticker, since_date, end)
+        if data is None or data.empty:
+            return None
+        closes = data["Adj Close"] if "Adj Close" in data.columns else data["Close"]
+        closes = closes.dropna()
+        if len(closes) < 2:
+            return None
+        first, last = float(closes.iloc[0]), float(closes.iloc[-1])
+        if first == 0:
+            return None
+        return round(((last - first) / first) * 100, 2)
+    except Exception as e:
+        logger.debug(f"SotD day-change failed for {ticker}: {e}")
+        return None
+
+
+def get_stock_of_the_day() -> Dict[str, Any]:
+    """
+    Featured JSE Top 40 pick for the Africa/Johannesburg calendar day.
+    Cached for the day after first build. Includes thesis bullets + yesterday's pick.
+    """
+    today = _jhb_today()
+    if _SOTD_CACHE.get("date") == today and _SOTD_CACHE.get("payload"):
+        return _SOTD_CACHE["payload"]
+
+    n = len(JSE_TOP_40)
+    idx = _date_index(today, n)
+    # Mild quality pass: try up to 3 consecutive date-hash picks for usable data
+    details = None
+    ticker = JSE_TOP_40[idx]
+    for offset in range(3):
+        candidate = JSE_TOP_40[(idx + offset) % n]
+        details = get_ticker_details(candidate)
+        if details and details.get("current_price"):
+            ticker = candidate
+            break
+    if not details:
+        details = {"ticker": ticker, "name": ticker, "sector": JSE_SECTORS.get(ticker, "Equity")}
+
+    sector = JSE_SECTORS.get(ticker, details.get("sector", "Equity"))
+    theme, why = _build_why_bullets(details)
+    emoji, theme_label = _THEME_FLAIR.get(theme, _THEME_FLAIR["featured"])
+
+    prices, change_pct = _sparkline_and_change(ticker)
+
+    # Yesterday's featured name (previous calendar day hash) + how it did since
+    try:
+        from zoneinfo import ZoneInfo
+        yday = (datetime.now(ZoneInfo("Africa/Johannesburg")) - timedelta(days=1)).strftime("%Y-%m-%d")
+    except Exception:
+        yday = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+    y_ticker = JSE_TOP_40[_date_index(yday, n)]
+    y_details = get_ticker_details(y_ticker) if y_ticker != ticker else details
+    y_name = (y_details or {}).get("name", y_ticker)
+    y_change = _day_change_since(y_ticker, yday)
+
+    blurb = (
+        f"{emoji} {theme_label}: {details.get('name', ticker)} ({ticker}) in {sector}. "
+        f"Fresh pick every Johannesburg midnight — come back tomorrow for the next one."
+    )
+
+    payload = clean_data({
+        "date": today,
+        "timezone": "Africa/Johannesburg",
+        "ticker": ticker,
+        "name": details.get("name", ticker),
+        "sector": sector,
+        "theme": theme,
+        "theme_label": theme_label,
+        "theme_emoji": emoji,
+        "current_price": details.get("current_price"),
+        "pe_ratio": details.get("pe_ratio"),
+        "dividend_yield": details.get("dividend_yield"),
+        "market_cap": details.get("market_cap"),
+        "change_pct_30d": change_pct,
+        "sparkline": prices,
+        "blurb": blurb,
+        "why": why,
+        "next_reveal_at": _jhb_next_midnight_iso(),
+        "yesterday": {
+            "date": yday,
+            "ticker": y_ticker,
+            "name": y_name,
+            "change_pct_since": y_change,
+        },
+        "teaser": "A new JSE Top 40 name drops at midnight (SAST). Build your streak — check back tomorrow.",
+    })
+
+    _SOTD_CACHE["date"] = today
+    _SOTD_CACHE["payload"] = payload
+    logger.info(f"Stock of the Day cached for {today}: {ticker} ({theme_label})")
+    return payload
