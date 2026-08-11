@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """Comprehensive backend testing script."""
 
+import os
 import sys
-sys.path.append('/home/red/projects/active/fin_fuz_sol/backend')
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+backend_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'backend')
+if backend_path not in sys.path:
+    sys.path.insert(0, backend_path)
 
 from fundamentals import (
     get_financial_statements, 
@@ -105,7 +110,9 @@ if results:
     print(f"✅ Found {len(results)} stocks with P/E < 15 and Div Yield > 3%")
     print("   Top 5 results:")
     for r in results[:5]:
-        print(f"     • {r['ticker']}: P/E={r['pe_ratio']:.1f}, Div={r['dividend_yield']*100:.1f}%")
+        pe_val = f"{r['pe_ratio']:.1f}" if r.get('pe_ratio') is not None else "N/A"
+        div_val = f"{r['dividend_yield']*100:.1f}%" if r.get('dividend_yield') is not None else "N/A"
+        print(f"     • {r['ticker']}: P/E={pe_val}, Div={div_val}")
 else:
     print("❌ Stock screener failed")
 
