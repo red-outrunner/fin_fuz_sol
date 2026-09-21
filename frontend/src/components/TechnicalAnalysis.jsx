@@ -18,13 +18,17 @@ const TIMEFRAMES = [
     { id: 'monthly', label: 'Monthly' },
 ];
 
+/** Colors are the single source of truth for toggles, legends, and Ubomvu chart series. */
 const INDICATOR_DEFS = [
     {
         id: 'volume',
         label: 'Volume',
         short: 'Vol',
         tip: 'How many shares traded. Tall bars = lots of interest that day. Helps confirm whether a price move is strong or weak.',
-        tv: null, // TradingView shows volume by default on candles
+        tv: null, // TradingView candles include volume by default
+        color: '#C5A059',
+        swatches: [{ color: 'rgba(197,160,89,0.75)', label: 'Volume bars' }],
+        meaning: 'Shares traded under the price',
     },
     {
         id: 'sma20',
@@ -33,14 +37,18 @@ const INDICATOR_DEFS = [
         tip: 'A smooth line of the last 20 closing prices. Price above it often means a short-term uptrend; below can mean a pullback.',
         tv: 'MASimple@tv-basicstudies',
         color: '#C5A059',
+        swatches: [{ color: '#C5A059', label: '20-day avg' }],
+        meaning: 'Short-term trend (gold line)',
     },
     {
         id: 'sma50',
         label: 'Trend (50-day avg)',
         short: 'SMA 50',
         tip: 'Slower trend line (50 days). Many beginners watch when the 20-day crosses the 50-day as a simple trend-change signal.',
-        tv: null, // TV MA study is one; we still toggle our chart independently
+        tv: 'MASimple@tv-basicstudies',
         color: '#3B82F6',
+        swatches: [{ color: '#3B82F6', label: '50-day avg' }],
+        meaning: 'Medium-term trend (blue line)',
     },
     {
         id: 'bollinger',
@@ -48,6 +56,12 @@ const INDICATOR_DEFS = [
         short: 'Bollinger',
         tip: 'Bands that widen when the stock is jumpy and tighten when it is quiet. Price near the upper band can mean “stretched”; near the lower band can mean “washed out”.',
         tv: 'BB@tv-basicstudies',
+        color: '#94A3B8',
+        swatches: [
+            { color: '#94A3B8', label: 'Upper / lower' },
+            { color: '#64748B', label: 'Mid' },
+        ],
+        meaning: 'Volatility envelope around price',
     },
     {
         id: 'rsi',
@@ -55,6 +69,13 @@ const INDICATOR_DEFS = [
         short: 'RSI',
         tip: 'Relative Strength Index (0–100). Above ~70 is often called overbought (may cool off). Below ~30 is often oversold (may bounce). Not a crystal ball — use with price.',
         tv: 'RSI@tv-basicstudies',
+        color: '#C5A059',
+        swatches: [
+            { color: '#C5A059', label: 'RSI' },
+            { color: 'rgba(140,74,74,0.85)', label: '70' },
+            { color: 'rgba(74,124,89,0.85)', label: '30' },
+        ],
+        meaning: 'Momentum 0–100 (gold; red 70 / green 30)',
     },
     {
         id: 'macd',
@@ -62,8 +83,16 @@ const INDICATOR_DEFS = [
         short: 'MACD',
         tip: 'Shows whether short-term momentum is stronger than longer-term. When the blue line crosses above the gold line, momentum is turning up (and vice versa).',
         tv: 'MACD@tv-basicstudies',
+        color: '#3B82F6',
+        swatches: [
+            { color: '#3B82F6', label: 'MACD' },
+            { color: '#C5A059', label: 'Signal' },
+        ],
+        meaning: 'Blue = MACD · Gold = signal',
     },
 ];
+
+const indicatorById = Object.fromEntries(INDICATOR_DEFS.map((d) => [d.id, d]));
 
 const PRESETS = {
     simple: {
@@ -183,17 +212,20 @@ const TechnicalAnalysis = ({ ticker }) => {
 
     const tvStudies = useMemo(() => {
         const studies = [];
-        // One MA study covers simple MA; we enable when either SMA is on
-        if (indicators.sma20 || indicators.sma50) {
-            studies.push('MASimple@tv-basicstudies');
-        }
+        const seen = new Set();
         INDICATOR_DEFS.forEach((d) => {
-            if (d.tv && d.id !== 'sma20' && d.id !== 'sma50' && indicators[d.id]) {
-                studies.push(d.tv);
-            }
+            if (!indicators[d.id] || !d.tv || seen.has(d.tv)) return;
+            // Free TV widget accepts study ids once; MASimple covers either SMA toggle
+            seen.add(d.tv);
+            studies.push(d.tv);
         });
         return studies;
     }, [indicators]);
+
+    const activeIndicators = useMemo(
+        () => INDICATOR_DEFS.filter((d) => indicators[d.id]),
+        [indicators],
+    );
 
     // TradingView widget — studies follow indicator toggles
     useEffect(() => {
@@ -305,12 +337,18 @@ const TechnicalAnalysis = ({ ticker }) => {
             main.addLineSeries({ color, lineWidth: width }).setData(data);
         };
 
-        if (indicators.sma20) addLine(snap.indicator_series?.sma20, '#C5A059');
-        if (indicators.sma50) addLine(snap.indicator_series?.sma50, '#3B82F6');
+        const sma20 = indicatorById.sma20;
+        const sma50 = indicatorById.sma50;
+        const bb = indicatorById.bollinger;
+        const rsiDef = indicatorById.rsi;
+        const macdDef = indicatorById.macd;
+
+        if (indicators.sma20) addLine(snap.indicator_series?.sma20, sma20.color);
+        if (indicators.sma50) addLine(snap.indicator_series?.sma50, sma50.color);
         if (indicators.bollinger) {
-            addLine(snap.indicator_series?.bb_upper, '#94A3B8', 1);
-            addLine(snap.indicator_series?.bb_mid, '#64748B', 1);
-            addLine(snap.indicator_series?.bb_lower, '#94A3B8', 1);
+            addLine(snap.indicator_series?.bb_upper, bb.swatches[0].color, 1);
+            addLine(snap.indicator_series?.bb_mid, bb.swatches[1].color, 1);
+            addLine(snap.indicator_series?.bb_lower, bb.swatches[0].color, 1);
         }
 
         if (indicators.rsi && rsiRef.current) {
@@ -321,15 +359,15 @@ const TechnicalAnalysis = ({ ticker }) => {
             });
             rsiApi.current = rsiChart;
             const rsiData = mapSeriesToCandleTime(snap.candles, snap.indicator_series?.rsi);
-            rsiChart.addLineSeries({ color: '#C5A059', lineWidth: 2 }).setData(rsiData);
+            rsiChart.addLineSeries({ color: rsiDef.swatches[0].color, lineWidth: 2 }).setData(rsiData);
             if (rsiData.length) {
                 rsiChart.addLineSeries({
-                    color: 'rgba(140,74,74,0.5)',
+                    color: rsiDef.swatches[1].color,
                     lineWidth: 1,
                     lineStyle: 2,
                 }).setData(rsiData.map((p) => ({ time: p.time, value: 70 })));
                 rsiChart.addLineSeries({
-                    color: 'rgba(74,124,89,0.5)',
+                    color: rsiDef.swatches[2].color,
                     lineWidth: 1,
                     lineStyle: 2,
                 }).setData(rsiData.map((p) => ({ time: p.time, value: 30 })));
@@ -346,8 +384,8 @@ const TechnicalAnalysis = ({ ticker }) => {
             macdApi.current = macdChart;
             const macd = mapSeriesToCandleTime(snap.candles, snap.indicator_series?.macd);
             const signal = mapSeriesToCandleTime(snap.candles, snap.indicator_series?.macd_signal);
-            macdChart.addLineSeries({ color: '#3B82F6', lineWidth: 2 }).setData(macd);
-            macdChart.addLineSeries({ color: '#C5A059', lineWidth: 2 }).setData(signal);
+            macdChart.addLineSeries({ color: macdDef.swatches[0].color, lineWidth: 2 }).setData(macd);
+            macdChart.addLineSeries({ color: macdDef.swatches[1].color, lineWidth: 2 }).setData(signal);
         }
 
         const sync = [main, rsiApi.current, macdApi.current].filter(Boolean);
@@ -523,16 +561,26 @@ const TechnicalAnalysis = ({ ticker }) => {
                                 key={ind.id}
                                 type="button"
                                 onClick={() => toggleIndicator(ind.id)}
+                                aria-pressed={on}
+                                title={on ? `${ind.label} — on: ${ind.meaning}` : `Turn on ${ind.label}`}
                                 className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition ${
                                     on
                                         ? 'bg-navy/90 dark:bg-gold/20 text-cream dark:text-gold border-navy dark:border-gold/40'
                                         : 'bg-white/40 dark:bg-navy/30 text-slate-500 border-beige-dark/20 dark:border-white/10 hover:border-gold/30'
                                 }`}
                             >
-                                <span
-                                    className={`w-2 h-2 rounded-full ${on ? 'bg-gold' : 'bg-slate-400/50'}`}
-                                    aria-hidden
-                                />
+                                <span className="inline-flex items-center gap-0.5" aria-hidden>
+                                    {(ind.swatches || [{ color: ind.color }]).slice(0, 3).map((s, i) => (
+                                        <span
+                                            key={`${ind.id}-${i}`}
+                                            className="w-2.5 h-2.5 rounded-full border border-white/30"
+                                            style={{
+                                                backgroundColor: on ? s.color : 'rgba(148,163,184,0.45)',
+                                                opacity: on ? 1 : 0.7,
+                                            }}
+                                        />
+                                    ))}
+                                </span>
                                 {ind.label}
                                 <InfoTip title={ind.short}>
                                     {ind.tip}
@@ -541,10 +589,45 @@ const TechnicalAnalysis = ({ ticker }) => {
                         );
                     })}
                 </div>
+
+                {activeIndicators.length > 0 && (
+                    <div className="rounded-lg border border-beige-dark/15 dark:border-white/10 bg-cream/40 dark:bg-navy/40 px-3 py-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">
+                            On now · what the colours mean
+                        </p>
+                        <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                            {activeIndicators.map((ind) => (
+                                <li key={ind.id} className="flex items-start gap-2 min-w-[10rem] max-w-xs">
+                                    <span className="inline-flex items-center gap-0.5 mt-1 shrink-0" aria-hidden>
+                                        {ind.swatches.map((s, i) => (
+                                            <span
+                                                key={`${ind.id}-leg-${i}`}
+                                                className="w-2.5 h-2.5 rounded-full"
+                                                style={{ backgroundColor: s.color }}
+                                                title={s.label}
+                                            />
+                                        ))}
+                                    </span>
+                                    <span className="text-[11px] leading-snug">
+                                        <span className="font-bold text-navy dark:text-cream">{ind.short}</span>
+                                        <span className="text-slate-500 dark:text-slate-400"> — {ind.meaning}</span>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        {view === 'tradingview' && (
+                            <p className="text-[10px] text-slate-400 mt-2">
+                                TradingView studies follow these toggles (Bollinger, RSI, MACD, and a moving average when either trend line is on).
+                                Volume is built into its candle chart. Exact 20/50-day colours apply on Ubomvu Chart.
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 <p className="text-[10px] text-slate-500">
                     {view === 'custom'
-                        ? 'Ubomvu Chart updates instantly when you toggle tools.'
-                        : 'TradingView reloads with your selected studies when you toggle tools.'}
+                        ? 'Ubomvu Chart updates instantly when you toggle tools — colours match the legend above.'
+                        : 'TradingView reloads with your selected studies when you toggle tools — colours match the legend above.'}
                 </p>
             </div>
 
@@ -589,21 +672,46 @@ const TechnicalAnalysis = ({ ticker }) => {
                 </div>
             ) : (
                 <div className="rounded-xl overflow-hidden border border-beige-dark/20 dark:border-white/10 bg-white dark:bg-navy-light shadow-soft p-2 space-y-1">
-                    <div className="px-2 pt-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                        {priceTitleParts.join(' · ')}
-                        {(indicators.sma20 || indicators.sma50) && (
-                            <span className="normal-case tracking-normal font-medium text-slate-400">
-                                {indicators.sma20 && <span className="text-[#C5A059]">● 20-day</span>}
-                                {indicators.sma20 && indicators.sma50 && ' '}
-                                {indicators.sma50 && <span className="text-[#3B82F6]">● 50-day</span>}
+                    <div className="px-2 pt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        <span>{priceTitleParts.join(' · ')}</span>
+                        {indicators.sma20 && (
+                            <span className="normal-case tracking-normal font-medium inline-flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: indicatorById.sma20.color }} />
+                                <span style={{ color: indicatorById.sma20.color }}>20-day avg</span>
+                            </span>
+                        )}
+                        {indicators.sma50 && (
+                            <span className="normal-case tracking-normal font-medium inline-flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: indicatorById.sma50.color }} />
+                                <span style={{ color: indicatorById.sma50.color }}>50-day avg</span>
+                            </span>
+                        )}
+                        {indicators.bollinger && (
+                            <span className="normal-case tracking-normal font-medium inline-flex items-center gap-1 text-slate-400">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: indicatorById.bollinger.color }} />
+                                Volatility bands
+                            </span>
+                        )}
+                        {indicators.volume && (
+                            <span className="normal-case tracking-normal font-medium inline-flex items-center gap-1 text-slate-400">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: indicatorById.volume.color }} />
+                                Volume
                             </span>
                         )}
                     </div>
                     <div ref={chartRef} className="w-full" />
                     {indicators.rsi && (
                         <>
-                            <div className="px-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                Momentum (RSI)
+                            <div className="px-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                <span>Momentum (RSI)</span>
+                                <span className="normal-case tracking-normal font-medium inline-flex items-center gap-2">
+                                    {indicatorById.rsi.swatches.map((s) => (
+                                        <span key={s.label} className="inline-flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                            <span className="text-slate-400">{s.label}</span>
+                                        </span>
+                                    ))}
+                                </span>
                                 <InfoTip title="RSI guide">
                                     Red dashed line ≈ 70 (stretched). Green dashed line ≈ 30 (washed out).
                                     The gold line is the RSI itself.
@@ -614,8 +722,16 @@ const TechnicalAnalysis = ({ ticker }) => {
                     )}
                     {indicators.macd && (
                         <>
-                            <div className="px-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                                Trend change (MACD)
+                            <div className="px-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                <span>Trend change (MACD)</span>
+                                <span className="normal-case tracking-normal font-medium inline-flex items-center gap-2">
+                                    {indicatorById.macd.swatches.map((s) => (
+                                        <span key={s.label} className="inline-flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                            <span style={{ color: s.color }}>{s.label}</span>
+                                        </span>
+                                    ))}
+                                </span>
                                 <InfoTip title="MACD guide">
                                     Blue = MACD line, gold = signal. A blue cross above gold often means
                                     momentum is turning up.
