@@ -19,6 +19,7 @@ from analysis import download_data, process_data, calculate_summary_stats, run_m
 import yfinance as yf
 from reports import PDFReportGenerator
 from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe, get_stock_of_the_day
+from sector_manager import sync_sector_data, import_from_excel
 from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
 from technical import build_technical_snapshot, run_backtest
 from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_provider
@@ -123,6 +124,16 @@ class FreedomRequest(BaseModel):
     monthly_income_goal: float
 
 
+@app.on_event("startup")
+def startup_event():
+    logger.info("Initializing JSE sector & ticker metadata...")
+    try:
+        res = sync_sector_data(auto_search_excel=True)
+        logger.info(f"Sector metadata initialized: {res}")
+    except Exception as e:
+        logger.error(f"Failed to initialize sector metadata: {e}")
+
+
 @app.get("/")
 def read_root():
     return {"message": "Global Index Analyzer API is running"}
@@ -130,6 +141,23 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+@app.post("/api/admin/sync-sectors")
+def admin_sync_sectors(request_path: Optional[str] = None):
+    """Triggers dynamic synchronization of JSE sector metadata from JSON or Excel source."""
+    try:
+        if request_path:
+            success = import_from_excel(request_path)
+            if not success:
+                raise HTTPException(status_code=400, detail=f"Failed to import from {request_path}")
+            return {"status": "success", "imported_file": request_path}
+        res = sync_sector_data(auto_search_excel=True)
+        return res
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error syncing sectors: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/search")
 def search_handler(request: SearchRequest):

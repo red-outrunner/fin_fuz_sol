@@ -10,121 +10,27 @@ import yfinance as yf
 
 from market_data import normalize_dividend_yield, download_data
 from serialization import clean_data
+from sector_manager import (
+    get_jse_top_40,
+    get_jse_sectors,
+    get_sector_for_ticker
+)
 
 logger = logging.getLogger(__name__)
 
-# === JSE Top 40 Tickers (from Satrix constituent_details.xlsx) ===
-JSE_TOP_40 = [
-    "ABG.JO",  # Absa Group Ltd - Banks
-    "AGL.JO",  # Anglo American - Basic Resources
-    "ANG.JO",  # AngloGold Ashanti - Basic Resources
-    "ANH.JO",  # Anheuser-Busch InBev - Food Beverage and Tobacco
-    "APN.JO",  # Aspen Pharmacare - Retail
-    "BHG.JO",  # BHP Group Limited - Basic Resources
-    "BID.JO",  # Bid Corp Ltd - Personal Care Drug and Grocery Stores
-    "BTI.JO",  # British American Tobacco - Food Beverage and Tobacco
-    "BVT.JO",  # Bidvest Group Limited - Industrial Goods & Sevices
-    "CFR.JO",  # Compagnie Financiere - Consumer Products and Services
-    "CLS.JO",  # Clicks Group - Personal Care Drug and Grocery Stores
-    "CPI.JO",  # Capitec - Banks
-    "DSY.JO",  # Discovery - Insurance
-    "EXX.JO",  # Exxaro Resources - Basic Resources
-    "FSR.JO",  # Firstrand - Banks
-    "GFI.JO",  # Gold Fields Ltd - Basic Resources
-    "GLN.JO",  # Glencore Plc - Basic Resources
-    "GRT.JO",  # Growthpoint - Real Estate
-    "HAR.JO",  # Harmony Gold Mining - Basic Resources
-    "IMP.JO",  # Implats - Basic Resources
-    "INL.JO",  # Investec Ltd - Banks
-    "INP.JO",  # Investec Plc - Banks
-    "MCG.JO",  # MultiChoice Group - Technology
-    "MNP.JO",  # Murray & Roberts - Industrial Goods & Sevices
-    "MRP.JO",  # Mr Price Group Ltd - Retail
-    "MTN.JO",  # MTN Group - Telecommunications
-    "NED.JO",  # Nedbank - Banks
-    "NPH.JO",  # Northam Platinum - Basic Resources
-    "NPN.JO",  # Naspers - Technology
-    "NRP.JO",  # NEPI Rockcastle Plc - Real Estate
-    "OMU.JO",  # Old Mutual Ltd - Insurance
-    "OUT.JO",  # Outsurance - Insurance
-    "PAN.JO",  # Pan African Resources - Basic Resources
-    "PPH.JO",  # Pepkor Holdings Ltd - Retail
-    "PRX.JO",  # Prosus Nv - Technology
-    "REM.JO",  # Remgro - Financial Services
-    "RMI.JO",  # Rand Merchant Investment - Insurance
-    "RNI.JO",  # Reinet Investments Sca - Financial Services
-    "SBK.JO",  # Standard Bank - Banks
-    "SHP.JO",  # Shoprite - Personal Care Drug and Grocery Stores
-    "SLM.JO",  # Sanlam - Insurance
-    "SOL.JO",  # Sasol - Chemicals
-    "SSW.JO",  # Sibanye Stillwater Ltd - Basic Resources
-    "VAL.JO",  # Valterra Platinum Ltd - Basic Resources
-    "VOD.JO",  # Vodacom Group Limited - Telecommunications
-    "WHL.JO",  # Woolworths Holdings Ltd - Retail
-]
+# Module-level attributes for backward compatibility
+JSE_TOP_40 = get_jse_top_40()
+JSE_SECTORS = get_jse_sectors()
 
-# Sector mappings from Satrix constituent_details.xlsx - 12 Industries
-JSE_SECTORS = {
-    # Banks (7)
-    "ABG.JO": "Banks",
-    "CPI.JO": "Banks",
-    "FSR.JO": "Banks",
-    "INL.JO": "Banks",
-    "INP.JO": "Banks",
-    "NED.JO": "Banks",
-    "SBK.JO": "Banks",
-    # Basic Resources (13)
-    "AGL.JO": "Basic Resources",
-    "ANG.JO": "Basic Resources",
-    "BHG.JO": "Basic Resources",
-    "EXX.JO": "Basic Resources",
-    "GFI.JO": "Basic Resources",
-    "GLN.JO": "Basic Resources",
-    "HAR.JO": "Basic Resources",
-    "IMP.JO": "Basic Resources",
-    "NPH.JO": "Basic Resources",
-    "PAN.JO": "Basic Resources",
-    "SSW.JO": "Basic Resources",
-    "VAL.JO": "Basic Resources",
-    # Chemicals (1)
-    "SOL.JO": "Chemicals",
-    # Consumer Products and Services (1)
-    "CFR.JO": "Consumer Products and Services",
-    # Financial Services (2)
-    "REM.JO": "Financial Services",
-    "RNI.JO": "Financial Services",
-    # Food Beverage and Tobacco (2)
-    "ANH.JO": "Food Beverage and Tobacco",
-    "BTI.JO": "Food Beverage and Tobacco",
-    # Industrial Goods & Sevices (2)
-    "BVT.JO": "Industrial Goods & Sevices",
-    "MNP.JO": "Industrial Goods & Sevices",
-    # Insurance (5)
-    "DSY.JO": "Insurance",
-    "OMU.JO": "Insurance",
-    "OUT.JO": "Insurance",
-    "RMI.JO": "Insurance",
-    "SLM.JO": "Insurance",
-    # Personal Care Drug and Grocery Stores (3)
-    "BID.JO": "Personal Care Drug and Grocery Stores",
-    "CLS.JO": "Personal Care Drug and Grocery Stores",
-    "SHP.JO": "Personal Care Drug and Grocery Stores",
-    # Real Estate (2)
-    "GRT.JO": "Real Estate",
-    "NRP.JO": "Real Estate",
-    # Retail (4)
-    "APN.JO": "Retail",
-    "MRP.JO": "Retail",
-    "PPH.JO": "Retail",
-    "WHL.JO": "Retail",
-    # Technology (3)
-    "MCG.JO": "Technology",
-    "NPN.JO": "Technology",
-    "PRX.JO": "Technology",
-    # Telecommunications (2)
-    "MTN.JO": "Telecommunications",
-    "VOD.JO": "Telecommunications",
-}
+
+def __getattr__(name: str):
+    """Dynamically return up-to-date JSE_TOP_40 and JSE_SECTORS."""
+    if name == "JSE_TOP_40":
+        return get_jse_top_40()
+    elif name == "JSE_SECTORS":
+        return get_jse_sectors()
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 
 
 def _fetch_ticker_info(ticker: str) -> Optional[Dict[str, Any]]:
@@ -165,7 +71,7 @@ def _fetch_ticker_info(ticker: str) -> Optional[Dict[str, Any]]:
         div_yield = normalize_dividend_yield(info.get('dividendYield'))
 
         # Get sector
-        sector = JSE_SECTORS.get(ticker, info.get('sector', 'Other'))
+        sector = get_sector_for_ticker(ticker)
 
         # Calculate valuation metrics
         trailing_pe = info.get('trailingPE')
@@ -222,7 +128,7 @@ def _fetch_ticker_info(ticker: str) -> Optional[Dict[str, Any]]:
 
 def get_jse_universe() -> List[str]:
     """Returns the list of JSE Top 40 tickers."""
-    return JSE_TOP_40.copy()
+    return get_jse_top_40()
 
 
 def screen_stocks(
@@ -272,7 +178,7 @@ def screen_stocks(
     max_pe = max_pe or max_pe_ratio  # Support both parameter names
 
     # Fetch data for all JSE Top 40 in parallel
-    tickers_to_screen = JSE_TOP_40
+    tickers_to_screen = get_jse_top_40()
     logger.info(f"Screening {len(tickers_to_screen)} JSE Top 40 stocks...")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
@@ -424,7 +330,7 @@ def get_sector_performance(period: str = "1d") -> List[Dict[str, Any]]:
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_ticker = {
             executor.submit(_fetch_ticker_info, ticker): ticker
-            for ticker in JSE_TOP_40
+            for ticker in get_jse_top_40()
         }
 
         for future in concurrent.futures.as_completed(future_to_ticker):
@@ -508,7 +414,7 @@ def get_stock_ideas() -> Dict[str, List[Dict[str, Any]]]:
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_ticker = {
             executor.submit(_fetch_ticker_info, ticker): ticker
-            for ticker in JSE_TOP_40
+            for ticker in get_jse_top_40()
         }
 
         for future in concurrent.futures.as_completed(future_to_ticker):
@@ -714,21 +620,22 @@ def get_stock_of_the_day() -> Dict[str, Any]:
     if _SOTD_CACHE.get("date") == today and _SOTD_CACHE.get("payload"):
         return _SOTD_CACHE["payload"]
 
-    n = len(JSE_TOP_40)
+    top_40_list = get_jse_top_40()
+    n = len(top_40_list)
     idx = _date_index(today, n)
     # Mild quality pass: try up to 3 consecutive date-hash picks for usable data
     details = None
-    ticker = JSE_TOP_40[idx]
+    ticker = top_40_list[idx]
     for offset in range(3):
-        candidate = JSE_TOP_40[(idx + offset) % n]
+        candidate = top_40_list[(idx + offset) % n]
         details = get_ticker_details(candidate)
         if details and details.get("current_price"):
             ticker = candidate
             break
     if not details:
-        details = {"ticker": ticker, "name": ticker, "sector": JSE_SECTORS.get(ticker, "Equity")}
+        details = {"ticker": ticker, "name": ticker, "sector": get_sector_for_ticker(ticker)}
 
-    sector = JSE_SECTORS.get(ticker, details.get("sector", "Equity"))
+    sector = get_sector_for_ticker(ticker, fallback_yfinance=False)
     theme, why = _build_why_bullets(details)
     emoji, theme_label = _THEME_FLAIR.get(theme, _THEME_FLAIR["featured"])
 
@@ -740,7 +647,7 @@ def get_stock_of_the_day() -> Dict[str, Any]:
         yday = (datetime.now(ZoneInfo("Africa/Johannesburg")) - timedelta(days=1)).strftime("%Y-%m-%d")
     except Exception:
         yday = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
-    y_ticker = JSE_TOP_40[_date_index(yday, n)]
+    y_ticker = top_40_list[_date_index(yday, n)]
     y_details = get_ticker_details(y_ticker) if y_ticker != ticker else details
     y_name = (y_details or {}).get("name", y_ticker)
     y_change = _day_change_since(y_ticker, yday)

@@ -460,9 +460,13 @@ def get_jse_peers(ticker, return_meta: bool = False):
     ticker = ticker.upper().strip()
 
     try:
-        from screener import JSE_SECTORS
+        from sector_manager import get_jse_sectors
+        JSE_SECTORS = get_jse_sectors()
     except ImportError:
-        JSE_SECTORS = {}
+        try:
+            from screener import JSE_SECTORS
+        except ImportError:
+            JSE_SECTORS = {}
 
     def _result(peers, peer_group, asset_class):
         peers = [p for p in peers if p != ticker][:4]
