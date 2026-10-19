@@ -61,9 +61,8 @@ const StockIdeasFeed = ({ onSelectTicker }) => {
 
     const formatPrice = (price) => {
         if (price === null || price === undefined) return 'N/A';
-        // Prices from backend are in cents (ZAc), convert to Rands
-        const rands = price / 100;
-        return `R${rands.toFixed(2)}`;
+        // Backend returns major units (ZAR) — do not divide by 100
+        return `R${Number(price).toFixed(2)}`;
     };
 
     const formatPercent = (num) => {

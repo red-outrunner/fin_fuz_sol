@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { apiWsBase } from '../utils/trading';
 import { Radio } from 'lucide-react';
+import { formatMoney } from '../utils/currency';
 
 /**
  * Live (or near-live) quote strip for the active ticker + optional extras.
@@ -93,7 +94,7 @@ const LiveQuoteStrip = ({ tickers = [] }) => {
                     <div key={t} className="flex items-baseline gap-2 text-sm">
                         <span className="font-bold text-navy dark:text-cream tracking-tight">{t}</span>
                         <span className="tabular-nums font-mono text-navy dark:text-cream">
-                            {q?.price != null ? q.price.toLocaleString() : '…'}
+                            {q?.price != null ? formatMoney(q.price, q.currency || 'ZAR') : '…'}
                         </span>
                         {q?.change_pct != null && (
                             <span className={`text-xs font-bold tabular-nums ${up ? 'text-success' : 'text-error'}`}>

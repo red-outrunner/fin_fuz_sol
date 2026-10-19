@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { FileText, TrendingUp, DollarSign, PieChart, BarChart3, Download } from 'lucide-react';
+import { formatMoney, currencySymbol } from '../utils/currency';
 
 const FinancialStatements = ({ ticker }) => {
     const [statements, setStatements] = useState(null);
@@ -30,15 +31,26 @@ const FinancialStatements = ({ ticker }) => {
         }
     };
 
+    const cur = statements?.currency || 'ZAR';
+    const sym = currencySymbol(cur);
+
     const formatNumber = (num) => {
         if (num === null || num === undefined || num === 'N/A') return 'N/A';
-        if (Math.abs(num) >= 1e9) {
-            return `R${(num / 1e9).toFixed(2)}B`;
+        const n = Number(num);
+        if (!Number.isFinite(n)) return 'N/A';
+        // Absolute major units from API — format compactly (supports negatives up to-trillions)
+        const a = Math.abs(n);
+        const sign = n < 0 ? '-' : '';
+        if (a >= 1e12) {
+            return `${sign}${sym}${(a / 1e12).toFixed(2)}T`;
         }
-        if (Math.abs(num) >= 1e6) {
-            return `R${(num / 1e6).toFixed(2)}M`;
+        if (a >= 1e9) {
+            return `${sign}${sym}${(a / 1e9).toFixed(2)}B`;
         }
-        return `R${num.toFixed(2)}`;
+        if (a >= 1e6) {
+            return `${sign}${sym}${(a / 1e6).toFixed(2)}M`;
+        }
+        return `${sign}${formatMoney(a, cur, { decimals: 0 })}`;
     };
 
     const calculateGrowth = (current, previous) => {

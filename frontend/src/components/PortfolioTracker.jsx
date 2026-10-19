@@ -149,6 +149,7 @@ const PortfolioTracker = () => {
     };
 
     const handleExport = () => {
+        const header = `# Analyzed with Ubomvu (ubomvu.com)\n`;
         const csv = [
             ['Ticker', 'Currency', 'Quantity', 'Avg Cost', 'Current Price', 'Value', 'P&L', 'P&L %', 'Value ZAR'],
             ...holdings.map((h) => [
@@ -166,7 +167,7 @@ const PortfolioTracker = () => {
             .map((row) => row.join(','))
             .join('\n');
 
-        const blob = new Blob([csv], { type: 'text/csv' });
+        const blob = new Blob([header + csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

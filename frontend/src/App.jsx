@@ -12,14 +12,16 @@ import ConsentToast from './components/ConsentToast';
 import { useTheme } from './context/ThemeContext';
 import { UserPreferencesProvider, useUserPreferences } from './context/UserPreferencesContext';
 import { Moon, Sun } from 'lucide-react';
+import { parseHash, buildHash, replaceHash, DASHBOARD_TABS } from './utils/hashRoute';
 
 function AppContent() {
-    const [currentRoute, setCurrentRoute] = useState(window.location.hash || '#/');
+    const initial = parseHash();
+    const [currentRoute, setCurrentRoute] = useState(initial.route || '#/');
     const { isDark, toggleTheme } = useTheme();
     const { preferences, watchlist, updatePreference, updateWatchlist } = useUserPreferences();
     const searchInputRef = useRef(null);
 
-    const [ticker, setTicker] = useState('^J203.JO');
+    const [ticker, setTicker] = useState(initial.ticker || '^J203.JO');
     const [startYear, setStartYear] = useState(2018);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [inflationAdjusted, setInflationAdjusted] = useState(false);
@@ -39,8 +41,16 @@ function AppContent() {
             return false;
         }
     });
-    const [dashboardTab, setDashboardTab] = useState('summary');
+    const [dashboardTab, setDashboardTabState] = useState(initial.tab || 'summary');
     const [terminalRefreshing, setTerminalRefreshing] = useState(false);
+    const deepLinkHandled = useRef(false);
+    const analyzingRef = useRef(false);
+
+    const setDashboardTab = useCallback((tab) => {
+        const next = DASHBOARD_TABS.includes(tab) ? tab : 'summary';
+        setDashboardTabState(next);
+        replaceHash(buildHash({ route: '#/', ticker, tab: next }));
+    }, [ticker]);
 
     useEffect(() => {
         try {
@@ -50,16 +60,19 @@ function AppContent() {
 
     useEffect(() => {
         const handleHashChange = () => {
-            const hash = window.location.hash || '#/';
-            setCurrentRoute(hash.split('?')[0] || '#/');
-            const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
-            const tab = params.get('tab');
-            if (tab) setDashboardTab(tab);
+            const { route, ticker: hashTicker, tab } = parseHash();
+            setCurrentRoute(route || '#/');
+            if (tab) setDashboardTabState(tab);
+            if (hashTicker && hashTicker !== ticker.toUpperCase() && !analyzingRef.current) {
+                setTicker(hashTicker);
+                triggerAnalyzeRef.current?.(hashTicker);
+            }
         };
 
         handleHashChange();
         window.addEventListener('hashchange', handleHashChange);
         return () => window.removeEventListener('hashchange', handleHashChange);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const focusSearch = useCallback(() => {
@@ -86,7 +99,6 @@ function AppContent() {
             } else if (key === 'r') {
                 e.preventDefault();
                 setDashboardTab('report');
-                window.location.hash = '#/?tab=report';
             } else if (key === 'd') {
                 e.preventDefault();
                 toggleTheme();
@@ -94,38 +106,41 @@ function AppContent() {
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [focusSearch, toggleTheme]);
+    }, [focusSearch, toggleTheme, setDashboardTab]);
 
-    const triggerAnalyze = async (symbol, year = startYear, date = endDate, inflation = inflationAdjusted) => {
-        window.location.hash = '#/';
+    const triggerAnalyze = async (symbol, year = startYear, date = endDate, inflation = inflationAdjusted, tab = dashboardTab) => {
+        analyzingRef.current = true;
+        const sym = String(symbol || '').trim().toUpperCase();
+        setTicker(sym);
+        replaceHash(buildHash({ route: '#/', ticker: sym, tab }));
         setLoading(true);
         setError(null);
         setProfileData(null);
         try {
             const [analysisRes, profileRes, fundRes, newsRes, calRes] = await Promise.all([
                 axios.post(`${API_BASE_URL}/api/analyze`, {
-                    ticker: symbol,
+                    ticker: sym,
                     start_year: year,
                     end_date: date,
                     inflation_rate: inflation ? 0.05 : 0.0,
                 }),
                 axios.post(`${API_BASE_URL}/api/profile`, {
-                    ticker: symbol,
+                    ticker: sym,
                     start_year: year,
                     end_date: date,
                 }).catch(() => ({ data: null })),
                 axios.post(`${API_BASE_URL}/api/fundamentals`, {
-                    ticker: symbol,
+                    ticker: sym,
                     start_year: year,
                     end_date: date,
                 }).catch(() => ({ data: null })),
                 axios.post(`${API_BASE_URL}/api/news`, {
-                    ticker: symbol,
+                    ticker: sym,
                     start_year: year,
                     end_date: date,
                 }).catch(() => ({ data: [] })),
                 axios.post(`${API_BASE_URL}/api/calendar`, {
-                    ticker: symbol,
+                    ticker: sym,
                     start_year: year,
                     end_date: date,
                 }).catch(() => ({ data: [] })),
@@ -142,15 +157,30 @@ function AppContent() {
             setError(errorMessage);
         } finally {
             setLoading(false);
+            analyzingRef.current = false;
         }
     };
+
+    const triggerAnalyzeRef = useRef(triggerAnalyze);
+    triggerAnalyzeRef.current = triggerAnalyze;
+
+    // Deep-link: auto-analyze ticker from URL on first load
+    useEffect(() => {
+        if (deepLinkHandled.current) return;
+        deepLinkHandled.current = true;
+        const { ticker: hashTicker, tab } = parseHash();
+        if (hashTicker) {
+            if (tab) setDashboardTabState(tab);
+            triggerAnalyze(hashTicker, startYear, endDate, inflationAdjusted, tab || dashboardTab);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleAnalyze = () => {
         triggerAnalyze(ticker);
     };
 
     const handleSelectTicker = (symbol) => {
-        setTicker(symbol);
         triggerAnalyze(symbol);
     };
 
@@ -246,7 +276,7 @@ function AppContent() {
                 <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-navy/5 dark:border-white/10">
                     <h1
                         className="text-2xl font-serif font-bold text-gold tracking-tight cursor-pointer"
-                        onClick={() => { window.location.hash = '#/'; }}
+                        onClick={() => { replaceHash(buildHash({ route: '#/', ticker, tab: dashboardTab })); }}
                     >
                         Ubomvu
                     </h1>

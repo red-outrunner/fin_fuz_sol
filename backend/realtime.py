@@ -11,6 +11,7 @@ import yfinance as yf
 
 from serialization import clean_data
 from technical import volume_zscore_alert
+from currency_utils import normalize_price, display_currency
 
 logger = logging.getLogger(__name__)
 
@@ -53,20 +54,27 @@ def _yf_quote(ticker: str) -> Optional[Dict[str, Any]]:
         price = info.get("price")
         if price is None:
             return None
-        prev = info.get("prev_close")
+        yahoo_cur = info.get("currency") or ""
+        if not yahoo_cur:
+            try:
+                yahoo_cur = (t.info or {}).get("currency", "") or ""
+            except Exception:
+                yahoo_cur = ""
+        price = normalize_price(price, yahoo_cur)
+        prev = normalize_price(info.get("prev_close"), yahoo_cur)
         change = None
         change_pct = None
-        if prev:
+        if prev and price is not None:
             change = float(price) - float(prev)
             change_pct = (change / float(prev)) * 100
         return {
             "ticker": ticker.upper(),
-            "price": round(float(price), 4),
+            "price": round(float(price), 4) if price is not None else None,
             "prev_close": round(float(prev), 4) if prev else None,
             "change": round(change, 4) if change is not None else None,
             "change_pct": round(change_pct, 3) if change_pct is not None else None,
             "volume": info.get("volume"),
-            "currency": info.get("currency"),
+            "currency": display_currency(yahoo_cur, ticker),
             "provider": "yfinance",
             "delayed": True,
             "as_of": datetime.utcnow().isoformat() + "Z",

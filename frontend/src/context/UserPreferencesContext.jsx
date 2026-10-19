@@ -87,22 +87,12 @@ export const UserPreferencesProvider = ({ children }) => {
         setWatchlist(savedWatchlist);
     }, []);
 
-    // Decline consent
+    // Decline consent — keep guest watchlist/theme in localStorage so users still get value without signup
     const declineConsent = useCallback(() => {
         setCookie(STORAGE_KEYS.CONSENT, 'declined', 30);
         localStorage.setItem(STORAGE_KEYS.CONSENT + '_shown', 'true');
         setConsentGiven(false);
         setConsentShown(true);
-
-        // Clear any existing data
-        Object.values(STORAGE_KEYS).forEach(key => {
-            try {
-                localStorage.removeItem(key);
-            } catch {}
-        });
-
-        setPreferences(DEFAULT_PREFERENCES);
-        setWatchlist([]);
     }, []);
 
     // Update preferences - saves immediately

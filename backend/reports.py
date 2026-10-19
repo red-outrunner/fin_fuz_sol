@@ -10,6 +10,8 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from datetime import datetime
 
+from currency_utils import BRAND_ATTRIBUTION
+
 # Set Matplotlib Style for "Old Money" / Scientific Look
 plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['font.family'] = 'serif'
@@ -120,6 +122,9 @@ class PDFReportGenerator:
         canvas.setFillColor(colors.grey)
         canvas.drawString(50, 40, f"Generated on {datetime.now().strftime('%Y-%m-%d')}")
         canvas.drawRightString(letter[0] - 50, 40, f"Page {doc.page}")
+        canvas.setFont('Helvetica-Oblique', 8)
+        canvas.setFillColor(colors.HexColor(COLOR_GOLD))
+        canvas.drawCentredString(letter[0] / 2, 28, "Analyzed with Ubomvu (ubomvu.com)")
         
         canvas.restoreState()
 
@@ -166,10 +171,15 @@ class PDFReportGenerator:
         import tempfile
         import os
         from svglib.svglib import svg2rlg
-        
+
         with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as f:
             temp_name = f.name
-            
+
+        fig.text(
+            0.99, 0.005, BRAND_ATTRIBUTION,
+            ha='right', va='bottom',
+            fontsize=7.5, color=COLOR_GOLD, alpha=0.8, style='italic',
+        )
         fig.savefig(temp_name, format='svg', bbox_inches='tight')
         plt.close(fig)
         

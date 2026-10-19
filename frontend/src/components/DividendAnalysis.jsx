@@ -42,6 +42,10 @@ const DividendAnalysis = ({ ticker, startYear }) => {
 
     if (loading) return <div className="p-12 text-center text-gold font-bold animate-pulse">Loading Dividend Data...</div>;
 
+    // Currency symbol for DPS display (backend returns major units now)
+    const CURRENCY_SYMBOL = { ZAR: 'R', GBP: '£', USD: '$', EUR: '€' };
+    const symbol = CURRENCY_SYMBOL[data?.currency] || (data?.currency ? `${data.currency} ` : '');
+
     // Graceful empty state
     if (error || !data) {
         return (
@@ -118,11 +122,11 @@ const DividendAnalysis = ({ ticker, startYear }) => {
                         <BarChart data={data.annual}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
                             <XAxis dataKey="year" stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} />
-                            <YAxis stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} tickFormatter={(val) => `$${val}`} />
+                            <YAxis stroke={colors.axisColor} tick={{ fill: colors.tickColor, fontSize: 12 }} tickFormatter={(val) => `${symbol}${val}`} />
                             <Tooltip
                                 contentStyle={{ backgroundColor: colors.tooltipBg, borderColor: colors.tooltipBorder, color: colors.tooltipText }}
                                 itemStyle={{ color: colors.tooltipText }}
-                                formatter={(value) => [`$${value.toFixed(2)}`, 'Total Annual Dividend']}
+                                formatter={(value) => [`${symbol}${value.toFixed(2)}`, 'Total Annual Dividend']}
                             />
                             <Bar dataKey="value" fill={colors.barPositive} radius={[4, 4, 0, 0]} />
                         </BarChart>

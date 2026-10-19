@@ -25,8 +25,11 @@ import AlertsPanel from './AlertsPanel';
 import LiveQuoteStrip from './LiveQuoteStrip';
 import FundamentalAnalysis from './FundamentalAnalysis';
 import { useAuth } from '../context/AuthContext';
+import { useUserPreferences } from '../context/UserPreferencesContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import { Star, Share2 } from 'lucide-react';
+import { buildHash } from '../utils/hashRoute';
 
 const TABS = [
     'summary', 'charts', 'technical', 'alerts', 'fundamentals', 'freedom', 'peers', 'report',
@@ -64,6 +67,7 @@ const Dashboard = ({
     terminalRefreshing,
 }) => {
     const { user } = useAuth();
+    const { watchlist, updateWatchlist } = useUserPreferences();
 
     const [internalTab, setInternalTab] = useState('summary');
     const activeTab = controlledTab ?? internalTab;
@@ -72,10 +76,39 @@ const Dashboard = ({
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [targetUpgradeTier, setTargetUpgradeTier] = useState('pro');
     const [exportStatus, setExportStatus] = useState(null);
+    const [shareCopied, setShareCopied] = useState(false);
 
     const returnsChartRef = useRef(null);
     const scatterChartRef = useRef(null);
     const heatmapChartRef = useRef(null);
+
+    const tickerKey = (ticker || '').toUpperCase();
+    const onWatchlist = watchlist.includes(tickerKey);
+
+    const toggleWatchlist = () => {
+        if (!tickerKey) return;
+        if (onWatchlist) {
+            updateWatchlist(watchlist.filter((t) => t !== tickerKey));
+        } else {
+            updateWatchlist([...watchlist, tickerKey].slice(0, 20));
+        }
+    };
+
+    const shareLink = async () => {
+        const hash = buildHash({ route: '#/', ticker: tickerKey, tab: activeTab });
+        const url = `${window.location.origin}${window.location.pathname}${hash}`;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: 'Ubomvu — Investment Analysis', text: `Check out ${tickerKey} on Ubomvu`, url });
+                return;
+            }
+            await navigator.clipboard.writeText(url);
+            setShareCopied(true);
+            window.setTimeout(() => setShareCopied(false), 2000);
+        } catch {
+            if (!navigator.share) window.prompt('Copy share link:', url);
+        }
+    };
 
     // Read Mode State
     const [readingArticle, setReadingArticle] = useState(null);
@@ -207,6 +240,30 @@ const Dashboard = ({
             {data && !loading && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <LiveQuoteStrip tickers={[ticker]} />
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={toggleWatchlist}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition ${
+                                onWatchlist
+                                    ? 'bg-gold/15 border-gold/40 text-gold'
+                                    : 'bg-white/50 dark:bg-navy-light border-beige-dark/20 dark:border-white/10 text-slate-500 hover:text-gold hover:border-gold/30'
+                            }`}
+                            title={onWatchlist ? 'Remove from watchlist' : 'Add to watchlist (no sign-up)'}
+                        >
+                            <Star className={`w-3.5 h-3.5 ${onWatchlist ? 'fill-gold' : ''}`} />
+                            {onWatchlist ? 'Watching' : 'Watch'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={shareLink}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border bg-white/50 dark:bg-navy-light border-beige-dark/20 dark:border-white/10 text-slate-500 hover:text-gold hover:border-gold/30 transition"
+                            title="Copy shareable link for this ticker and tab"
+                        >
+                            <Share2 className="w-3.5 h-3.5" />
+                            {shareCopied ? 'Link copied' : 'Share'}
+                        </button>
+                    </div>
                     {inflationAdjusted && (
                         <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/30 text-[10px] font-bold uppercase tracking-widest text-gold">
                             Real returns · 5% inflation

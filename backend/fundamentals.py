@@ -6,6 +6,7 @@ import pandas as pd
 from typing import Optional, Dict, Any, List
 
 from serialization import clean_data
+from currency_utils import normalize_price, display_currency
 
 logger = logging.getLogger(__name__)
 
@@ -13,46 +14,46 @@ logger = logging.getLogger(__name__)
 def get_financial_statements(ticker: str) -> Optional[Dict[str, Any]]:
     """
     Get 5-year financial statements for a ticker.
-    Returns income statement, balance sheet, and cash flow.
+    Returns income statement, balance sheet, and cash flow in absolute major units.
     """
     try:
         t = yf.Ticker(ticker)
-        
+        info = t.info or {}
+        currency = display_currency(info.get("currency", ""), ticker)
+
         # Get financial statements
         income_stmt = t.income_stmt
         balance_sheet = t.balance_sheet
         cash_flow = t.cashflow
-        
+
         if income_stmt.empty and balance_sheet.empty and cash_flow.empty:
             return None
-        
-        # Convert to dict with years as keys
-        def stmt_to_dict(stmt, name):
+
+        def stmt_to_dict(stmt):
             if stmt.empty:
                 return {}
-            # Convert to millions for readability
             result = {}
             for idx in stmt.index:
-                result[idx] = {}
+                result[str(idx)] = {}
                 for col in stmt.columns:
                     year = col.strftime('%Y') if hasattr(col, 'strftime') else str(col)
                     value = stmt.loc[idx, col]
-                    # Convert to millions if value is large
-                    if abs(value) > 1e9:
-                        value = value / 1e6  # Convert to millions
-                    result[idx][year] = round(value, 2) if pd.notna(value) else None
+                    # Keep absolute units — frontend formats B/M. Do not millify selectively.
+                    result[str(idx)][year] = round(float(value), 2) if pd.notna(value) else None
             return result
-        
+
+        years = sorted(set(
+            [col.strftime('%Y') if hasattr(col, 'strftime') else str(col)
+             for col in list(income_stmt.columns) + list(balance_sheet.columns) + list(cash_flow.columns)]
+        ), reverse=True)
+
         return {
-            "income_statement": stmt_to_dict(income_stmt, "income"),
-            "balance_sheet": stmt_to_dict(balance_sheet, "balance"),
-            "cash_flow": stmt_to_dict(cash_flow, "cash"),
-            "years": list(set([col.strftime('%Y') if hasattr(col, 'strftime') else str(col) 
-                              for col in income_stmt.columns] + 
-                             [col.strftime('%Y') if hasattr(col, 'strftime') else str(col) 
-                              for col in balance_sheet.columns] +
-                             [col.strftime('%Y') if hasattr(col, 'strftime') else str(col) 
-                              for col in cash_flow.columns]))
+            "income_statement": stmt_to_dict(income_stmt),
+            "balance_sheet": stmt_to_dict(balance_sheet),
+            "cash_flow": stmt_to_dict(cash_flow),
+            "years": years,
+            "currency": currency,
+            "unit": "absolute",
         }
     except Exception as e:
         logger.error(f"Error fetching financial statements for {ticker}: {e}")
@@ -183,27 +184,31 @@ def get_segment_data(ticker: str) -> Optional[Dict[str, Any]]:
 def get_fair_value_comparison(ticker: str, dcf_value: float) -> Optional[Dict[str, Any]]:
     """
     Compare DCF valuation to analyst consensus and peers.
+    Prices and DCF are in major currency units.
     """
     try:
         t = yf.Ticker(ticker)
         info = t.info
-        
-        current_price = info.get('currentPrice', info.get('regularMarketPrice'))
-        target_mean = info.get('targetMeanPrice')
-        
+        yahoo_cur = info.get('currency', '') or ''
+
+        raw_price = info.get('currentPrice', info.get('regularMarketPrice'))
+        current_price = normalize_price(raw_price, yahoo_cur)
+        target_mean = normalize_price(info.get('targetMeanPrice'), yahoo_cur)
+
         if not current_price:
             return None
-        
+
         # Calculate upside/downside
         dcf_upside = ((dcf_value - current_price) / current_price) * 100 if current_price else 0
         analyst_upside = ((target_mean - current_price) / current_price) * 100 if target_mean else 0
-        
+
         return {
             "current_price": current_price,
             "your_dcf": dcf_value,
             "dcf_upside": round(dcf_upside, 2),
             "analyst_target": target_mean,
             "analyst_upside": round(analyst_upside, 2),
+            "currency": display_currency(yahoo_cur, ticker),
             "verdict": "Undervalued" if dcf_value > current_price else "Overvalued",
             "confidence": "High" if abs(dcf_upside) > 20 else "Medium" if abs(dcf_upside) > 10 else "Low"
         }

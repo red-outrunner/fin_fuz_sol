@@ -13,6 +13,7 @@ from scipy import stats
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import core_math
 from serialization import clean_data
+from currency_utils import normalize_price, display_currency
 
 logger = logging.getLogger(__name__)
 
@@ -272,38 +273,27 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
         else:
             return None
 
-        # Detect currency and convert to ZAR
-        # yfinance sometimes misreports currency, so we use ticker suffix as primary indicator
+        # Trust Yahoo currency (ZAc→ZAR /100). Never use magnitude heuristics —
+        # Capitec/Naspers trade well above R500 in real rands.
+        yahoo_cur = (info.get("currency") or "").strip()
         ticker_upper = (ticker or "").upper()
-        
-        if ticker_upper.endswith(".JO"):
-            # JSE stocks: prices in ZAR (Rand), dividends in ZAR
-            # Note: Some older yfinance versions return ZAc (cents), so we detect by magnitude
-            price_in_zar = current_price
-            # If price looks like cents (>500 suggests it's ZAc, since few JSE stocks trade above R500)
-            if current_price > 500:
-                price_in_zar = current_price / 100.0
-        elif ticker_upper.endswith(".US") or "." not in ticker_upper:
-            # US stocks: convert USD to ZAR
+        major_price = normalize_price(current_price, yahoo_cur)
+        if major_price is None:
+            return None
+        display_cur = display_currency(yahoo_cur, ticker or "")
+
+        def _usd_to_zar(amount: float) -> float:
             try:
-                zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
-            except:
-                zar_per_usd = 18.0
-            price_in_zar = current_price * zar_per_usd
-        else:
-            # Other exchanges (UK, EU, AU, etc.) - use info currency or default to no conversion
-            currency = info.get("currency", "USD")
-            if currency == "ZAc":
-                price_in_zar = current_price / 100.0
-            elif currency == "USD":
-                try:
-                    zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
-                except:
-                    zar_per_usd = 18.0
-                price_in_zar = current_price * zar_per_usd
-            else:
-                # GBP, EUR, AUD, etc. - would need additional FX conversion (TODO)
-                price_in_zar = current_price
+                return float(amount) * float(yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1])
+            except Exception:
+                return float(amount) * 18.0
+
+        is_usd = (
+            display_cur == "USD"
+            or ticker_upper.endswith(".US")
+            or ("." not in ticker_upper and display_cur not in ("ZAR", "GBP", "EUR", "AUD", "CAD"))
+        )
+        price_in_zar = _usd_to_zar(major_price) if is_usd else major_price
 
         # Fetch actual dividend data from yfinance
         annual_yield = 0.0
@@ -314,39 +304,14 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
                 dividends = ticker_obj.dividends
 
                 if dividends is not None and not dividends.empty:
-                    # Sum last 12 months of dividends
                     last_year = dividends.index.max() - pd.DateOffset(months=12)
-                    dividends_12m_raw = dividends[dividends.index >= last_year].sum()
-
-                    # Convert dividends to ZAR using same logic as price
-                    dividends_in_zar = dividends_12m_raw
-                    
-                    if ticker_upper.endswith(".JO"):
-                        # JSE: check if dividends are in cents (same magnitude logic as price)
-                        if dividends_12m_raw > 500:  # Likely in ZAc
-                            dividends_in_zar = dividends_12m_raw / 100.0
-                    elif ticker_upper.endswith(".US") or "." not in ticker_upper:
-                        # US: convert USD dividends to ZAR
-                        try:
-                            zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
-                        except:
-                            zar_per_usd = 18.0
-                        dividends_in_zar = dividends_12m_raw * zar_per_usd
-                    else:
-                        # Other currencies - use info currency
-                        currency = info.get("currency", "USD")
-                        if currency == "ZAc":
-                            dividends_in_zar = dividends_12m_raw / 100.0
-                        elif currency == "USD":
-                            try:
-                                zar_per_usd = yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1]
-                            except:
-                                zar_per_usd = 18.0
-                            dividends_in_zar = dividends_12m_raw * zar_per_usd
+                    dividends_12m_raw = float(dividends[dividends.index >= last_year].sum())
+                    dividends_major = normalize_price(dividends_12m_raw, yahoo_cur) or 0.0
+                    dividends_in_zar = _usd_to_zar(dividends_major) if is_usd else dividends_major
 
                     if price_in_zar > 0:
                         annual_yield = dividends_in_zar / price_in_zar
-                        dividends_12m = dividends_in_zar  # Store the ZAR-converted value
+                        dividends_12m = dividends_in_zar
             except Exception as e:
                 logger.warning(f"Could not fetch dividend data for {ticker}: {e}")
 

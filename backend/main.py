@@ -23,6 +23,7 @@ from sector_manager import sync_sector_data, import_from_excel
 from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
 from technical import build_technical_snapshot, run_backtest
 from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_provider
+from currency_utils import normalize_price, display_currency, normalize_history_value, BRAND_ATTRIBUTION
 from database import get_db, engine, Base
 import models
 from sqlalchemy.orm import Session
@@ -372,6 +373,17 @@ def _build_export_frames(request: AnalysisRequest):
     return processed, flat_stats
 
 
+def _make_excel_safe(df):
+    """Strip timezone info from index/columns so openpyxl can write them."""
+    df = df.copy()
+    if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
+    for col in df.columns:
+        if pd.api.types.is_datetime64tz_dtype(df[col]):
+            df[col] = df[col].dt.tz_localize(None)
+    return df
+
+
 @app.post("/api/export/excel")
 def export_excel(request: AnalysisRequest):
     logger.info(f"Exporting Excel for {request.ticker}")
@@ -379,10 +391,15 @@ def export_excel(request: AnalysisRequest):
 
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        processed['df'].to_excel(writer, sheet_name='Monthly Data')
-        processed['pivot'].to_excel(writer, sheet_name='Yearly Pivot')
+        _make_excel_safe(processed['df']).to_excel(writer, sheet_name='Monthly Data')
+        _make_excel_safe(processed['pivot']).to_excel(writer, sheet_name='Yearly Pivot')
         if flat_stats:
             pd.DataFrame([flat_stats]).to_excel(writer, sheet_name='Summary Stats', index=False)
+        pd.DataFrame([
+            [BRAND_ATTRIBUTION],
+            [f"Ticker: {request.ticker}"],
+            [f"Period: {request.start_year} → {request.end_date}"],
+        ]).to_excel(writer, sheet_name='About', index=False, header=False)
 
     output.seek(0)
     headers = {
@@ -412,6 +429,7 @@ def export_sheets(request: AnalysisRequest):
         stats_tsv = pd.DataFrame([flat_stats]).to_csv(sep='\t', index=False)
 
     payload = (
+        f"{BRAND_ATTRIBUTION}\n"
         f"UBOMVU ANALYSIS\t{request.ticker}\n"
         f"Period\t{request.start_year} → {request.end_date}\n\n"
         f"=== SUMMARY ===\n{stats_tsv}\n"
@@ -439,6 +457,8 @@ def export_csv(request: AnalysisRequest):
         raise HTTPException(status_code=500, detail="Error processing data")
         
     output = io.StringIO()
+    output.write(f"# {BRAND_ATTRIBUTION}\n")
+    output.write(f"# Ticker: {request.ticker} | Period: {request.start_year} → {request.end_date}\n")
     processed['df'].to_csv(output)
     
     # Convert string to bytes for StreamingResponse
@@ -565,6 +585,8 @@ def export_ml(request: AnalysisRequest):
     df_export = pd.DataFrame(export_data)
     
     output = io.StringIO()
+    output.write(f"# {BRAND_ATTRIBUTION}\n")
+    output.write(f"# Ticker: {request.ticker} | ML cluster export\n")
     df_export.to_csv(output, index=False)
     
     mem = io.BytesIO()
@@ -760,7 +782,8 @@ def watchlist_sparklines(request: Request, body: SparklineRequest):
                 continue
             closes = data["Adj Close"] if "Adj Close" in data.columns else data["Close"]
             closes = closes.dropna().tail(30)
-            prices = [round(float(p), 4) for p in closes.tolist()]
+            raw = [float(p) for p in closes.tolist()]
+            prices = [round(v, 4) if v is not None else 0.0 for v in (normalize_history_value(p, ticker) for p in raw)]
             change_pct = None
             if len(prices) >= 2 and prices[0] != 0:
                 change_pct = round(((prices[-1] - prices[0]) / prices[0]) * 100, 2)
@@ -830,31 +853,12 @@ _FX_FALLBACK_ZAR = {
 
 
 def _infer_holding_currency(ticker: str, yahoo_currency: str = "") -> str:
-    raw = (yahoo_currency or "").strip()
-    if raw in ("ZAc", "ZAR"):
-        return "ZAR"
-    if raw == "GBp":
-        return "GBP"
-    if raw:
-        return raw
-    sym = (ticker or "").upper().strip()
-    if "." in sym:
-        suffix = sym.rsplit(".", 1)[-1]
-        if suffix in _SUFFIX_CURRENCY:
-            return _SUFFIX_CURRENCY[suffix]
-    return "USD"
+    return display_currency(yahoo_currency, ticker)
 
 
 def _normalize_price(price, yahoo_currency: str):
     """Convert Yahoo quote units to major currency units (ZAc→ZAR, GBp→GBP)."""
-    if not price:
-        return 0.0
-    cur = (yahoo_currency or "").strip()
-    if cur == "ZAc":
-        return float(price) / 100.0
-    if cur == "GBp":
-        return float(price) / 100.0
-    return float(price)
+    return normalize_price(price, yahoo_currency) or 0.0
 
 
 def _fx_rate_to_zar(currency: str, cache: dict) -> float:

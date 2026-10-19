@@ -1,6 +1,7 @@
 """Stock screener and discovery features: filtering, heatmap data, stock ideas feed."""
 import os
 import logging
+import math
 import concurrent.futures
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ import yfinance as yf
 
 from market_data import normalize_dividend_yield, download_data
 from serialization import clean_data
+from currency_utils import normalize_price, display_currency
 from sector_manager import (
     get_jse_top_40,
     get_jse_sectors,
@@ -43,6 +45,8 @@ def _fetch_ticker_info(ticker: str) -> Optional[Dict[str, Any]]:
         if not info.get('marketCap') and not info.get('currentPrice'):
             return None
 
+        yahoo_cur = (info.get('currency') or '').strip()
+
         # Get recent price data for 52-week calculation
         try:
             hist = t.history(period="1y")
@@ -58,6 +62,12 @@ def _fetch_ticker_info(ticker: str) -> Optional[Dict[str, Any]]:
             high_52w = None
             low_52w = None
             current_price = info.get('currentPrice', info.get('regularMarketPrice'))
+
+        # Normalize to major units (ZAc→ZAR). Apply to high/low too so ratios stay consistent.
+        current_price = normalize_price(current_price, yahoo_cur)
+        high_52w = normalize_price(high_52w, yahoo_cur)
+        low_52w = normalize_price(low_52w, yahoo_cur)
+        currency = display_currency(yahoo_cur, ticker)
 
         # Calculate distance from 52-week high/low
         pct_from_high = None
@@ -101,7 +111,7 @@ def _fetch_ticker_info(ticker: str) -> Optional[Dict[str, Any]]:
             "sector": sector,
             "industry": info.get('industry', 'N/A'),
             "current_price": current_price,
-            "currency": info.get('currency', 'ZAR'),
+            "currency": currency,
             "market_cap": market_cap,
             "pe_ratio": trailing_pe,
             "forward_pe": forward_pe,
@@ -258,59 +268,56 @@ def screen_stocks(
 def _calculate_price_change(ticker: str, period: str = "1d") -> float:
     """
     Calculate price change percentage for a given period.
-    
-    Args:
-        ticker: Stock ticker symbol
-        period: Time period ("1d", "7d", "1mo", "ytd")
-    
-    Returns:
-        Percentage change (can be negative)
+
+    Returns a finite float percentage (never NaN/inf). Falls back to 0.0
+    when fewer than two valid closes are available.
     """
     try:
         t = yf.Ticker(ticker)
-        
-        # For YTD, we need special handling - fetch from January 1st
+
+        # "1d" fetches a wider window so we still have ≥2 valid closes after
+        # dropping NaN bars (a bare "2d" window often returns a single bar
+        # pre-market). Other periods stay anchored to their labelled window.
+        fetch_map = {
+            "1d": "5d",
+            "7d": "7d",
+            "1mo": "1mo",
+        }
+
         if period == "ytd":
             current_year = datetime.now().year
-            start_date = datetime(current_year, 1, 1).strftime("%Y-%m-%d")
-            end_date = datetime.now().strftime("%Y-%m-%d")
-            hist = t.history(start=start_date, end=end_date)
+            hist = t.history(
+                start=datetime(current_year, 1, 1).strftime("%Y-%m-%d"),
+                end=datetime.now().strftime("%Y-%m-%d"),
+            )
         else:
-            # Map period to yfinance history period
-            period_map = {
-                "1d": "2d",    # Fetch 2 days to compare yesterday vs today
-                "7d": "7d",
-                "1mo": "1mo",
-            }
-            
-            yf_period = period_map.get(period, "2d")
-            hist = t.history(period=yf_period)
-        
-        if len(hist) < 2:
+            hist = t.history(period=fetch_map.get(period, "1mo"))
+
+        # Drop NaN/missing closes (common during intraday partial bars)
+        closes = hist["Close"].dropna() if hist is not None and not hist.empty else pd.Series(dtype=float)
+
+        if len(closes) < 2:
             return 0.0
-        
-        # For 1-day change, compare the previous close to the most recent close
-        # For other periods, compare the first close to the last close
+
         if period == "1d":
-            # Use the second-to-last close as "previous" and last as "current"
-            # This gives us the actual 1-day change
-            if len(hist) >= 2:
-                prev_close = hist['Close'].iloc[-2]
-                current_close = hist['Close'].iloc[-1]
-            else:
-                return 0.0
+            prev_close = closes.iloc[-2]
+            current_close = closes.iloc[-1]
         else:
-            # For longer periods (7d, 1mo, ytd), compare start to end
-            prev_close = hist['Close'].iloc[0]
-            current_close = hist['Close'].iloc[-1]
-        
+            # For 7d / 1mo / ytd: compare first valid close to last valid close.
+            prev_close = closes.iloc[0]
+            current_close = closes.iloc[-1]
+
         if prev_close == 0:
             return 0.0
-        
-        change_pct = ((current_close - prev_close) / prev_close) * 100
-        return change_pct
+
+        change_pct = ((current_close - prev_close) / abs(prev_close)) * 100
+
+        if not math.isfinite(change_pct):
+            return 0.0
+
+        return round(change_pct, 4)
     except Exception as e:
-        logger.error(f"Error calculating {period} change for {ticker}: {e}")
+        logger.debug(f"Error calculating {period} change for {ticker}: {e}")
         return 0.0
 
 
@@ -351,6 +358,8 @@ def get_sector_performance(period: str = "1d") -> List[Dict[str, Any]]:
 
                 # Calculate price change for the specified period
                 change_pct = _calculate_price_change(data['ticker'], period)
+                if not math.isfinite(change_pct):
+                    change_pct = 0.0
 
                 # Include ALL fundamental data for display in heatmap detail panel
                 stock_info = {
@@ -383,7 +392,9 @@ def get_sector_performance(period: str = "1d") -> List[Dict[str, Any]]:
     # Build sector summaries
     sectors = []
     for sector_name, data in sector_data.items():
-        avg_performance = data["performance_sum"] / data["count"] if data["count"] > 0 else 0
+        avg_performance = data["performance_sum"] / data["count"] if data["count"] > 0 else 0.0
+        if not math.isfinite(avg_performance):
+            avg_performance = 0.0
 
         sectors.append({
             "name": sector_name,

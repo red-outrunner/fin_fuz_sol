@@ -3,13 +3,13 @@ import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { TrendingUp, DollarSign, Activity } from 'lucide-react';
 import InfoTip from './InfoTip';
+import { formatMoney } from '../utils/currency';
 
 const ValuationLab = ({ ticker }) => {
-    const formatPrice = (price) => {
+    const formatPrice = (price, currency = 'ZAR') => {
         if (price === null || price === undefined) return 'N/A';
-        // Prices from backend are in cents (ZAc), convert to Rands
-        const rands = price / 100;
-        return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(rands);
+        // Backend returns major units (ZAR/USD), never ZAc cents
+        return formatMoney(price, currency);
     };
     const [financials, setFinancials] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -46,13 +46,17 @@ const ValuationLab = ({ ticker }) => {
 
     // Recalculate Fair Value whenever assumptions or data change
     useEffect(() => {
-        if (!financials || !financials.fcf) return;
+        if (!financials || !financials.fcf || !financials.shares_outstanding) return;
 
         const fcf0 = financials.fcf;
         const shares = financials.shares_outstanding;
 
+        if (!isFinite(fcf0) || !isFinite(shares) || shares <= 0) return;
+
         // Simple 2-Stage DCF function
         const calcDCF = (growthRate) => {
+            // Terminal-growth must stay below the discount rate or TV is meaningless
+            if (discountRate - growthRateTerminal <= 0) return null;
             let futureCashFlows = 0;
             let lastFCF = fcf0;
 
@@ -71,6 +75,11 @@ const ValuationLab = ({ ticker }) => {
         const baseValue = calcDCF(growthRate1to5);
         const bullValue = calcDCF(growthRate1to5 + 0.02);
         const bearValue = calcDCF(growthRate1to5 - 0.02);
+
+        if (baseValue == null || bullValue == null || bearValue == null) {
+            setFairValue(null);
+            return;
+        }
 
         // Blend scenarios based on slider (0 = 100% Bear, 50 = 100% Base, 100 = 100% Bull)
         let calculatedFairValue;
@@ -91,8 +100,11 @@ const ValuationLab = ({ ticker }) => {
     if (loading) return <div className="p-12 text-center text-gold font-bold animate-pulse">Loading Valuation Data...</div>;
     if (!financials) return <div className="p-12 text-center text-slate-400">Valuation data unavailable for {ticker}.</div>;
 
-    const upside = ((fairValue - financials.price) / financials.price) * 100;
-    const isUndervalued = fairValue > financials.price;
+    const price = financials.price;
+    const upsidePct = (fairValue == null || price == null || !isFinite(price) || price === 0 || !isFinite(fairValue))
+        ? null
+        : ((fairValue - price) / price) * 100;
+    const isUndervalued = upsidePct != null && fairValue > price;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
@@ -201,36 +213,38 @@ const ValuationLab = ({ ticker }) => {
                     <div className="card-premium p-12 text-center relative overflow-hidden">
 
                         {/* Status Badge */}
-                        <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${isUndervalued ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {isUndervalued ? 'Undervalued' : 'Overvalued'}
+                        <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${upsidePct == null ? 'bg-slate-100 text-slate-500' : isUndervalued ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {upsidePct == null ? 'Insufficient Data' : isUndervalued ? 'Undervalued' : 'Overvalued'}
                         </div>
 
                         <h3 className="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4">Intrinsic Fair Value</h3>
 
                         <div className="text-7xl font-serif font-bold text-navy mb-2">
-                            {formatPrice(fairValue)}
+                            {formatPrice(fairValue, financials?.currency)}
                         </div>
 
                         <div className="flex items-center justify-center gap-2 mb-8">
-                            <span className="text-sm text-slate-500">Current Price: <span className="font-bold">{formatPrice(financials.price)}</span></span>
+                            <span className="text-sm text-slate-500">Current Price: <span className="font-bold">{formatPrice(financials.price, financials?.currency)}</span></span>
                         </div>
 
                         {/* Upside Meter */}
                         <div className="max-w-md mx-auto">
                             <div className="flex justify-between text-xs font-bold uppercase text-slate-400 mb-2">
                                 <span>Upside Potential</span>
-                                <span className={isUndervalued ? 'text-green-600' : 'text-red-600'}>{upside > 0 ? '+' : ''}{upside.toFixed(2)}%</span>
+                                <span className={upsidePct == null ? 'text-slate-500' : isUndervalued ? 'text-green-600' : 'text-red-600'}>
+                                    {upsidePct == null ? 'N/A' : `${upsidePct > 0 ? '+' : ''}${upsidePct.toFixed(2)}%`}
+                                </span>
                             </div>
                             <div className="h-4 bg-slate-100 rounded-full overflow-hidden flex">
                                 {/* This is a simplified split bar for visualization */}
                                 <div className="w-1/2 bg-slate-300 border-r border-white flex justify-end">
-                                    {!isUndervalued && (
-                                        <div className="h-full bg-red-500" style={{ width: `${Math.min(Math.abs(upside), 50)}%` }}></div>
+                                    {upsidePct != null && !isUndervalued && (
+                                        <div className="h-full bg-red-500" style={{ width: `${Math.min(Math.abs(upsidePct), 50)}%` }}></div>
                                     )}
                                 </div>
                                 <div className="w-1/2 bg-slate-300 flex justify-start">
-                                    {isUndervalued && (
-                                        <div className="h-full bg-green-500" style={{ width: `${Math.min(upside, 100)}%` }}></div>
+                                    {upsidePct != null && isUndervalued && (
+                                        <div className="h-full bg-green-500" style={{ width: `${Math.min(upsidePct, 100)}%` }}></div>
                                     )}
                                 </div>
                             </div>

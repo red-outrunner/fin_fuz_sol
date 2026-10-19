@@ -4,9 +4,22 @@ import { X, Settings, Check } from 'lucide-react';
 
 const ConsentToast = () => {
     const { consentGiven, consentShown, acceptConsent, declineConsent } = useUserPreferences();
-    const [visible, setVisible] = useState(true);
+    const [visible, setVisible] = useState(() => {
+        try {
+            return localStorage.getItem('ubomvu_consent_shown') !== 'true';
+        } catch {
+            return true;
+        }
+    });
 
     if (consentGiven || consentShown || !visible) return null;
+
+    const dismissForLater = () => {
+        try {
+            localStorage.setItem('ubomvu_consent_shown', 'true');
+        } catch { /* ignore */ }
+        setVisible(false);
+    };
 
     return (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-in slide-in-from-bottom fade-in duration-300">
@@ -16,12 +29,12 @@ const ConsentToast = () => {
                         <div className="flex items-center gap-2 mb-1">
                             <Settings className="w-4 h-4 text-gold" />
                             <h3 className="font-bold text-navy dark:text-cream text-sm">
-                                Your Settings Matter
+                                Save your watchlist
                             </h3>
                         </div>
                         <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                            We use browser storage to save your watchlist, theme preference, and settings. 
-                            This data stays on your device and is never shared.
+                            Add stocks in seconds — no sign-up. We store your watchlist and theme
+                            in this browser only (never shared).
                         </p>
                         <div className="flex gap-2 mt-3">
                             <button
@@ -46,8 +59,9 @@ const ConsentToast = () => {
                         </div>
                     </div>
                     <button
-                        onClick={() => setVisible(false)}
+                        onClick={dismissForLater}
                         className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition"
+                        title="Remind me later"
                     >
                         <X className="w-4 h-4" />
                     </button>

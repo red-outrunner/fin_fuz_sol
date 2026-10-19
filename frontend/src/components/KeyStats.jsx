@@ -23,7 +23,7 @@ const MetricRow = ({ label, value, format = 'text', currency = 'USD' }) => {
 
 const KeyStats = ({ stats, ticker = '' }) => {
     const isJSE = ticker.includes('.JO') || ticker.startsWith('^J');
-    const currency = isJSE ? 'ZAR' : 'USD';
+    const currency = stats?.currency || (isJSE ? 'ZAR' : 'USD');
 
     if (!stats) {
         return (

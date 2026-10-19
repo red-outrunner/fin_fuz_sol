@@ -1,5 +1,8 @@
 /** Currency helpers for multi-market portfolio entry & display. */
 
+export const BRAND_ATTRIBUTION = 'Analyzed with Ubomvu (ubomvu.com)';
+export const BRAND_URL = 'ubomvu.com';
+
 const SUFFIX_CURRENCY = {
     JO: 'ZAR',
     L: 'GBP',

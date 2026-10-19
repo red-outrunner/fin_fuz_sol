@@ -20,6 +20,7 @@ from bs4 import BeautifulSoup
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import core_math
 from serialization import clean_data
+from currency_utils import normalize_price, display_currency, normalize_history_value
 
 logger = logging.getLogger(__name__)
 
@@ -357,6 +358,7 @@ def get_key_stats(ticker: str):
         fun_stats = generate_fun_stats(info)
 
         stats = {
+            "currency": display_currency(info.get("currency", ""), ticker),
             "valuation": {
                 "market_cap": fmt("marketCap"),
                 "pe_ratio": fmt("trailingPE"),
@@ -376,9 +378,9 @@ def get_key_stats(ticker: str):
             "trading": {
                 "beta": fmt("beta"),
                 "short_ratio": fmt("shortRatio"),
-                "target_high": fmt("targetHighPrice"),
-                "target_low": fmt("targetLowPrice"),
-                "target_mean": fmt("targetMeanPrice"),
+                "target_high": normalize_price(fmt("targetHighPrice"), info.get("currency", "")),
+                "target_low": normalize_price(fmt("targetLowPrice"), info.get("currency", "")),
+                "target_mean": normalize_price(fmt("targetMeanPrice"), info.get("currency", "")),
                 "recommendation_mean": fmt("recommendationMean"),
             },
             "insight": {
@@ -636,14 +638,14 @@ def get_dividend_history(ticker: str, start_year: int = 2010):
         for date, val in dividends.items():
              div_data.append({
                  "date": str(date).split(" ")[0],
-                 "value": val
+                 "value": normalize_history_value(val, ticker)
              })
 
         annual_data = []
         for date, val in annual_div.items():
             annual_data.append({
                 "year": date.year,
-                "value": val,
+                "value": normalize_history_value(val, ticker),
                 "growth": growth.get(date, 0)
             })
 
@@ -651,7 +653,8 @@ def get_dividend_history(ticker: str, start_year: int = 2010):
             "history": div_data,
             "annual": annual_data,
             "current_yield": normalize_dividend_yield(t.info.get('dividendYield')) or 0,
-            "payout_ratio": t.info.get('payoutRatio', 0)
+            "payout_ratio": t.info.get('payoutRatio', 0),
+            "currency": display_currency(t.info.get("currency", ""), ticker)
         }
     except Exception as e:
         logger.error(f"Error fetching dividends for {ticker}: {e}")
@@ -1072,9 +1075,12 @@ def get_financials(ticker: str):
             "fcf": fcf,
             "shares_outstanding": shares,
             "beta": beta,
-            "price": info.get("currentPrice", info.get("regularMarketPreviousClose")),
+            "price": normalize_price(
+                info.get("currentPrice", info.get("regularMarketPreviousClose")),
+                info.get("currency", ""),
+            ),
             "suggested_discount_rate": suggested_discount_rate,
-            "currency": info.get("currency", "USD")
+            "currency": display_currency(info.get("currency", ""), ticker),
         }
     except Exception as e:
         logger.error(f"Error fetching financials for {ticker}: {e}")

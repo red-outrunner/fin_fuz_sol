@@ -43,14 +43,18 @@ const formatCap = (num) => {
 
 const formatPrice = (price) => {
     if (price == null) return '—';
-    // JSE often in cents via yfinance
-    const rands = price > 1000 ? price / 100 : price;
-    return `R${rands.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Backend heatmap prices are major units (ZAR)
+    return `R${Number(price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 const formatPct = (n, digits = 1) => {
     if (n == null) return '—';
     return `${(n * 100).toFixed(digits)}%`;
+};
+
+const fmtChg = (n) => {
+    if (n == null || Number.isNaN(n)) return '—';
+    return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
 };
 
 const JSEHeatmap = ({ onSelectTicker }) => {
@@ -182,13 +186,8 @@ const JSEHeatmap = ({ onSelectTicker }) => {
 
             // Sector change
             ctx.font = `${13 * detailScale}px monospace`;
-            const changeSign = sector.change_percent >= 0 ? '+' : '';
             ctx.textAlign = 'right';
-            ctx.fillText(
-                `${changeSign}${sector.change_percent?.toFixed(2)}%`,
-                x + colWidth - 10,
-                y + 22
-            );
+            ctx.fillText(fmtChg(sector.change_percent), x + colWidth - 10, y + 22);
             ctx.textAlign = 'left';
             
             // Draw stocks in grid
@@ -227,13 +226,8 @@ const JSEHeatmap = ({ onSelectTicker }) => {
 
                 // Stock change
                 ctx.font = `bold ${12 * detailScale}px monospace`;
-                const stockChangeSign = stock.change_percent >= 0 ? '+' : '';
                 ctx.textAlign = 'right';
-                ctx.fillText(
-                    `${stockChangeSign}${stock.change_percent?.toFixed(2)}%`,
-                    sx + stockWidth - 8,
-                    sy + 18
-                );
+                ctx.fillText(fmtChg(stock.change_percent), sx + stockWidth - 8, sy + 18);
                 ctx.textAlign = 'left';
                 
                 // Stock name (smaller)
@@ -260,6 +254,13 @@ const JSEHeatmap = ({ onSelectTicker }) => {
             ctx.fillText(`Part ${currentPart} of ${totalParts}`, width / 2, height - 30);
             ctx.textAlign = 'left';
         }
+
+        // Brand watermark
+        ctx.fillStyle = 'rgba(197,160,89,0.7)';
+        ctx.font = `600 ${Math.max(12, 14 * detailScale)}px "Playfair Display", serif`;
+        ctx.textAlign = 'right';
+        ctx.fillText('Analyzed with Ubomvu (ubomvu.com)', width - 40, height - 24);
+        ctx.textAlign = 'left';
     };
 
     const exportToPNG = async () => {
@@ -536,7 +537,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                 <div className="flex items-center gap-2">
                     <span className="text-slate-500 uppercase tracking-wider text-[9px] font-bold">Cap-wtd</span>
                     <span className={`font-mono font-semibold tabular-nums ${marketAvg >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {marketAvg >= 0 ? '+' : ''}{marketAvg.toFixed(2)}%
+                        {fmtChg(marketAvg)}
                     </span>
                 </div>
                 {leaders.bestSector && (
@@ -544,15 +545,14 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                         <span>
                             Best <span className="text-emerald-400 font-medium">{leaders.bestSector.name}</span>
                             <span className="font-mono ml-1 text-emerald-400/80">
-                                {leaders.bestSector.change_percent >= 0 ? '+' : ''}
-                                {leaders.bestSector.change_percent?.toFixed(2)}%
+                                {fmtChg(leaders.bestSector.change_percent)}
                             </span>
                         </span>
                         <span className="text-slate-700">|</span>
                         <span>
                             Weak <span className="text-rose-400 font-medium">{leaders.worstSector?.name}</span>
                             <span className="font-mono ml-1 text-rose-400/80">
-                                {leaders.worstSector?.change_percent?.toFixed(2)}%
+                                {leaders.worstSector ? fmtChg(leaders.worstSector.change_percent) : '—'}
                             </span>
                         </span>
                     </div>
@@ -593,8 +593,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                             {sector.name}
                                         </span>
                                         <span className="font-mono text-[10px] font-semibold tabular-nums shrink-0 ml-2">
-                                            {sector.change_percent >= 0 ? '+' : ''}
-                                            {sector.change_percent?.toFixed(2)}%
+                                            {fmtChg(sector.change_percent)}
                                             <span className="opacity-70 ml-1.5">{stocks.length}</span>
                                         </span>
                                     </div>
@@ -616,7 +615,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                         active ? 'ring-2 ring-gold z-10' : ''
                                                     }`}
                                                     style={{ background: c.bg, color: c.fg }}
-                                                    title={`${stock.ticker} ${stock.change_percent?.toFixed(2)}%`}
+                                                    title={`${stock.ticker} ${fmtChg(stock.change_percent)}`}
                                                 >
                                                     <div className="flex items-start justify-between gap-1">
                                                         <CompanyLogo
@@ -637,8 +636,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                         )}
                                                     </div>
                                                     <div className="font-mono text-[11px] md:text-sm font-semibold tabular-nums mt-0.5">
-                                                        {stock.change_percent >= 0 ? '+' : ''}
-                                                        {stock.change_percent?.toFixed(2)}%
+                                                        {fmtChg(stock.change_percent)}
                                                     </div>
                                                     <div className="text-[9px] opacity-80 truncate mt-0.5 hidden sm:block">
                                                         {stock.name}
@@ -663,8 +661,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                     >
                                         <span className="text-xs font-bold uppercase tracking-wider">{sector.name}</span>
                                         <span className="font-mono text-xs tabular-nums">
-                                            {sector.change_percent >= 0 ? '+' : ''}
-                                            {sector.change_percent?.toFixed(2)}% · {formatCap(sector.market_cap)}
+                                            {fmtChg(sector.change_percent)} · {formatCap(sector.market_cap)}
                                         </span>
                                     </div>
                                     <div className="divide-y divide-slate-800/80 bg-[#0b1220]">
@@ -708,8 +705,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                                                     : 'text-rose-400'
                                                             }`}
                                                         >
-                                                            {stock.change_percent >= 0 ? '+' : ''}
-                                                            {stock.change_percent?.toFixed(2)}%
+                                                            {fmtChg(stock.change_percent)}
                                                         </span>
                                                     </button>
                                                 );
@@ -739,7 +735,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                         style={{ background: c.bg, color: c.fg }}
                                     >
                                         <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" variant="heatmap" />
-                                        <span>{s.ticker.replace('.JO', '')} +{s.change_percent?.toFixed(2)}%</span>
+                                        <span>{s.ticker.replace('.JO', '')} {fmtChg(s.change_percent)}</span>
                                     </button>
                                 );
                             })}
@@ -761,7 +757,7 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                         style={{ background: c.bg, color: c.fg }}
                                     >
                                         <CompanyLogo ticker={s.ticker} name={s.name} website={s.website} size="xs" variant="heatmap" />
-                                        <span>{s.ticker.replace('.JO', '')} {s.change_percent?.toFixed(2)}%</span>
+                                        <span>{s.ticker.replace('.JO', '')} {fmtChg(s.change_percent)}</span>
                                     </button>
                                 );
                             })}
@@ -787,8 +783,8 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                     <p className="text-xs text-slate-400 truncate">{hover.name}</p>
                                 </div>
                             </div>
-                            <p className={`font-mono font-bold ${hover.change_percent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {hover.change_percent >= 0 ? '+' : ''}{hover.change_percent?.toFixed(2)}%
+                            <p className={`font-mono font-bold ${(hover.change_percent || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {fmtChg(hover.change_percent)}
                             </p>
                         </div>
                         <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
@@ -834,11 +830,10 @@ const JSEHeatmap = ({ onSelectTicker }) => {
                                         </h3>
                                         <span
                                             className={`font-mono text-lg font-semibold tabular-nums ${
-                                                selected.change_percent >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                                                (selected.change_percent || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
                                             }`}
                                         >
-                                            {selected.change_percent >= 0 ? '+' : ''}
-                                            {selected.change_percent?.toFixed(2)}%
+                                            {fmtChg(selected.change_percent)}
                                         </span>
                                     </div>
                                     <p className="text-sm text-slate-400 mt-0.5">{selected.name}</p>
