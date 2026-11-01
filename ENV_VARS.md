@@ -58,8 +58,7 @@ All optional — the app runs with sensible defaults if these are unset.
 | `RATE_LIMIT` | `60/minute` | Per-IP request limit applied to all routes. |
 | `RATE_LIMIT_BURST` | `1000/hour` | Secondary longer-window per-IP cap. |
 | `RATE_LIMIT_STORAGE_URI` | `memory://` | Set to `redis://...` for shared rate-limit state across multiple workers/instances. |
-| `ADMIN_EMAIL` | `test@gmail.com` | Email of the auto-seeded admin account (full access to all tools). |
-| `ADMIN_PASSWORD` | `12345678` | Password for the seeded admin. **Change both of these in production** — the defaults are for local/dev only. |
+| `SECTOR_ADMIN_TOKEN` | _(unset)_ | Private bearer token for sector reloads; minimum 32 characters. Generate with `openssl rand -hex 32`. Unset or shorter values disable the endpoint. Keep server-side; never use a `VITE_` variable. |
 | `CACHE_DIR` | `cache_v3` | Directory for the parquet market-data cache. |
 | `CACHE_TTL_SECONDS` | `86400` | How long (seconds) a cached price series is considered fresh. |
 | `POLYGON_API_KEY` | _(unset)_ | Optional. Enables lower-latency quotes via Polygon.io (falls back to yfinance). |

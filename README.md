@@ -98,3 +98,22 @@ The project includes configurations for:
 ## 📄 License
 
 This project is licensed under the terms found in the [LICENSE](LICENSE) file.
+
+
+### Sector metadata administration
+
+Startup loads the sector JSON without searching server directories for spreadsheets.
+`POST /api/admin/sync-sectors` reloads that JSON and requires an
+`Authorization: Bearer <SECTOR_ADMIN_TOKEN>` header over HTTPS. Set
+`SECTOR_ADMIN_TOKEN` on the backend to a private random value (generate one with
+`openssl rand -hex 32`); absent or shorter-than-32-character configuration disables
+this endpoint. It accepts no query parameters and does not import spreadsheets.
+
+To import a spreadsheet, run the local administrative CLI from `backend/`:
+
+```bash
+python sector_manager.py --import-excel /trusted/path/constituent_details.xlsx
+```
+
+Then restart the backend or call the authenticated reload endpoint on each running
+instance. Existing public stock and sector read endpoints remain available.

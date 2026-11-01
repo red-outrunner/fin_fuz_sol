@@ -578,8 +578,6 @@ def _build_why_bullets(details: Dict[str, Any]) -> tuple:
         bullets.append(f"Today's featured {sector} name — dig into returns, risk and peers in the Analyser.")
 
     theme = max(scores, key=scores.get) if any(scores.values()) else "featured"
-    if scores[theme] == 0:
-        theme = "featured"
 
     # Cap at 3 punchy reasons
     return theme, bullets[:3]
@@ -622,7 +620,7 @@ def _day_change_since(ticker: str, since_date: str) -> Optional[float]:
         return None
 
 
-def get_stock_of_the_day() -> Dict[str, Any]:
+def get_stock_of_the_day() -> Optional[Dict[str, Any]]:
     """
     Featured JSE Top 40 pick for the Africa/Johannesburg calendar day.
     Cached for the day after first build. Includes thesis bullets + yesterday's pick.
@@ -633,18 +631,21 @@ def get_stock_of_the_day() -> Dict[str, Any]:
 
     top_40_list = get_jse_top_40()
     n = len(top_40_list)
+    if not n:
+        return None
     idx = _date_index(today, n)
     # Mild quality pass: try up to 3 consecutive date-hash picks for usable data
     details = None
     ticker = top_40_list[idx]
     for offset in range(3):
         candidate = top_40_list[(idx + offset) % n]
-        details = get_ticker_details(candidate)
-        if details and details.get("current_price"):
+        candidate_details = get_ticker_details(candidate)
+        if candidate_details and candidate_details.get("current_price"):
             ticker = candidate
+            details = candidate_details
             break
     if not details:
-        details = {"ticker": ticker, "name": ticker, "sector": get_sector_for_ticker(ticker)}
+        details = {"ticker": ticker, "name": ticker, "sector": get_sector_for_ticker(ticker, fallback_yfinance=False)}
 
     sector = get_sector_for_ticker(ticker, fallback_yfinance=False)
     theme, why = _build_why_bullets(details)

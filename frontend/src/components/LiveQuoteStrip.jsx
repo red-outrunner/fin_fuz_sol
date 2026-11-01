@@ -37,12 +37,19 @@ const LiveQuoteStrip = ({ tickers = [] }) => {
             }
         };
 
+        const startPolling = () => {
+            if (cancelled || pollId) return;
+            setConnected(false);
+            poll();
+            pollId = window.setInterval(poll, 15000);
+        };
+
         // Try WebSocket first
         try {
             const wsUrl = `${apiWsBase()}/ws/quotes?tickers=${encodeURIComponent(list.join(','))}&interval=8`;
             const ws = new WebSocket(wsUrl);
             wsRef.current = ws;
-            ws.onopen = () => setConnected(true);
+            ws.onopen = () => { if (!cancelled) setConnected(true); };
             ws.onmessage = (ev) => {
                 try {
                     apply(JSON.parse(ev.data));
@@ -50,21 +57,10 @@ const LiveQuoteStrip = ({ tickers = [] }) => {
                     /* ignore */
                 }
             };
-            ws.onerror = () => {
-                setConnected(false);
-                poll();
-                pollId = window.setInterval(poll, 15000);
-            };
-            ws.onclose = () => {
-                setConnected(false);
-                if (!cancelled && !pollId) {
-                    poll();
-                    pollId = window.setInterval(poll, 15000);
-                }
-            };
+            ws.onerror = startPolling;
+            ws.onclose = startPolling;
         } catch {
-            poll();
-            pollId = window.setInterval(poll, 15000);
+            startPolling();
         }
 
         return () => {

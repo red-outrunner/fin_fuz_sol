@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import StreamingResponse
+from starlette.concurrency import run_in_threadpool
 import io
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -19,7 +20,7 @@ from analysis import download_data, process_data, calculate_summary_stats, run_m
 import yfinance as yf
 from reports import PDFReportGenerator
 from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe, get_stock_of_the_day
-from sector_manager import sync_sector_data, import_from_excel
+from sector_manager import sync_sector_data
 from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
 from technical import build_technical_snapshot, run_backtest
 from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_provider
@@ -27,6 +28,7 @@ from currency_utils import normalize_price, display_currency, normalize_history_
 from database import get_db, engine, Base
 import models
 from portfolio_access import require_portfolio_key
+from admin_access import require_sector_admin
 from sqlalchemy.orm import Session
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -130,7 +132,7 @@ class FreedomRequest(BaseModel):
 def startup_event():
     logger.info("Initializing JSE sector & ticker metadata...")
     try:
-        res = sync_sector_data(auto_search_excel=True)
+        res = sync_sector_data(auto_search_excel=False)
         logger.info(f"Sector metadata initialized: {res}")
     except Exception as e:
         logger.error(f"Failed to initialize sector metadata: {e}")
@@ -144,22 +146,16 @@ def read_root():
 def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
-@app.post("/api/admin/sync-sectors")
-def admin_sync_sectors(request_path: Optional[str] = None):
-    """Triggers dynamic synchronization of JSE sector metadata from JSON or Excel source."""
+@app.post("/api/admin/sync-sectors", dependencies=[Depends(require_sector_admin)])
+def admin_sync_sectors(request: Request):
+    """Reload sector JSON; spreadsheet imports are local CLI operations only."""
+    if request.query_params:
+        raise HTTPException(status_code=400, detail="This endpoint accepts no query parameters")
     try:
-        if request_path:
-            success = import_from_excel(request_path)
-            if not success:
-                raise HTTPException(status_code=400, detail=f"Failed to import from {request_path}")
-            return {"status": "success", "imported_file": request_path}
-        res = sync_sector_data(auto_search_excel=True)
-        return res
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error syncing sectors: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return sync_sector_data(auto_search_excel=False)
+    except Exception:
+        logger.exception("Error reloading sector metadata")
+        raise HTTPException(status_code=500, detail="Failed to reload sector metadata")
 
 @app.post("/api/search")
 def search_handler(request: SearchRequest):
@@ -806,7 +802,10 @@ def stock_of_the_day(request: Request):
     Featured JSE equity for the Africa/Johannesburg calendar day.
     Day-cached; includes thesis bullets, theme, countdown target, and yesterday's pick.
     """
-    return get_stock_of_the_day()
+    result = get_stock_of_the_day()
+    if result is None:
+        raise HTTPException(status_code=503, detail="No stocks are currently available for the daily feature")
+    return result
 
 
 # === Portfolio Tracking Endpoints ===
@@ -1299,7 +1298,7 @@ async def ws_quotes(websocket: WebSocket):
     """
     await websocket.accept()
     params = websocket.query_params
-    tickers = [t.strip().upper() for t in (params.get("tickers") or "").split(",") if t.strip()]
+    tickers = list(dict.fromkeys(t.strip().upper() for t in (params.get("tickers") or "").split(",") if t.strip()))[:20]
     try:
         interval = max(3, min(60, int(params.get("interval") or "5")))
     except ValueError:
@@ -1310,13 +1309,25 @@ async def ws_quotes(websocket: WebSocket):
         return
     try:
         while True:
-            payload = get_live_quotes(tickers)
+            payload = await run_in_threadpool(get_live_quotes, tickers)
             await websocket.send_json(payload)
-            await asyncio.sleep(interval)
-    except WebSocketDisconnect:
+            # Observe disconnects while waiting, rather than discovering them on
+            # the next send. Client messages must not accelerate provider polling.
+            deadline = asyncio.get_running_loop().time() + interval
+            while True:
+                remaining = deadline - asyncio.get_running_loop().time()
+                if remaining <= 0:
+                    break
+                try:
+                    message = await asyncio.wait_for(websocket.receive(), timeout=remaining)
+                except asyncio.TimeoutError:
+                    break
+                if message["type"] == "websocket.disconnect":
+                    return
+    except (WebSocketDisconnect, OSError):
         logger.info("Quote WebSocket disconnected")
-    except Exception as e:
-        logger.error(f"Quote WebSocket error: {e}")
+    except Exception:
+        logger.exception("Quote WebSocket failed")
         try:
             await websocket.close()
         except Exception:
