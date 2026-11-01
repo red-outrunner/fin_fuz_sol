@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import { getPortfolioKey } from '../utils/portfolioKey';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { Plus, Trash2, RefreshCw, Download } from 'lucide-react';
 import { getListingMeta, displayCompanyName } from '../utils/listingMeta';
@@ -18,7 +19,7 @@ const PortfolioTracker = () => {
     const [performance, setPerformance] = useState(null);
     const [loading, setLoading] = useState(false);
     const [showAddForm, setShowAddForm] = useState(false);
-    const [clientKey, setClientKey] = useState('default');
+    const [clientKey] = useState(getPortfolioKey);
 
     const [newHolding, setNewHolding] = useState({
         ticker: '',
@@ -75,10 +76,10 @@ const PortfolioTracker = () => {
         try {
             const [holdingsRes, perfRes] = await Promise.all([
                 axios.get(`${API_BASE_URL}/api/portfolio/holdings`, {
-                    params: { client_key: clientKey },
+                    headers: { 'X-Portfolio-Key': clientKey },
                 }),
                 axios.get(`${API_BASE_URL}/api/portfolio/performance`, {
-                    params: { client_key: clientKey },
+                    headers: { 'X-Portfolio-Key': clientKey },
                 }),
             ]);
             setHoldings(holdingsRes.data.holdings || []);
@@ -125,7 +126,7 @@ const PortfolioTracker = () => {
                     quantity: qty,
                     avg_cost: avgCost,
                 },
-                { params: { client_key: clientKey } }
+                { headers: { 'X-Portfolio-Key': clientKey } }
             );
             setNewHolding({ ticker: '', quantity: '', avg_cost: '', name: '', currency: 'ZAR' });
             setTickerQuery('');
@@ -140,7 +141,9 @@ const PortfolioTracker = () => {
     const handleDeleteHolding = async (id) => {
         if (!confirm('Are you sure you want to delete this holding?')) return;
         try {
-            await axios.delete(`${API_BASE_URL}/api/portfolio/holdings/${id}`);
+            await axios.delete(`${API_BASE_URL}/api/portfolio/holdings/${id}`, {
+                headers: { 'X-Portfolio-Key': clientKey },
+            });
             fetchPortfolio();
         } catch (err) {
             console.error('Delete error:', err);
@@ -171,7 +174,7 @@ const PortfolioTracker = () => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `portfolio_${clientKey}_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = `portfolio_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
     };
 
@@ -220,13 +223,7 @@ const PortfolioTracker = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                    <input
-                        type="text"
-                        value={clientKey}
-                        onChange={(e) => setClientKey(e.target.value)}
-                        placeholder="Client ID"
-                        className="px-3 py-2 border border-white/60 rounded-lg text-sm bg-white/50 dark:bg-navy/50"
-                    />
+                    <span className="text-xs text-slate-500">Private portfolio · saved in this browser</span>
                     <button
                         onClick={fetchPortfolio}
                         className="p-2 text-slate-500 hover:text-gold transition"

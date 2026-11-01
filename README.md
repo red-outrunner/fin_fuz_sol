@@ -65,6 +65,17 @@ The application is built with a decoupled architecture:
 
 ## 🗄️ Database Migrations (Alembic)
 
+Portfolio access is anonymous and private to a browser. The frontend generates a
+256-bit key, persists it in localStorage, and sends it in the `X-Portfolio-Key`
+header for every portfolio request. The API stores its SHA-256 fingerprint and
+checks it when reading, adding, or deleting holdings. Treat the key as a password:
+use HTTPS in production. Clearing browser storage loses access; there is no account
+recovery or cross-device sync. If storage is blocked, access lasts only for the page
+session. Legacy holdings under public client IDs (including `default`) remain in
+the database but are inaccessible through these endpoints; they cannot safely be
+automatically assigned to a browser. The old `client_key` query parameter no longer
+grants portfolio access.
+
 Schema changes are versioned with [Alembic](https://alembic.sqlalchemy.org/). Run commands from the `backend/` directory; the database URL is taken from `DATABASE_URL` (falls back to local SQLite).
 
 ```bash

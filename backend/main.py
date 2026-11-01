@@ -26,6 +26,7 @@ from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_pro
 from currency_utils import normalize_price, display_currency, normalize_history_value, BRAND_ATTRIBUTION
 from database import get_db, engine, Base
 import models
+from portfolio_access import require_portfolio_key
 from sqlalchemy.orm import Session
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -923,9 +924,9 @@ def _holding_quote(ticker: str):
 
 @app.get("/api/portfolio/holdings")
 @limiter.limit("60/minute")
-def get_holdings(request: Request, client_key: str = "default", db: Session = Depends(get_db)):
+def get_holdings(request: Request, client_key: str = Depends(require_portfolio_key), db: Session = Depends(get_db)):
     """Get all portfolio holdings for a client (prices in each stock's native currency)."""
-    logger.info(f"Fetching portfolio holdings for {client_key}")
+    logger.info("Fetching portfolio holdings")
     holdings = db.query(models.PortfolioHolding).filter(
         models.PortfolioHolding.client_key == client_key
     ).all()
@@ -965,9 +966,9 @@ def get_holdings(request: Request, client_key: str = "default", db: Session = De
 
 @app.post("/api/portfolio/holdings")
 @limiter.limit("30/minute")
-def add_holding(request: Request, holding_req: HoldingRequest, client_key: str = "default", db: Session = Depends(get_db)):
+def add_holding(request: Request, holding_req: HoldingRequest, client_key: str = Depends(require_portfolio_key), db: Session = Depends(get_db)):
     """Add or update a portfolio holding. avg_cost is in the stock's native currency."""
-    logger.info(f"Adding holding {holding_req.ticker} for {client_key}")
+    logger.info("Adding portfolio holding")
     ticker = holding_req.ticker.strip().upper()
 
     existing = db.query(models.PortfolioHolding).filter(
@@ -1006,11 +1007,12 @@ def add_holding(request: Request, holding_req: HoldingRequest, client_key: str =
 
 @app.delete("/api/portfolio/holdings/{holding_id}")
 @limiter.limit("30/minute")
-def delete_holding(request: Request, holding_id: int, db: Session = Depends(get_db)):
+def delete_holding(request: Request, holding_id: int, client_key: str = Depends(require_portfolio_key), db: Session = Depends(get_db)):
     """Delete a portfolio holding."""
     logger.info(f"Deleting holding {holding_id}")
     holding = db.query(models.PortfolioHolding).filter(
-        models.PortfolioHolding.id == holding_id
+        models.PortfolioHolding.id == holding_id,
+        models.PortfolioHolding.client_key == client_key
     ).first()
 
     if not holding:
@@ -1023,9 +1025,9 @@ def delete_holding(request: Request, holding_id: int, db: Session = Depends(get_
 
 @app.get("/api/portfolio/performance")
 @limiter.limit("30/minute")
-def portfolio_performance(request: Request, client_key: str = "default", db: Session = Depends(get_db)):
+def portfolio_performance(request: Request, client_key: str = Depends(require_portfolio_key), db: Session = Depends(get_db)):
     """Portfolio totals in ZAR (FX-converted) plus sector allocation."""
-    logger.info(f"Fetching portfolio performance for {client_key}")
+    logger.info("Fetching portfolio performance")
     holdings = db.query(models.PortfolioHolding).filter(
         models.PortfolioHolding.client_key == client_key
     ).all()
