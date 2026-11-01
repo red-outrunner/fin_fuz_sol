@@ -237,13 +237,13 @@ def calculate_correlation(pivot: pd.DataFrame):
      pass
 
 
-def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000, dividend_yield: float = 0.0):
+def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000):
     """
-    Runs Monte Carlo simulation for future wealth projection.
-    dividend_yield is an annual fraction (e.g. 0.03) reinvested into the total return.
+    Project wealth from historical total returns (including adjusted dividends).
+    No separate dividend yield is added to these returns.
     """
     try:
-        return core_math.run_monte_carlo(monthly_ret, years, n_sims, method='gbm', dividend_yield=dividend_yield)
+        return core_math.run_monte_carlo(monthly_ret, years, n_sims, method='gbm')
     except Exception as e:
         logger.error(f"Error in Monte Carlo: {e}")
         return None

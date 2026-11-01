@@ -15,7 +15,7 @@ import logging
 import os
 import asyncio
 import json
-from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers, get_dividend_yield
+from analysis import download_data, process_data, calculate_summary_stats, run_ml_analysis, run_anova_test, clean_data, calculate_dca, run_monte_carlo, get_company_profile, get_key_stats, get_news, get_calendar, get_article_content, search_tickers, get_dividend_history, get_financials, fetch_multiple_tickers, calculate_financial_freedom, get_jse_peers
 import yfinance as yf
 from reports import PDFReportGenerator
 from screener import screen_stocks, get_sector_performance, get_stock_ideas, get_ticker_details, get_jse_universe, get_stock_of_the_day
@@ -235,9 +235,8 @@ def get_wealth_projection(request: AnalysisRequest):
     if processed is None:
         raise HTTPException(status_code=500, detail="Error processing data")
         
-    # Reinvest dividends into the projected total return.
-    dividend_yield = get_dividend_yield(request.ticker)
-    projection = run_monte_carlo(processed['monthly_ret'], dividend_yield=dividend_yield)
+    # Adjusted historical returns already include dividends; do not add yield again.
+    projection = run_monte_carlo(processed['monthly_ret'])
 
     if projection is None:
         raise HTTPException(status_code=400, detail="Not enough data for projection")
@@ -503,8 +502,8 @@ def export_pdf(request: AnalysisRequest):
                     # Store mean monthly returns for chart
                     peer_data_map[p_ticker] = p_processed['pivot'].mean().to_list()
 
-    # 2. Monte Carlo (dividends reinvested into total return)
-    monte_carlo = run_monte_carlo(processed['monthly_ret'], dividend_yield=get_dividend_yield(request.ticker))
+    # 2. Monte Carlo (adjusted historical returns already include dividends)
+    monte_carlo = run_monte_carlo(processed['monthly_ret'])
     
     # 3. DCA Analysis (Default: R1000/month)
     dca_results = calculate_dca(processed['monthly_ret'], 1000.0)

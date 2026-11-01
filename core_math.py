@@ -167,18 +167,16 @@ def calculate_dca(monthly_ret: pd.Series, monthly_contribution: float) -> dict:
         }
     }
 
-def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000, method: str = 'gbm', dividend_yield: float = 0.0) -> list:
+def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000, method: str = 'gbm') -> list:
     """
     Runs Monte Carlo simulation using Geometric Brownian Motion (GBM) or Historical Bootstrapping.
-    Incorporates dividend reinvestment into total return.
+    Input monthly_ret must be total returns, including dividends where available.
+    Dividends are already embedded in adjusted-price returns and are not added again.
     Returns: 10th, 50th, 90th percentile paths.
     """
     if monthly_ret.empty or len(monthly_ret) < 12: return None
     months = years * 12
     last_val = 10000 
-    
-    # Adjust monthly yield
-    monthly_yield = dividend_yield / 12.0
     
     if method == 'gbm':
         # Discrete GBM modelled directly in LOG-return space. Monthly log returns are
@@ -191,9 +189,7 @@ def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000,
         mu_log = np.mean(log_ret)
         sigma_log = np.std(log_ret)
 
-        # Dividends reinvested: add monthly dividend growth in log space.
-        div_drift = np.log1p(monthly_yield)
-        drift = mu_log + div_drift
+        drift = mu_log
 
         sim_paths = np.zeros((months + 1, n_sims))
         sim_paths[0] = last_val
@@ -210,7 +206,7 @@ def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000,
         ret_vals = monthly_ret.values
         
         for t in range(1, months + 1):
-            sampled_rets = np.random.choice(ret_vals, n_sims, replace=True) + monthly_yield
+            sampled_rets = np.random.choice(ret_vals, n_sims, replace=True)
             # Ensure price >= 0
             growth = np.maximum(sampled_rets + 1, 0)
             sim_paths[t] = sim_paths[t-1] * growth
