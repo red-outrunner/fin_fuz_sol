@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Depends
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import Response, StreamingResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from starlette.concurrency import run_in_threadpool
@@ -110,7 +110,16 @@ limiter = Limiter(
     storage_uri=os.getenv("RATE_LIMIT_STORAGE_URI", "memory://"),
 )
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+def rate_limit_exceeded_handler(request: Request, exc: Exception) -> Response:
+    """Adapt SlowAPI's narrower exception type to Starlette's handler contract."""
+    if not isinstance(exc, RateLimitExceeded):
+        raise exc
+    return _rate_limit_exceeded_handler(request, exc)
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS Setup
@@ -392,7 +401,7 @@ def _build_export_frames(request: AnalysisRequest):
         ticker=request.ticker, inflation_rate=request.inflation_rate
     )
     flat_stats = None
-    if stats:
+    if isinstance(stats, dict) and stats:
         flat_stats = {k: v for k, v in stats.items() if isinstance(v, (int, float, str))}
     return processed, flat_stats
 
@@ -403,7 +412,7 @@ def _make_excel_safe(df):
     if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
         df.index = df.index.tz_localize(None)
     for col in df.columns:
-        if pd.api.types.is_datetime64tz_dtype(df[col]):
+        if isinstance(df[col].dtype, pd.DatetimeTZDtype):
             df[col] = df[col].dt.tz_localize(None)
     return df
 
@@ -1008,9 +1017,9 @@ def portfolio_performance(request: Request, client_key: str = Depends(require_po
     total_value = sum(row["value_zar"] for row in rows) if complete else None
     total_cost = (sum(row["cost_zar"] for row in rows)
                   if all(row["cost_zar"] is not None for row in rows) else None)
-    total_pnl = total_value - total_cost if complete else None
+    total_pnl = total_value - total_cost if total_value is not None and total_cost is not None else None
     allocation = {}
-    if complete and total_value > 0:
+    if total_value is not None and total_value > 0:
         for row in rows:
             sector = row["sector"]
             allocation[sector] = allocation.get(sector, 0) + row["value_zar"] / total_value * 100
@@ -1018,7 +1027,7 @@ def portfolio_performance(request: Request, client_key: str = Depends(require_po
         "total_value": total_value,
         "total_cost": total_cost,
         "total_pnl": total_pnl,
-        "total_pnl_pct": total_pnl / total_cost * 100 if complete and total_cost > 0 else None,
+        "total_pnl_pct": total_pnl / total_cost * 100 if total_pnl is not None and total_cost is not None and total_cost > 0 else None,
         "holdings_count": len(rows),
         "sector_allocation": allocation,
         "display_currency": "ZAR",

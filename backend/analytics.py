@@ -4,6 +4,7 @@ on data already fetched by the market_data layer (no network access here)."""
 import os
 import sys
 import logging
+from typing import Iterable, Literal, Optional, TypedDict, Union, overload
 
 import numpy as np
 import pandas as pd
@@ -91,11 +92,12 @@ def process_data(data: pd.DataFrame):
         return None
 
 
-def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, ticker: str = None, inflation_rate: float = 0.0):
+def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, ticker: Optional[str] = None, inflation_rate: Optional[float] = 0.0):
     """Calculates summary statistics using raw returns (fat tail risk intact).
 
     ticker        - used to pick a country-aware risk-free rate for Sharpe/Sortino.
-    inflation_rate - annual rate (e.g. 0.05). When > 0 all return-based metrics
+    inflation_rate - annual rate (e.g. 0.05); None retains nominal returns, as 0 does.
+                     When > 0 all return-based metrics
                      (CAGR, vol, Sharpe, Sortino, drawdown, wealth, annual returns)
                      are computed on the REAL return series and the risk-free rate is
                      converted to real terms, so "inflation-adjusted" is consistent.
@@ -426,7 +428,25 @@ def _is_likely_etf(ticker: str) -> bool:
     return any(h in base for h in _ETF_TICKER_HINTS)
 
 
-def get_jse_peers(ticker, return_meta: bool = False):
+class _PeerMetadata(TypedDict):
+    peers: list[str]
+    peer_group: str
+    asset_class: str
+
+
+@overload
+def get_jse_peers(ticker: str, return_meta: Literal[False] = False) -> list[str]: ...
+
+
+@overload
+def get_jse_peers(ticker: str, return_meta: Literal[True]) -> _PeerMetadata: ...
+
+
+@overload
+def get_jse_peers(ticker: str, return_meta: bool) -> Union[list[str], _PeerMetadata]: ...
+
+
+def get_jse_peers(ticker: str, return_meta: bool = False) -> Union[list[str], _PeerMetadata]:
     """
     Returns competitor tickers matched by asset class then industry.
 
@@ -447,7 +467,7 @@ def get_jse_peers(ticker, return_meta: bool = False):
         except ImportError:
             JSE_SECTORS = {}
 
-    def _result(peers, peer_group, asset_class):
+    def _result(peers: Iterable[str], peer_group: str, asset_class: str) -> Union[list[str], _PeerMetadata]:
         peers = [p for p in peers if p != ticker][:4]
         if return_meta:
             return {"peers": peers, "peer_group": peer_group, "asset_class": asset_class}
