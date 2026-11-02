@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
+import { formatMoney } from '../utils/currency';
 import { Calculator, Target, TrendingUp, DollarSign } from 'lucide-react';
 import InfoTip from './InfoTip';
 
@@ -106,9 +107,9 @@ const FreedomCalculator = ({ ticker }) => {
                                     <Target className="w-32 h-32" />
                                 </div>
                                 <h4 className="text-gold font-bold uppercase tracking-widest text-xs mb-2">Shares Required</h4>
-                                <p className="text-5xl font-serif font-bold mb-4">{result.shares_needed.toLocaleString()}</p>
+                                <p className="text-5xl font-serif font-bold mb-4">{result.shares_needed?.toLocaleString() ?? 'N/A'}</p>
                                 <p className="text-slate-300 text-sm">
-                                    You need <span className="text-white font-bold">{result.shares_needed.toLocaleString()}</span> shares of {ticker} to generate <span className="text-gold font-bold">R{result.monthly_income_goal.toLocaleString()}</span> per month.
+                                    You need <span className="text-white font-bold">{result.shares_needed?.toLocaleString() ?? 'N/A'}</span> shares of {ticker} to generate <span className="text-gold font-bold">R{result.monthly_income_goal.toLocaleString()}</span> per month.
                                 </p>
                                 {result.dividends_12m && (
                                     <p className="text-slate-400 text-xs mt-2">
@@ -128,7 +129,7 @@ const FreedomCalculator = ({ ticker }) => {
                                 </div>
                                 <div>
                                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Total Investment Required</span>
-                                    <span className="text-2xl font-serif font-bold text-navy">R {result.investment_needed.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                    <span className="text-2xl font-serif font-bold text-navy">{formatMoney(result.investment_needed, 'ZAR', { decimals: 0 })}</span>
                                 </div>
                             </div>
 
@@ -138,7 +139,7 @@ const FreedomCalculator = ({ ticker }) => {
                                 </div>
                                 <div>
                                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">Current Annual Yield</span>
-                                    <span className="text-2xl font-serif font-bold text-navy">{(result.annual_yield * 100).toFixed(2)}%</span>
+                                    <span className="text-2xl font-serif font-bold text-navy">{result.annual_yield == null ? 'N/A' : `${(result.annual_yield * 100).toFixed(2)}%`}</span>
                                 </div>
                             </div>
                         </>

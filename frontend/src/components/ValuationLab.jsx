@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
 import { TrendingUp, DollarSign, Activity } from 'lucide-react';
 import InfoTip from './InfoTip';
 import { formatMoney } from '../utils/currency';
+import { createLatestRequest } from '../utils/latestRequest.mjs';
 
 const ValuationLab = ({ ticker }) => {
     const formatPrice = (price, currency = 'ZAR') => {
@@ -13,6 +14,8 @@ const ValuationLab = ({ ticker }) => {
     };
     const [financials, setFinancials] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [resolvedTicker, setResolvedTicker] = useState(null);
+    const requests = useRef(createLatestRequest());
 
     // DCF Assumptions State
     const [growthRate1to5, setGrowthRate1to5] = useState(0.10); // 10%
@@ -23,6 +26,15 @@ const ValuationLab = ({ ticker }) => {
     const [fairValue, setFairValue] = useState(0);
 
     useEffect(() => {
+        const request = requests.current.begin();
+        setFinancials(null);
+        setFairValue(null);
+        setResolvedTicker(null);
+        if (!ticker) {
+            setLoading(false);
+            setResolvedTicker(ticker);
+            return () => requests.current.cancel();
+        }
         const fetchData = async () => {
             setLoading(true);
             try {
@@ -30,18 +42,24 @@ const ValuationLab = ({ ticker }) => {
                     ticker: ticker,
                     start_year: 2020, // Not used for this call but required by schema
                     end_date: "2024-01-01"
-                });
+                }, { signal: request.signal });
+                if (!request.isCurrent()) return;
                 setFinancials(response.data);
                 if (response.data) {
                     setDiscountRate(response.data.suggested_discount_rate || 0.10);
                 }
             } catch (err) {
+                if (!request.isCurrent()) return;
                 console.error("Valuation data fetch failed", err);
             } finally {
-                setLoading(false);
+                if (request.isCurrent()) {
+                    setLoading(false);
+                    setResolvedTicker(ticker);
+                }
             }
         };
-        if (ticker) fetchData();
+        fetchData();
+        return () => requests.current.cancel();
     }, [ticker]);
 
     // Recalculate Fair Value whenever assumptions or data change
@@ -97,7 +115,7 @@ const ValuationLab = ({ ticker }) => {
 
     }, [financials, growthRate1to5, growthRateTerminal, discountRate, scenarioWeight]);
 
-    if (loading) return <div className="p-12 text-center text-gold font-bold animate-pulse">Loading Valuation Data...</div>;
+    if (loading || resolvedTicker !== ticker) return <div className="p-12 text-center text-gold font-bold animate-pulse">Loading Valuation Data...</div>;
     if (!financials) return <div className="p-12 text-center text-slate-400">Valuation data unavailable for {ticker}.</div>;
 
     const price = financials.price;

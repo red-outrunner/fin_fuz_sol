@@ -132,12 +132,20 @@ def calculate_sortino(monthly_ret: pd.Series, cagr: float, risk_free_rate: float
     
     return (cagr - risk_free_rate) / downside_dev if downside_dev > 0 else 0.0
 
+def calculate_drawdown(monthly_ret: pd.Series) -> pd.Series:
+    """Drawdowns from peak wealth, including the initial investment of 1.0.
+
+    Keep the input index: each output describes wealth after that period's return.
+    The starting investment remains the peak until cumulative wealth exceeds it.
+    """
+    cumulative = (1 + monthly_ret).cumprod()
+    peak = cumulative.cummax().clip(lower=1.0)
+    return cumulative / peak - 1
+
+
 def calculate_max_drawdown(monthly_ret: pd.Series) -> float:
     if monthly_ret.empty: return 0.0
-    cumulative = (1 + monthly_ret).cumprod()
-    peak = cumulative.expanding(min_periods=1).max()
-    drawdowns = (cumulative / peak) - 1
-    return drawdowns.min()
+    return float(calculate_drawdown(monthly_ret).min())
 
 def calculate_dca(monthly_ret: pd.Series, monthly_contribution: float) -> dict:
     if monthly_ret.empty: return None

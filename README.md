@@ -76,6 +76,29 @@ the database but are inaccessible through these endpoints; they cannot safely be
 automatically assigned to a browser. The old `client_key` query parameter no longer
 grants portfolio access.
 
+Portfolio valuation never substitutes zero prices or fixed exchange rates for
+missing provider data. Holding responses expose `valuation_status` and
+`missing_data` (`price` and/or `fx`); dependent values are `null` when unavailable.
+Native-currency values remain available when only FX is missing. If any holding
+cannot be valued in ZAR, portfolio value, P&L, return, and sector allocation are
+withheld rather than shown as a partial total. Total cost remains available when
+all required exchange rates are known. The UI and CSV export display unavailable
+values as `N/A`.
+
+Stored alerts use a separate 256-bit browser-generated key in the `X-Alert-Key`
+header. Only its SHA-256 fingerprint is stored on the server. Use `GET/POST
+/api/alerts`, `DELETE /api/alerts/{alert_id}`, and `POST /api/alerts/check`; credentials
+are never part of these URLs. Old client-key routes and body/query credentials no
+longer grant access. Legacy alerts remain in the database but must be recreated,
+since their ownership cannot safely be inferred. Clearing browser storage loses
+access to anonymous alerts; use HTTPS in production.
+
+Alert creation uses `alert_type` (`price`, `volume`, or `earnings`). Stateless
+`POST /api/alerts/evaluate` accepts up to 50 rules using `type` and requires no
+stored-alert credential. Price/volume rules require finite, nonnegative thresholds;
+invalid types, conditions, tickers, and thresholds return HTTP 422. Malformed
+persisted rules are skipped and reported in the evaluation response's `errors`.
+
 Schema changes are versioned with [Alembic](https://alembic.sqlalchemy.org/). Run commands from the `backend/` directory; the database URL is taken from `DATABASE_URL` (falls back to local SQLite).
 
 ```bash
@@ -117,3 +140,14 @@ python sector_manager.py --import-excel /trusted/path/constituent_details.xlsx
 
 Then restart the backend or call the authenticated reload endpoint on each running
 instance. Existing public stock and sector read endpoints remain available.
+
+
+Daily-feature selections are persisted in `daily_stock_picks`, including the
+selected fallback ticker and company name. Yesterday's feature reads that saved
+record, so provider recovery, a changed universe, or a backend restart cannot
+replace the actual pick. Dates without a published record have no yesterday card.
+Apply the new table with `alembic upgrade head` from `backend/` before deployment.
+
+Frontend request-order regressions run with `npm run test:requests` from
+`frontend/`. They exercise the actual analysis and valuation components with
+out-of-order responses, including transports that ignore cancellation.

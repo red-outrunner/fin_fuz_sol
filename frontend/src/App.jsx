@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from './api';
+import { createLatestRequest } from './utils/latestRequest.mjs';
 import Dashboard from './components/Dashboard';
 import StockScreener from './components/StockScreener';
 import JSEHeatmap from './components/JSEHeatmap';
@@ -45,6 +46,14 @@ function AppContent() {
     const [terminalRefreshing, setTerminalRefreshing] = useState(false);
     const deepLinkHandled = useRef(false);
     const analyzingRef = useRef(false);
+    const activeTickerRef = useRef(ticker.toUpperCase());
+    const analysisRequests = useRef(createLatestRequest());
+    const terminalRequests = useRef(createLatestRequest());
+
+    useEffect(() => () => {
+        analysisRequests.current.cancel();
+        terminalRequests.current.cancel();
+    }, []);
 
     const setDashboardTab = useCallback((tab) => {
         const next = DASHBOARD_TABS.includes(tab) ? tab : 'summary';
@@ -63,7 +72,7 @@ function AppContent() {
             const { route, ticker: hashTicker, tab } = parseHash();
             setCurrentRoute(route || '#/');
             if (tab) setDashboardTabState(tab);
-            if (hashTicker && hashTicker !== ticker.toUpperCase() && !analyzingRef.current) {
+            if (hashTicker && hashTicker !== activeTickerRef.current) {
                 setTicker(hashTicker);
                 triggerAnalyzeRef.current?.(hashTicker);
             }
@@ -109,13 +118,21 @@ function AppContent() {
     }, [focusSearch, toggleTheme, setDashboardTab]);
 
     const triggerAnalyze = async (symbol, year = startYear, date = endDate, inflation = inflationAdjusted, tab = dashboardTab) => {
+        const request = analysisRequests.current.begin();
+        terminalRequests.current.cancel();
+        setTerminalRefreshing(false);
         analyzingRef.current = true;
         const sym = String(symbol || '').trim().toUpperCase();
+        activeTickerRef.current = sym;
         setTicker(sym);
         replaceHash(buildHash({ route: '#/', ticker: sym, tab }));
         setLoading(true);
         setError(null);
+        setData(null);
         setProfileData(null);
+        setFundamentals(null);
+        setNews(null);
+        setCalendar(null);
         try {
             const [analysisRes, profileRes, fundRes, newsRes, calRes] = await Promise.all([
                 axios.post(`${API_BASE_URL}/api/analyze`, {
@@ -123,41 +140,45 @@ function AppContent() {
                     start_year: year,
                     end_date: date,
                     inflation_rate: inflation ? 0.05 : 0.0,
-                }),
+                }, { signal: request.signal }),
                 axios.post(`${API_BASE_URL}/api/profile`, {
                     ticker: sym,
                     start_year: year,
                     end_date: date,
-                }).catch(() => ({ data: null })),
+                }, { signal: request.signal }).catch(() => ({ data: null })),
                 axios.post(`${API_BASE_URL}/api/fundamentals`, {
                     ticker: sym,
                     start_year: year,
                     end_date: date,
-                }).catch(() => ({ data: null })),
+                }, { signal: request.signal }).catch(() => ({ data: null })),
                 axios.post(`${API_BASE_URL}/api/news`, {
                     ticker: sym,
                     start_year: year,
                     end_date: date,
-                }).catch(() => ({ data: [] })),
+                }, { signal: request.signal }).catch(() => ({ data: [] })),
                 axios.post(`${API_BASE_URL}/api/calendar`, {
                     ticker: sym,
                     start_year: year,
                     end_date: date,
-                }).catch(() => ({ data: [] })),
+                }, { signal: request.signal }).catch(() => ({ data: [] })),
             ]);
 
+            if (!request.isCurrent()) return;
             setData(analysisRes.data);
             setProfileData(profileRes.data);
             setFundamentals(fundRes.data);
             setNews(newsRes.data);
             setCalendar(calRes.data);
         } catch (err) {
+            if (!request.isCurrent()) return;
             console.error('Analysis Error:', err);
             const errorMessage = err.response?.data?.detail || err.message || 'Analysis failed. Please check the ticker and try again.';
             setError(errorMessage);
         } finally {
-            setLoading(false);
-            analyzingRef.current = false;
+            if (request.isCurrent()) {
+                setLoading(false);
+                analyzingRef.current = false;
+            }
         }
     };
 
@@ -185,28 +206,31 @@ function AppContent() {
     };
 
     const refreshTerminal = async () => {
-        if (!ticker) return;
+        if (!ticker || analyzingRef.current) return;
+        const request = terminalRequests.current.begin();
         setTerminalRefreshing(true);
         try {
             const payload = { ticker, start_year: startYear, end_date: endDate };
             const [fundRes, newsRes, calRes] = await Promise.all([
-                axios.post(`${API_BASE_URL}/api/fundamentals`, payload).catch(() => ({ data: null })),
-                axios.post(`${API_BASE_URL}/api/news`, payload).catch(() => ({ data: [] })),
-                axios.post(`${API_BASE_URL}/api/calendar`, payload).catch(() => ({ data: [] })),
+                axios.post(`${API_BASE_URL}/api/fundamentals`, payload, { signal: request.signal }).catch(() => ({ data: null })),
+                axios.post(`${API_BASE_URL}/api/news`, payload, { signal: request.signal }).catch(() => ({ data: [] })),
+                axios.post(`${API_BASE_URL}/api/calendar`, payload, { signal: request.signal }).catch(() => ({ data: [] })),
             ]);
+            if (!request.isCurrent()) return;
             setFundamentals(fundRes.data);
             setNews(newsRes.data);
             setCalendar(calRes.data);
         } catch (err) {
+            if (!request.isCurrent()) return;
             console.error('Terminal refresh failed:', err);
         } finally {
-            setTerminalRefreshing(false);
+            if (request.isCurrent()) setTerminalRefreshing(false);
         }
     };
 
     const prevInflationRef = useRef(inflationAdjusted);
     useEffect(() => {
-        if (prevInflationRef.current !== inflationAdjusted && data !== null) {
+        if (prevInflationRef.current !== inflationAdjusted && (data !== null || analyzingRef.current)) {
             triggerAnalyze(ticker, startYear, endDate, inflationAdjusted);
         }
         prevInflationRef.current = inflationAdjusted;

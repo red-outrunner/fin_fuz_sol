@@ -2,6 +2,15 @@ from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime
 from datetime import datetime
 from database import Base
 
+
+class DailyStockPick(Base):
+    """The actual first published selection for a Johannesburg calendar day."""
+    __tablename__ = "daily_stock_picks"
+
+    date = Column(String(10), primary_key=True)
+    ticker = Column(String(64), nullable=False)
+    name = Column(String, nullable=False)
+
 class User(Base):
     __tablename__ = "users"
 

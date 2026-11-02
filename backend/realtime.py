@@ -12,6 +12,8 @@ import yfinance as yf
 from serialization import clean_data
 from technical import volume_zscore_alert
 from currency_utils import normalize_price, display_currency
+from alert_rules import AlertRule
+from pydantic import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -228,11 +230,17 @@ def evaluate_alerts(rules: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     fired = []
     checked = []
+    errors = []
     for rule in rules[:50]:
-        rtype = (rule.get("type") or "price").lower()
-        ticker = (rule.get("ticker") or "").upper().strip()
-        if not ticker:
+        try:
+            rule = AlertRule.model_validate(rule).model_dump()
+        except ValidationError:
+            # Legacy/corrupted stored rules must not abort evaluation of valid ones.
+            errors.append({"id": rule.get("id") if isinstance(rule, dict) else None,
+                           "message": "Invalid alert rule; recreate this alert"})
             continue
+        rtype = rule["type"]
+        ticker = rule["ticker"]
         result = None
         if rtype == "price":
             result = evaluate_price_alert(
@@ -262,4 +270,5 @@ def evaluate_alerts(rules: List[Dict[str, Any]]) -> Dict[str, Any]:
         "provider": quote_provider(),
         "fired": fired,
         "results": checked,
+        "errors": errors,
     })

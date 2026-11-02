@@ -2,6 +2,7 @@ import io
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import core_math
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
@@ -225,10 +226,7 @@ class PDFReportGenerator:
     def add_drawdown_chart(self, processed_data):
         self.elements.append(Paragraph("Risk Analysis: Drawdowns", self.styles['SectionHeader']))
         
-        df = processed_data['monthly_ret'].copy()
-        cumulative = (1 + df).cumprod()
-        peak = cumulative.cummax()
-        drawdown = (cumulative - peak) / peak
+        drawdown = core_math.calculate_drawdown(processed_data['monthly_ret'])
         
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.fill_between(drawdown.index, drawdown.values, 0, color='darkred', alpha=0.6)

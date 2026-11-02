@@ -82,16 +82,6 @@ export function tradingViewChartUrl(ticker) {
     return `https://www.tradingview.com/chart/?symbol=${sym}`;
 }
 
-export function getClientKey() {
-    const KEY = 'ubomvu_client_key';
-    let k = localStorage.getItem(KEY);
-    if (!k) {
-        k = `ck_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
-        localStorage.setItem(KEY, k);
-    }
-    return k;
-}
-
 export function apiWsBase() {
     const http = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL)
         || 'http://localhost:8000';

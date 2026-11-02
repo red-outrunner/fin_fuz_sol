@@ -161,10 +161,10 @@ const PortfolioTracker = () => {
                 h.quantity,
                 h.avg_cost?.toFixed(2),
                 h.current_price?.toFixed(2) || 'N/A',
-                h.current_value?.toFixed(2) || '0',
-                h.pnl?.toFixed(2) || '0',
-                h.pnl_pct?.toFixed(2) || '0',
-                h.value_zar?.toFixed(2) || '0',
+                h.current_value?.toFixed(2) ?? 'N/A',
+                h.pnl?.toFixed(2) ?? 'N/A',
+                h.pnl_pct?.toFixed(2) ?? 'N/A',
+                h.value_zar?.toFixed(2) ?? 'N/A',
             ]),
         ]
             .map((row) => row.join(','))
@@ -248,6 +248,14 @@ const PortfolioTracker = () => {
                 </div>
             </div>
 
+            {performance?.valuation_status === 'incomplete' && (
+                <p role="status" className="text-sm text-amber-700 dark:text-amber-300">
+                    Portfolio totals are unavailable because price or exchange-rate data is missing for{' '}
+                    {performance.unavailable_holdings.map((h) => h.ticker).join(', ')}.
+                    Available holding values remain visible. Refresh to try again.
+                </p>
+            )}
+
             {performance && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white/40 dark:bg-navy/40 backdrop-blur-md rounded-xl border border-white/60 dark:border-white/10 shadow-sm p-4">
@@ -272,7 +280,7 @@ const PortfolioTracker = () => {
                         </p>
                         <p
                             className={`text-2xl font-serif font-bold ${
-                                performance.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                                performance.total_pnl == null ? 'text-slate-500' : performance.total_pnl >= 0 ? 'text-green-600' : 'text-red-600'
                             }`}
                         >
                             {formatZar(performance.total_pnl)}
@@ -284,7 +292,7 @@ const PortfolioTracker = () => {
                         </p>
                         <p
                             className={`text-2xl font-serif font-bold ${
-                                performance.total_pnl_pct >= 0 ? 'text-green-600' : 'text-red-600'
+                                performance.total_pnl_pct == null ? 'text-slate-500' : performance.total_pnl_pct >= 0 ? 'text-green-600' : 'text-red-600'
                             }`}
                         >
                             {formatPercent(performance.total_pnl_pct)}
@@ -475,6 +483,11 @@ const PortfolioTracker = () => {
                                                         ? ` · ${holding.name}`
                                                         : ''}
                                                 </div>
+                                                {holding.valuation_status === 'unavailable' && (
+                                                    <div className="text-[10px] text-amber-700 dark:text-amber-300 mt-1">
+                                                        {holding.missing_data.includes('price') ? 'Price unavailable' : 'Exchange rate unavailable'}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-right font-medium text-navy dark:text-cream">
                                                 {holding.quantity}
@@ -495,14 +508,14 @@ const PortfolioTracker = () => {
                                             </td>
                                             <td
                                                 className={`px-6 py-4 text-sm text-right font-bold ${
-                                                    holding.pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                                                    holding.pnl == null ? 'text-slate-500' : holding.pnl >= 0 ? 'text-green-600' : 'text-red-600'
                                                 }`}
                                             >
                                                 {formatNative(holding.pnl, cur)}
                                             </td>
                                             <td
                                                 className={`px-6 py-4 text-sm text-right font-bold ${
-                                                    holding.pnl_pct >= 0 ? 'text-green-600' : 'text-red-600'
+                                                    holding.pnl_pct == null ? 'text-slate-500' : holding.pnl_pct >= 0 ? 'text-green-600' : 'text-red-600'
                                                 }`}
                                             >
                                                 {formatPercent(holding.pnl_pct)}

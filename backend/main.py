@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, WebSocket, WebSocketDisconnect, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from starlette.concurrency import run_in_threadpool
 import io
 from reportlab.lib import colors
@@ -8,8 +10,8 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field, StringConstraints, field_validator
+from typing import Annotated, List, Optional
 import pandas as pd
 from datetime import datetime
 import logging
@@ -25,10 +27,13 @@ from fundamentals import get_financial_statements, get_ratio_trends, get_analyst
 from technical import build_technical_snapshot, run_backtest
 from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_provider
 from currency_utils import normalize_price, display_currency, normalize_history_value, BRAND_ATTRIBUTION
+from fx_rates import fx_rate_to_zar as _fx_rate_to_zar, positive_number as _positive_number
 from database import get_db, engine, Base
 import models
 from portfolio_access import require_portfolio_key
 from admin_access import require_sector_admin
+from alert_access import require_alert_key
+from alert_rules import AlertRule, AlertCreate
 from sqlalchemy.orm import Session
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -66,6 +71,15 @@ if SENTRY_DSN:
         logger.warning(f"Sentry initialization failed: {e}")
 
 app = FastAPI(title="Global Index Analyzer API", version="3.0.0")
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    # Nonfinite JSON numbers must produce a validation response, not a second
+    # exception while serializing the rejected input in FastAPI's error details.
+    return JSONResponse(status_code=422, content={
+        "detail": clean_data(jsonable_encoder(exc.errors())),
+    })
 
 # Rate limiting (IP-based) to protect the upstream yfinance / DuckDuckGo scrapers
 # from getting throttled/banned and to stop the heavy ML/Monte-Carlo endpoints from
@@ -811,9 +825,18 @@ def stock_of_the_day(request: Request):
 # === Portfolio Tracking Endpoints ===
 
 class HoldingRequest(BaseModel):
-    ticker: str
-    quantity: float
-    avg_cost: float  # Average cost per share in the stock's native major currency units
+    ticker: Annotated[str, StringConstraints(
+        strip_whitespace=True, min_length=1, max_length=64,
+        pattern=r"^[A-Za-z0-9^][A-Za-z0-9.^=_-]*$",
+    )]
+    quantity: float = Field(gt=0, allow_inf_nan=False)
+    # Zero cost is valid for gifted shares; costs are in native major units.
+    avg_cost: float = Field(ge=0, allow_inf_nan=False)
+
+    @field_validator("ticker")
+    @classmethod
+    def normalize_ticker(cls, value: str) -> str:
+        return value.upper()
 
 
 _SUFFIX_CURRENCY = {
@@ -825,99 +848,59 @@ _SUFFIX_CURRENCY = {
     "NZ": "NZD",
 }
 
-_FX_TO_ZAR = {
-    "ZAR": None,
-    "USD": "ZAR=X",
-    "GBP": "GBPZAR=X",
-    "EUR": "EURZAR=X",
-    "AUD": "AUDZAR=X",
-    "CAD": "CADZAR=X",
-    "CHF": "CHFZAR=X",
-    "JPY": "JPYZAR=X",
-    "HKD": "HKDZAR=X",
-    "CNY": "CNYZAR=X",
-    "SGD": "SGDZAR=X",
-    "NZD": "NZDZAR=X",
-    "INR": "INRZAR=X",
-    "BRL": "BRLZAR=X",
-    "MXN": "MXNZAR=X",
-    "KRW": "KRWZAR=X",
-}
-
-_FX_FALLBACK_ZAR = {
-    "USD": 18.5, "GBP": 23.5, "EUR": 20.0, "AUD": 12.0, "CAD": 13.5,
-    "CHF": 21.0, "JPY": 0.12, "HKD": 2.4, "CNY": 2.6, "SGD": 14.0,
-    "NZD": 11.0, "INR": 0.22, "BRL": 3.2, "MXN": 0.95, "KRW": 0.014,
-}
-
-
 def _infer_holding_currency(ticker: str, yahoo_currency: str = "") -> str:
     return display_currency(yahoo_currency, ticker)
 
 
-def _normalize_price(price, yahoo_currency: str):
-    """Convert Yahoo quote units to major currency units (ZAc→ZAR, GBp→GBP)."""
-    return normalize_price(price, yahoo_currency) or 0.0
-
-
-def _fx_rate_to_zar(currency: str, cache: dict) -> float:
-    code = (currency or "ZAR").upper()
-    if code in ("ZAR", "ZAC"):
-        return 1.0
-    if code in cache:
-        return cache[code]
-    pair = _FX_TO_ZAR.get(code)
-    rate = None
-    if pair:
-        try:
-            hist = yf.Ticker(pair).history(period="5d")
-            if hist is not None and not hist.empty:
-                rate = float(hist["Close"].dropna().iloc[-1])
-        except Exception:
-            rate = None
-    if rate is None and code != "USD":
-        # Cross via USD
-        try:
-            usd_zar = _fx_rate_to_zar("USD", cache)
-            usd_pair = f"{code}=X"  # often USD per unit inverted; try CODEUSD=X
-            # Prefer CODEUSD then invert conceptually — Yahoo XXX=X is usually vs USD
-            hist = yf.Ticker(f"{code}USD=X").history(period="5d")
-            if hist is not None and not hist.empty:
-                per_usd = float(hist["Close"].dropna().iloc[-1])
-                # If CODEUSD is how many USD per 1 CODE, then ZAR = per_usd * usd_zar
-                rate = per_usd * usd_zar
-        except Exception:
-            rate = None
-    if rate is None:
-        rate = float(_FX_FALLBACK_ZAR.get(code, 1.0))
-    cache[code] = rate
-    return rate
-
-
 def _holding_quote(ticker: str):
-    """Live price in major units + currency + sector for a portfolio ticker."""
+    """Missing/invalid provider quotes remain unavailable, never zero prices."""
     try:
-        t = yf.Ticker(ticker)
-        info = t.info or {}
-        yahoo_cur = info.get("currency", "") or ""
-        raw_price = info.get("currentPrice", info.get("regularMarketPrice", 0)) or 0
-        price = _normalize_price(raw_price, yahoo_cur)
-        currency = _infer_holding_currency(ticker, yahoo_cur)
-        sector = info.get("sector") or "Other"
-        name = info.get("shortName") or info.get("longName") or ticker
-        return {
-            "current_price": price,
-            "currency": currency,
-            "sector": sector,
-            "name": name,
-        }
+        info = yf.Ticker(ticker).info or {}
     except Exception:
-        return {
-            "current_price": 0.0,
-            "currency": _infer_holding_currency(ticker, ""),
-            "sector": "Other",
-            "name": ticker,
-        }
+        info = {}
+    yahoo_cur = info.get("currency") or ""
+    raw_price = _positive_number(info.get("currentPrice"))
+    if raw_price is None:
+        raw_price = _positive_number(info.get("regularMarketPrice"))
+    # Without quote-unit metadata a JSE quote could be cents or rands.
+    price = normalize_price(raw_price, yahoo_cur) if yahoo_cur else None
+    return {
+        "current_price": _positive_number(price),
+        "currency": _infer_holding_currency(ticker, yahoo_cur),
+        "sector": info.get("sector") or "Other",
+        "name": info.get("shortName") or info.get("longName") or ticker,
+    }
+
+
+def _holding_valuation(holding, fx_cache):
+    quote = _holding_quote(holding.ticker)
+    price = quote["current_price"]
+    fx = _fx_rate_to_zar(quote["currency"], fx_cache)
+    value = holding.quantity * price if price is not None else None
+    cost = holding.quantity * holding.avg_cost
+    pnl = value - cost if value is not None else None
+    missing = []
+    if price is None:
+        missing.append("price")
+    if fx is None:
+        missing.append("fx")
+    return {
+        **quote,
+        "id": holding.id,
+        "ticker": holding.ticker,
+        "quantity": holding.quantity,
+        "avg_cost": holding.avg_cost,
+        "current_value": value,
+        "cost_basis": cost,
+        "pnl": pnl,
+        "pnl_pct": pnl / cost * 100 if pnl is not None and cost > 0 else None,
+        "value_zar": value * fx if value is not None and fx is not None else None,
+        "cost_zar": cost * fx if fx is not None else None,
+        "pnl_zar": pnl * fx if pnl is not None and fx is not None else None,
+        "valuation_status": "unavailable" if missing else "available",
+        "missing_data": missing,
+        "created_at": holding.created_at.isoformat() if holding.created_at else None,
+    }
 
 
 @app.get("/api/portfolio/holdings")
@@ -930,36 +913,8 @@ def get_holdings(request: Request, client_key: str = Depends(require_portfolio_k
     ).all()
 
     fx_cache = {}
-    result = []
-    for h in holdings:
-        quote = _holding_quote(h.ticker)
-        current_price = quote["current_price"]
-        currency = quote["currency"]
-        current_value = h.quantity * current_price if current_price else 0
-        cost_basis = h.quantity * h.avg_cost
-        pnl = current_value - cost_basis
-        pnl_pct = (pnl / cost_basis * 100) if cost_basis > 0 else 0
-        fx = _fx_rate_to_zar(currency, fx_cache)
-
-        result.append({
-            "id": h.id,
-            "ticker": h.ticker,
-            "name": quote["name"],
-            "quantity": h.quantity,
-            "avg_cost": h.avg_cost,
-            "current_price": current_price,
-            "current_value": current_value,
-            "cost_basis": cost_basis,
-            "pnl": pnl,
-            "pnl_pct": pnl_pct,
-            "currency": currency,
-            "value_zar": current_value * fx,
-            "cost_zar": cost_basis * fx,
-            "pnl_zar": pnl * fx,
-            "created_at": h.created_at.isoformat() if h.created_at else None,
-        })
-
-    return {"holdings": result, "count": len(result)}
+    result = [_holding_valuation(h, fx_cache) for h in holdings]
+    return clean_data({"holdings": result, "count": len(result)})
 
 
 @app.post("/api/portfolio/holdings")
@@ -1030,42 +985,32 @@ def portfolio_performance(request: Request, client_key: str = Depends(require_po
         models.PortfolioHolding.client_key == client_key
     ).all()
 
-    total_value = 0.0
-    total_cost = 0.0
-    sector_allocation = {}
     fx_cache = {}
-    currencies = set()
-
-    for h in holdings:
-        quote = _holding_quote(h.ticker)
-        currency = quote["currency"]
-        currencies.add(currency)
-        fx = _fx_rate_to_zar(currency, fx_cache)
-        value_native = h.quantity * quote["current_price"] if quote["current_price"] else 0
-        cost_native = h.quantity * h.avg_cost
-        value = value_native * fx
-        cost = cost_native * fx
-        total_value += value
-        total_cost += cost
-        sector = quote["sector"] or "Other"
-        sector_allocation[sector] = sector_allocation.get(sector, 0) + value
-
-    total_pnl = total_value - total_cost
-    total_pnl_pct = (total_pnl / total_cost * 100) if total_cost > 0 else 0
-
-    allocation_pct = {}
-    for sector, value in sector_allocation.items():
-        allocation_pct[sector] = (value / total_value * 100) if total_value > 0 else 0
-
+    rows = [_holding_valuation(h, fx_cache) for h in holdings]
+    missing = [{"ticker": row["ticker"], "missing_data": row["missing_data"]}
+               for row in rows if row["missing_data"]]
+    complete = not missing
+    # Suppress complete-portfolio figures rather than presenting a partial sum.
+    total_value = sum(row["value_zar"] for row in rows) if complete else None
+    total_cost = (sum(row["cost_zar"] for row in rows)
+                  if all(row["cost_zar"] is not None for row in rows) else None)
+    total_pnl = total_value - total_cost if complete else None
+    allocation = {}
+    if complete and total_value > 0:
+        for row in rows:
+            sector = row["sector"]
+            allocation[sector] = allocation.get(sector, 0) + row["value_zar"] / total_value * 100
     return clean_data({
         "total_value": total_value,
         "total_cost": total_cost,
         "total_pnl": total_pnl,
-        "total_pnl_pct": total_pnl_pct,
-        "holdings_count": len(holdings),
-        "sector_allocation": allocation_pct,
+        "total_pnl_pct": total_pnl / total_cost * 100 if complete and total_cost > 0 else None,
+        "holdings_count": len(rows),
+        "sector_allocation": allocation,
         "display_currency": "ZAR",
-        "currencies": sorted(currencies),
+        "currencies": sorted({row["currency"] for row in rows}),
+        "valuation_status": "available" if complete else "incomplete",
+        "unavailable_holdings": missing,
     })
 
 
@@ -1174,16 +1119,7 @@ class QuotesRequest(BaseModel):
 
 
 class AlertEvaluateRequest(BaseModel):
-    rules: List[dict]
-
-
-class AlertCreate(BaseModel):
-    client_key: str
-    ticker: str
-    alert_type: Optional[str] = "price"  # price | volume | earnings
-    condition: Optional[str] = "above"
-    threshold: Optional[float] = None
-    label: Optional[str] = None
+    rules: List[AlertRule] = Field(max_length=50)
 
 
 @app.post("/api/quotes/live")
@@ -1205,11 +1141,11 @@ def quotes_provider_info():
 @limiter.limit("30/minute")
 def alerts_evaluate(request: Request, body: AlertEvaluateRequest):
     """Evaluate client-supplied alert rules (also works without DB)."""
-    return evaluate_alerts(body.rules)
+    return evaluate_alerts([rule.model_dump() for rule in body.rules])
 
 
-@app.get("/api/alerts/{client_key}")
-def list_alerts(client_key: str, db: Session = Depends(get_db)):
+@app.get("/api/alerts")
+def list_alerts(client_key: str = Depends(require_alert_key), db: Session = Depends(get_db)):
     rows = (
         db.query(models.Alert)
         .filter(models.Alert.client_key == client_key, models.Alert.active == True)  # noqa: E712
@@ -1235,11 +1171,11 @@ def list_alerts(client_key: str, db: Session = Depends(get_db)):
 
 
 @app.post("/api/alerts")
-def create_alert(body: AlertCreate, db: Session = Depends(get_db)):
+def create_alert(body: AlertCreate, client_key: str = Depends(require_alert_key), db: Session = Depends(get_db)):
     alert = models.Alert(
-        client_key=body.client_key.strip(),
+        client_key=client_key,
         ticker=body.ticker.upper().strip(),
-        alert_type=(body.alert_type or "price").lower(),
+        alert_type=body.type,
         condition=(body.condition or "above").lower(),
         threshold=body.threshold,
         label=body.label,
@@ -1252,7 +1188,7 @@ def create_alert(body: AlertCreate, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/alerts/{alert_id}")
-def delete_alert(alert_id: int, client_key: str, db: Session = Depends(get_db)):
+def delete_alert(alert_id: int, client_key: str = Depends(require_alert_key), db: Session = Depends(get_db)):
     row = db.query(models.Alert).filter(models.Alert.id == alert_id, models.Alert.client_key == client_key).first()
     if not row:
         raise HTTPException(status_code=404, detail="Alert not found")
@@ -1261,9 +1197,9 @@ def delete_alert(alert_id: int, client_key: str, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
-@app.post("/api/alerts/{client_key}/check")
+@app.post("/api/alerts/check")
 @limiter.limit("20/minute")
-def check_stored_alerts(request: Request, client_key: str, db: Session = Depends(get_db)):
+def check_stored_alerts(request: Request, client_key: str = Depends(require_alert_key), db: Session = Depends(get_db)):
     """Load DB alerts for client, evaluate, mark triggered."""
     rows = (
         db.query(models.Alert)
@@ -1276,7 +1212,7 @@ def check_stored_alerts(request: Request, client_key: str, db: Session = Depends
             "ticker": a.ticker,
             "type": a.alert_type,
             "condition": a.condition,
-            "threshold": a.threshold if a.threshold is not None else 2.5,
+            "threshold": a.threshold,
         }
         for a in rows
     ]

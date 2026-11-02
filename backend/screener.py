@@ -11,6 +11,7 @@ import yfinance as yf
 
 from market_data import normalize_dividend_yield, download_data
 from serialization import clean_data
+from daily_picks import get_published_pick, publish_pick
 from currency_utils import normalize_price, display_currency
 from sector_manager import (
     get_jse_top_40,
@@ -629,23 +630,31 @@ def get_stock_of_the_day() -> Optional[Dict[str, Any]]:
     if _SOTD_CACHE.get("date") == today and _SOTD_CACHE.get("payload"):
         return _SOTD_CACHE["payload"]
 
-    top_40_list = get_jse_top_40()
-    n = len(top_40_list)
-    if not n:
-        return None
-    idx = _date_index(today, n)
-    # Mild quality pass: try up to 3 consecutive date-hash picks for usable data
+    published = get_published_pick(today)
     details = None
-    ticker = top_40_list[idx]
-    for offset in range(3):
-        candidate = top_40_list[(idx + offset) % n]
-        candidate_details = get_ticker_details(candidate)
-        if candidate_details and candidate_details.get("current_price"):
-            ticker = candidate
-            details = candidate_details
-            break
-    if not details:
-        details = {"ticker": ticker, "name": ticker, "sector": get_sector_for_ticker(ticker, fallback_yfinance=False)}
+    if published:
+        ticker = published["ticker"]
+        details = get_ticker_details(ticker) or {}
+    else:
+        top_40_list = get_jse_top_40()
+        n = len(top_40_list)
+        if not n:
+            return None
+        idx = _date_index(today, n)
+        ticker = top_40_list[idx]
+        for offset in range(min(3, n)):
+            candidate = top_40_list[(idx + offset) % n]
+            candidate_details = get_ticker_details(candidate)
+            if candidate_details and candidate_details.get("current_price"):
+                ticker, details = candidate, candidate_details
+                break
+        details = details or {"ticker": ticker, "name": ticker}
+        published = publish_pick(today, ticker, details.get("name") or ticker)
+        if published["ticker"] != ticker:
+            ticker = published["ticker"]
+            details = get_ticker_details(ticker) or {}
+    # Preserve the published identity even if data availability/universe changes.
+    details = {**details, **published}
 
     sector = get_sector_for_ticker(ticker, fallback_yfinance=False)
     theme, why = _build_why_bullets(details)
@@ -653,16 +662,13 @@ def get_stock_of_the_day() -> Optional[Dict[str, Any]]:
 
     prices, change_pct = _sparkline_and_change(ticker)
 
-    # Yesterday's featured name (previous calendar day hash) + how it did since
-    try:
-        from zoneinfo import ZoneInfo
-        yday = (datetime.now(ZoneInfo("Africa/Johannesburg")) - timedelta(days=1)).strftime("%Y-%m-%d")
-    except Exception:
-        yday = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
-    y_ticker = top_40_list[_date_index(yday, n)]
-    y_details = get_ticker_details(y_ticker) if y_ticker != ticker else details
-    y_name = (y_details or {}).get("name", y_ticker)
-    y_change = _day_change_since(y_ticker, yday)
+    # Read the actual published selection, including any fallback. A missing
+    # historical record is unknown; do not invent a pick from today's data.
+    yday = (datetime.strptime(today, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+    previous = get_published_pick(yday)
+    yesterday = ({"date": yday, **previous,
+                  "change_pct_since": _day_change_since(previous["ticker"], yday)}
+                 if previous else None)
 
     blurb = (
         f"{emoji} {theme_label}: {details.get('name', ticker)} ({ticker}) in {sector}. "
@@ -687,12 +693,7 @@ def get_stock_of_the_day() -> Optional[Dict[str, Any]]:
         "blurb": blurb,
         "why": why,
         "next_reveal_at": _jhb_next_midnight_iso(),
-        "yesterday": {
-            "date": yday,
-            "ticker": y_ticker,
-            "name": y_name,
-            "change_pct_since": y_change,
-        },
+        "yesterday": yesterday,
         "teaser": "A new JSE Top 40 name drops at midnight (SAST). Build your streak — check back tomorrow.",
     })
 

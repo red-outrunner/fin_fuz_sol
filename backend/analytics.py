@@ -14,6 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import core_math
 from serialization import clean_data
 from currency_utils import normalize_price, display_currency
+from fx_rates import fx_rate_to_zar, positive_number
 
 logger = logging.getLogger(__name__)
 
@@ -138,9 +139,7 @@ def calculate_summary_stats(monthly_ret: pd.Series, pivot: pd.DataFrame, ticker:
         sortino_ratio = core_math.calculate_sortino(calc_series, cagr, risk_free_rate)
         max_drawdown = core_math.calculate_max_drawdown(calc_series)
 
-        cumulative_returns = (1 + calc_series).cumprod()
-        peak = cumulative_returns.expanding(min_periods=1).max()
-        drawdown = (cumulative_returns / peak) - 1
+        drawdown = core_math.calculate_drawdown(calc_series)
 
         # 5. Wealth Index (Growth of 10,000)
         wealth_index = 10000 * (1 + calc_series).cumprod()
@@ -276,24 +275,28 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
         # Trust Yahoo currency (ZAc→ZAR /100). Never use magnitude heuristics —
         # Capitec/Naspers trade well above R500 in real rands.
         yahoo_cur = (info.get("currency") or "").strip()
-        ticker_upper = (ticker or "").upper()
         major_price = normalize_price(current_price, yahoo_cur)
-        if major_price is None:
+        if positive_number(major_price) is None:
             return None
         display_cur = display_currency(yahoo_cur, ticker or "")
 
-        def _usd_to_zar(amount: float) -> float:
-            try:
-                return float(amount) * float(yf.Ticker("ZAR=X").history(period="1d")["Close"].iloc[-1])
-            except Exception:
-                return float(amount) * 18.0
-
-        is_usd = (
-            display_cur == "USD"
-            or ticker_upper.endswith(".US")
-            or ("." not in ticker_upper and display_cur not in ("ZAR", "GBP", "EUR", "AUD", "CAD"))
-        )
-        price_in_zar = _usd_to_zar(major_price) if is_usd else major_price
+        # Use one provider-backed major-unit rate for both prices and dividends.
+        # Never relabel foreign amounts as ZAR or substitute a fixed rate.
+        fx = fx_rate_to_zar(display_cur, {})
+        if fx is None:
+            return {
+                "current_price": None,
+                "annual_yield": None,
+                "shares_needed": None,
+                "investment_needed": None,
+                "dividends_12m": None,
+                "monthly_income_goal": monthly_income_goal,
+                "currency": "ZAR",
+                "source_currency": display_cur,
+                "valuation_status": "unavailable",
+                "warning": f"Exchange rate from {display_cur} to ZAR is unavailable. Please try again later.",
+            }
+        price_in_zar = major_price * fx
 
         # Fetch actual dividend data from yfinance
         annual_yield = 0.0
@@ -307,7 +310,7 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
                     last_year = dividends.index.max() - pd.DateOffset(months=12)
                     dividends_12m_raw = float(dividends[dividends.index >= last_year].sum())
                     dividends_major = normalize_price(dividends_12m_raw, yahoo_cur) or 0.0
-                    dividends_in_zar = _usd_to_zar(dividends_major) if is_usd else dividends_major
+                    dividends_in_zar = dividends_major * fx
 
                     if price_in_zar > 0:
                         annual_yield = dividends_in_zar / price_in_zar
@@ -338,7 +341,10 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
             "shares_needed": shares_needed,
             "investment_needed": investment_needed,
             "monthly_income_goal": monthly_income_goal,
-            "currency": "ZAR"
+            "currency": "ZAR",
+            "source_currency": display_cur,
+            "fx_rate_to_zar": fx,
+            "valuation_status": "available",
         }
     except Exception as e:
         logger.error(f"Error calculating financial freedom: {e}")

@@ -1,4 +1,5 @@
 """Exercise portfolio isolation against a disposable database, without providers."""
+import json
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -53,3 +54,46 @@ def test_all_portfolio_operations_require_private_key(client, key):
     assert api.get("/api/portfolio/performance", headers=headers).status_code == 401
     assert api.post("/api/portfolio/holdings", headers=headers,
                     json={"ticker": "SBK.JO", "quantity": 1, "avg_cost": 100}).status_code == 401
+
+
+@pytest.mark.parametrize("field, value", [
+    ("ticker", ""), ("ticker", "   "), ("ticker", "SBK JO"),
+    ("ticker", None), ("ticker", "A" * 65),
+    ("quantity", 0), ("quantity", -2), ("quantity", None),
+    ("quantity", "NaN"), ("quantity", "Infinity"),
+    ("quantity", float("nan")), ("quantity", float("inf")),
+    ("quantity", float("-inf")),
+    ("avg_cost", -50), ("avg_cost", None),
+    ("avg_cost", "NaN"), ("avg_cost", "Infinity"),
+    ("avg_cost", float("nan")), ("avg_cost", float("inf")),
+    ("avg_cost", float("-inf")),
+])
+def test_invalid_holding_returns_422_without_changing_database(client, field, value):
+    api, db = client
+    headers = {"X-Portfolio-Key": "a" * 64, "Content-Type": "application/json"}
+    valid = {"ticker": "SBK.JO", "quantity": 2, "avg_cost": 100}
+    assert api.post("/api/portfolio/holdings", headers=headers, json=valid).status_code == 200
+    # Exercise both invalid creates and attempts to update an existing ticker.
+    for ticker in ("NEW.JO", "SBK.JO"):
+        payload = {**valid, "ticker": ticker, field: value}
+        response = api.post("/api/portfolio/holdings", headers=headers,
+                            content=json.dumps(payload))
+        assert response.status_code == 422, response.text
+        assert response.json()["detail"][0]["loc"] == ["body", field]
+    row = db.query(models.PortfolioHolding).one()
+    assert row.ticker == "SBK.JO"
+    assert row.quantity == 2
+    assert row.avg_cost == 100
+
+
+def test_fractional_holdings_zero_cost_and_normalized_ticker(client):
+    api, db = client
+    headers = {"X-Portfolio-Key": "a" * 64}
+    for ticker, quantity, cost in [(" sbk.jo ", .5, 0), ("SBK.JO", 1.5, 100)]:
+        response = api.post("/api/portfolio/holdings", headers=headers,
+                            json={"ticker": ticker, "quantity": quantity, "avg_cost": cost})
+        assert response.status_code == 200
+    row = db.query(models.PortfolioHolding).one()
+    assert row.ticker == "SBK.JO"
+    assert row.quantity == 2
+    assert row.avg_cost == 75

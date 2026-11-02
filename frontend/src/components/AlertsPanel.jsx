@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../api';
-import { getClientKey } from '../utils/trading';
+import { getAlertKey } from '../utils/alertKey';
 import { Bell, Plus, Trash2, Volume2, TrendingUp, Landmark } from 'lucide-react';
 import InfoTip from './InfoTip';
 
 const AlertsPanel = ({ ticker }) => {
-    const clientKey = getClientKey();
+    const [clientKey] = useState(getAlertKey);
     const [alerts, setAlerts] = useState([]);
     const [type, setType] = useState('price');
     const [condition, setCondition] = useState('above');
@@ -16,7 +16,7 @@ const AlertsPanel = ({ ticker }) => {
 
     const load = useCallback(async () => {
         try {
-            const res = await axios.get(`${API_BASE_URL}/api/alerts/${clientKey}`);
+            const res = await axios.get(`${API_BASE_URL}/api/alerts`, { headers: { 'X-Alert-Key': clientKey } });
             setAlerts(res.data.alerts || []);
         } catch (err) {
             console.error(err);
@@ -46,7 +46,6 @@ const AlertsPanel = ({ ticker }) => {
         e.preventDefault();
         try {
             await axios.post(`${API_BASE_URL}/api/alerts`, {
-                client_key: clientKey,
                 ticker: ticker || 'NPN.JO',
                 alert_type: type,
                 condition: type === 'price' ? condition : 'above',
@@ -57,26 +56,27 @@ const AlertsPanel = ({ ticker }) => {
                         : type === 'volume'
                             ? `${ticker} unusual volume`
                             : `${ticker} earnings surprise`,
-            });
+            }, { headers: { 'X-Alert-Key': clientKey } });
             setThreshold('');
             setStatus('Alert saved');
             load();
         } catch (err) {
-            alert(err.response?.data?.detail || 'Failed to create alert');
+            const detail = err.response?.data?.detail;
+            alert(Array.isArray(detail) ? detail.map((e) => e.msg).join('; ') : detail || 'Failed to create alert');
         }
     };
 
     const remove = async (id) => {
-        await axios.delete(`${API_BASE_URL}/api/alerts/${id}`, { params: { client_key: clientKey } });
+        await axios.delete(`${API_BASE_URL}/api/alerts/${id}`, { headers: { 'X-Alert-Key': clientKey } });
         load();
     };
 
     const checkNow = async () => {
         setChecking(true);
         try {
-            const res = await axios.post(`${API_BASE_URL}/api/alerts/${clientKey}/check`);
+            const res = await axios.post(`${API_BASE_URL}/api/alerts/check`, {}, { headers: { 'X-Alert-Key': clientKey } });
             const fired = res.data.fired || [];
-            if (fired.length && Notification.permission === 'granted') {
+            if (fired.length && 'Notification' in window && Notification.permission === 'granted') {
                 fired.forEach((f) => {
                     // eslint-disable-next-line no-new
                     new Notification('Ubomvu Alert', {
