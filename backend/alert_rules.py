@@ -15,6 +15,9 @@ class AlertRule(BaseModel):
     type: Literal["price", "volume", "earnings"] = "price"
     condition: Literal["above", "below", "crosses_above", "crosses_below", ">", "<"] = "above"
     threshold: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    # Stateless callers round-trip condition_met from the previous evaluation;
+    # stored rules always get this state from the database, never the browser.
+    was_triggered: bool = Field(default=False, strict=True)
 
     @field_validator("ticker")
     @classmethod

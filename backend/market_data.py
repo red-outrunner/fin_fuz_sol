@@ -4,9 +4,7 @@ import os
 import sys
 import re
 import time
-import socket
 import hashlib
-import ipaddress
 import logging
 import urllib.parse
 import concurrent.futures
@@ -21,6 +19,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import core_math
 from serialization import clean_data
 from currency_utils import normalize_price, display_currency, normalize_history_value
+from safe_http import fetch_public_url, resolve_public_url
+from fx_rates import fx_rate_to_zar, positive_number
 
 logger = logging.getLogger(__name__)
 
@@ -464,44 +464,18 @@ def is_safe_public_url(url: str) -> bool:
     multicast and unspecified ranges, and any non-http(s) scheme.
     """
     try:
-        parsed = urllib.parse.urlparse(url)
-    except Exception:
+        resolve_public_url(url)
+        return True
+    except (ValueError, OSError, UnicodeError):
         return False
-
-    if parsed.scheme not in ("http", "https"):
-        return False
-
-    host = parsed.hostname
-    if not host:
-        return False
-
-    try:
-        addr_infos = socket.getaddrinfo(host, None)
-    except Exception:
-        # Unresolvable host -> treat as unsafe.
-        return False
-
-    for info in addr_infos:
-        ip_str = info[4][0]
-        try:
-            ip = ipaddress.ip_address(ip_str)
-        except ValueError:
-            return False
-        if (ip.is_private or ip.is_loopback or ip.is_link_local
-                or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
-            return False
-
-    return True
 
 
 def get_article_content(url: str):
     """
     Fetches and extracts text content from a news URL.
 
-    Hardened against SSRF: the initial URL and every redirect hop are validated
-    against is_safe_public_url() before any request is made, and redirects are
-    followed manually (allow_redirects=False) so an attacker cannot redirect from
-    a public host to an internal one.
+    Every redirect hop uses a DNS-pinned public connection. The original hostname
+    is retained for HTTPS certificate verification and SNI.
     """
     try:
         headers = {
@@ -509,16 +483,15 @@ def get_article_content(url: str):
         }
 
         current_url = url
-        response = None
+        body = None
         for _ in range(5):  # cap redirect chain
-            if not is_safe_public_url(current_url):
+            try:
+                status, location, body = fetch_public_url(current_url, headers, timeout=10)
+            except ValueError:
                 logger.warning(f"Blocked unsafe URL (SSRF guard): {current_url}")
                 return {"content": "This article could not be loaded for security reasons."}
 
-            response = requests.get(current_url, headers=headers, timeout=10, allow_redirects=False)
-
-            if response.is_redirect or response.status_code in (301, 302, 303, 307, 308):
-                location = response.headers.get("Location")
+            if status in (301, 302, 303, 307, 308):
                 if not location:
                     break
                 # Resolve relative redirects against the current URL, then re-validate next loop.
@@ -528,10 +501,10 @@ def get_article_content(url: str):
         else:
             return {"content": "Could not load the article (too many redirects)."}
 
-        if response is None:
+        if body is None:
             return {"content": "Could not load the article."}
 
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = BeautifulSoup(body, 'html.parser')
 
         # Heuristic to find main content
         # 1. Look for <article>
@@ -1071,8 +1044,38 @@ def get_financials(ticker: str):
         # 4. WACC components
         suggested_discount_rate = core_math.calculate_wacc(ticker, beta)
 
+        # Cash-flow statements use financialCurrency, which can differ from the
+        # listing's quote currency. Convert before the frontend calculates DCF.
+        quote_unit = info.get("currency") or ""
+        quote_currency = display_currency(quote_unit, ticker)
+        reporting_unit = info.get("financialCurrency") or ""
+        reporting_currency = display_currency(reporting_unit) if reporting_unit else None
+        reporting_fcf = normalize_price(fcf, reporting_unit)
+        conversion_rate = None
+        warning = None
+        if not reporting_currency or not quote_unit:
+            warning = "Reporting or trading currency is unavailable; fair value cannot be compared."
+        elif reporting_currency == quote_currency:
+            conversion_rate = 1.0
+        else:
+            fx_cache = {}
+            source_rate = fx_rate_to_zar(reporting_currency, fx_cache)
+            target_rate = fx_rate_to_zar(quote_currency, fx_cache)
+            if source_rate is not None and target_rate is not None:
+                conversion_rate = positive_number(source_rate / target_rate)
+            if conversion_rate is None:
+                warning = f"Exchange rate from {reporting_currency} to {quote_currency} is unavailable; fair value cannot be compared."
+        converted_fcf = (reporting_fcf * conversion_rate
+                         if reporting_fcf is not None and conversion_rate is not None else None)
+
         return {
-            "fcf": fcf,
+            "fcf": converted_fcf,
+            "fcf_reporting": reporting_fcf,
+            "reporting_currency": reporting_currency,
+            "fcf_currency": quote_currency if converted_fcf is not None else None,
+            "fx_rate": conversion_rate,
+            "valuation_status": "available" if converted_fcf is not None else "unavailable",
+            "warning": warning,
             "shares_outstanding": shares,
             "beta": beta,
             "price": normalize_price(
@@ -1080,7 +1083,7 @@ def get_financials(ticker: str):
                 info.get("currency", ""),
             ),
             "suggested_discount_rate": suggested_discount_rate,
-            "currency": display_currency(info.get("currency", ""), ticker),
+            "currency": quote_currency,
         }
     except Exception as e:
         logger.error(f"Error fetching financials for {ticker}: {e}")

@@ -142,23 +142,32 @@ def get_live_quotes(tickers: List[str]) -> Dict[str, Any]:
     })
 
 
-def evaluate_price_alert(ticker: str, condition: str, threshold: float) -> Optional[Dict[str, Any]]:
+def evaluate_price_alert(ticker: str, condition: str, threshold: float,
+                         was_triggered: bool = False) -> Optional[Dict[str, Any]]:
+    """Fire on entry to the threshold region, then rearm on leaving it.
+
+    New rules start armed, so the first qualifying quote fires once. The caller
+    persists condition_met and supplies it as was_triggered on the next check.
+    """
     q = get_live_quote(ticker)
     if not q or q.get("price") is None:
         return None
     price = float(q["price"])
     cond = condition.lower().strip()
-    triggered = False
+    condition_met = False
     if cond in ("above", "crosses_above", ">"):
-        triggered = price >= threshold
+        condition_met = price >= threshold
     elif cond in ("below", "crosses_below", "<"):
-        triggered = price <= threshold
+        condition_met = price <= threshold
+    triggered = condition_met and not was_triggered
     return {
         "ticker": ticker.upper(),
         "type": "price",
         "condition": cond,
         "threshold": threshold,
         "price": price,
+        "condition_met": condition_met,
+        "armed": not condition_met,
         "triggered": triggered,
         "message": (
             f"{ticker.upper()} is {price} ({cond} {threshold})"
@@ -247,6 +256,7 @@ def evaluate_alerts(rules: List[Dict[str, Any]]) -> Dict[str, Any]:
                 ticker,
                 rule.get("condition", "above"),
                 float(rule.get("threshold", 0)),
+                was_triggered=rule["was_triggered"],
             )
         elif rtype == "volume":
             result = volume_zscore_alert(ticker, float(rule.get("threshold", 2.5)))

@@ -99,6 +99,23 @@ stored-alert credential. Price/volume rules require finite, nonnegative threshol
 invalid types, conditions, tickers, and thresholds return HTTP 422. Malformed
 persisted rules are skipped and reported in the evaluation response's `errors`.
 
+Stored price alerts start armed. The first quote at or beyond the threshold fires
+once; repeated qualifying quotes do not notify again. A quote on the opposite side
+rearms the alert. `triggered` records the current latch, `armed` exposes its inverse,
+and `last_triggered_at` retains the last notification time through rearming. Missing
+quotes preserve the latch. Stateless evaluation callers must send the previous
+result's `condition_met` as `was_triggered` on their next check to get the same
+transition behavior. No database migration is needed for this state handling.
+
+DCF inputs expose `fcf` in the listing's major trading currency (`fcf_currency`),
+converted from `financialCurrency` before calculating per-share fair value.
+`fcf_reporting`, `reporting_currency`, and `fx_rate` describe the original cash flow
+and conversion. Missing currency metadata or FX rates withhold the comparison
+instead of relabeling unconverted cash flows. Financial freedom uses dividend
+payments in the last 12 calendar months ending today, in the dividend index's
+timezone; old and future payments do not contribute. Dashboard exports send the
+selected inflation rate so exported summary statistics match the displayed KPIs.
+
 Schema changes are versioned with [Alembic](https://alembic.sqlalchemy.org/). Run commands from the `backend/` directory; the database URL is taken from `DATABASE_URL` (falls back to local SQLite).
 
 ```bash

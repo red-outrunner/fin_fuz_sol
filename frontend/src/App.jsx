@@ -26,6 +26,11 @@ function AppContent() {
     const [startYear, setStartYear] = useState(2018);
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [inflationAdjusted, setInflationAdjusted] = useState(false);
+    // Sidebar fields are drafts. Results, exports and links use the submitted
+    // parameters until the next analysis starts (which clears the old results).
+    const [analysisParams, setAnalysisParams] = useState(() => ({
+        ticker, startYear, endDate, inflationAdjusted,
+    }));
 
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -58,8 +63,8 @@ function AppContent() {
     const setDashboardTab = useCallback((tab) => {
         const next = DASHBOARD_TABS.includes(tab) ? tab : 'summary';
         setDashboardTabState(next);
-        replaceHash(buildHash({ route: '#/', ticker, tab: next }));
-    }, [ticker]);
+        replaceHash(buildHash({ route: '#/', ticker: analysisParams.ticker, tab: next }));
+    }, [analysisParams.ticker]);
 
     useEffect(() => {
         try {
@@ -117,14 +122,15 @@ function AppContent() {
         return () => window.removeEventListener('keydown', onKey);
     }, [focusSearch, toggleTheme, setDashboardTab]);
 
-    const triggerAnalyze = async (symbol, year = startYear, date = endDate, inflation = inflationAdjusted, tab = dashboardTab) => {
+    const triggerAnalyze = async (symbol, year = startYear, date = endDate, inflation = inflationAdjusted, tab = dashboardTab, updateDraftTicker = true) => {
         const request = analysisRequests.current.begin();
         terminalRequests.current.cancel();
         setTerminalRefreshing(false);
         analyzingRef.current = true;
         const sym = String(symbol || '').trim().toUpperCase();
         activeTickerRef.current = sym;
-        setTicker(sym);
+        if (updateDraftTicker) setTicker(sym);
+        setAnalysisParams({ ticker: sym, startYear: year, endDate: date, inflationAdjusted: inflation });
         replaceHash(buildHash({ route: '#/', ticker: sym, tab }));
         setLoading(true);
         setError(null);
@@ -206,11 +212,15 @@ function AppContent() {
     };
 
     const refreshTerminal = async () => {
-        if (!ticker || analyzingRef.current) return;
+        if (!analysisParams.ticker || analyzingRef.current) return;
         const request = terminalRequests.current.begin();
         setTerminalRefreshing(true);
         try {
-            const payload = { ticker, start_year: startYear, end_date: endDate };
+            const payload = {
+                ticker: analysisParams.ticker,
+                start_year: analysisParams.startYear,
+                end_date: analysisParams.endDate,
+            };
             const [fundRes, newsRes, calRes] = await Promise.all([
                 axios.post(`${API_BASE_URL}/api/fundamentals`, payload, { signal: request.signal }).catch(() => ({ data: null })),
                 axios.post(`${API_BASE_URL}/api/news`, payload, { signal: request.signal }).catch(() => ({ data: [] })),
@@ -231,7 +241,7 @@ function AppContent() {
     const prevInflationRef = useRef(inflationAdjusted);
     useEffect(() => {
         if (prevInflationRef.current !== inflationAdjusted && (data !== null || analyzingRef.current)) {
-            triggerAnalyze(ticker, startYear, endDate, inflationAdjusted);
+            triggerAnalyze(analysisParams.ticker, analysisParams.startYear, analysisParams.endDate, inflationAdjusted, dashboardTab, false);
         }
         prevInflationRef.current = inflationAdjusted;
     }, [inflationAdjusted]);
@@ -252,10 +262,10 @@ function AppContent() {
             default:
                 return (
                     <Dashboard
-                        ticker={ticker}
-                        startYear={startYear}
-                        endDate={endDate}
-                        inflationAdjusted={inflationAdjusted}
+                        ticker={analysisParams.ticker}
+                        startYear={analysisParams.startYear}
+                        endDate={analysisParams.endDate}
+                        inflationAdjusted={analysisParams.inflationAdjusted}
                         data={data}
                         loading={loading}
                         error={error}
@@ -300,7 +310,7 @@ function AppContent() {
                 <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-navy/5 dark:border-white/10">
                     <h1
                         className="text-2xl font-serif font-bold text-gold tracking-tight cursor-pointer"
-                        onClick={() => { replaceHash(buildHash({ route: '#/', ticker, tab: dashboardTab })); }}
+                        onClick={() => { replaceHash(buildHash({ route: '#/', ticker: analysisParams.ticker, tab: dashboardTab })); }}
                     >
                         Ubomvu
                     </h1>

@@ -248,6 +248,11 @@ def run_monte_carlo(monthly_ret: pd.Series, years: int = 10, n_sims: int = 1000)
         return None
 
 
+def _dividend_as_of(tz):
+    """Today's date in the dividend index's timezone (also supports naive dates)."""
+    return pd.Timestamp.now(tz=tz).normalize()
+
+
 def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
     """
     Calculates the number of shares and investment required to generate a target monthly income.
@@ -307,8 +312,11 @@ def calculate_financial_freedom(data, monthly_income_goal, ticker: str = None):
                 dividends = ticker_obj.dividends
 
                 if dividends is not None and not dividends.empty:
-                    last_year = dividends.index.max() - pd.DateOffset(months=12)
-                    dividends_12m_raw = float(dividends[dividends.index >= last_year].sum())
+                    as_of = _dividend_as_of(dividends.index.tz)
+                    last_year = as_of - pd.DateOffset(months=12)
+                    dividends_12m_raw = float(dividends[
+                        (dividends.index > last_year) & (dividends.index <= as_of)
+                    ].sum())
                     dividends_major = normalize_price(dividends_12m_raw, yahoo_cur) or 0.0
                     dividends_in_zar = dividends_major * fx
 

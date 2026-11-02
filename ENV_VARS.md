@@ -61,9 +61,25 @@ All optional — the app runs with sensible defaults if these are unset.
 | `SECTOR_ADMIN_TOKEN` | _(unset)_ | Private bearer token for sector reloads; minimum 32 characters. Generate with `openssl rand -hex 32`. Unset or shorter values disable the endpoint. Keep server-side; never use a `VITE_` variable. |
 | `CACHE_DIR` | `cache_v3` | Directory for the parquet market-data cache. |
 | `CACHE_TTL_SECONDS` | `86400` | How long (seconds) a cached price series is considered fresh. |
+| `QUOTE_CACHE_TTL_SECONDS` | `5` | Shared REST/WebSocket quote cache lifetime per worker; minimum 3 seconds. Unavailable quotes are cached too. |
+| `QUOTE_CACHE_MAX_ENTRIES` | `512` | Maximum cached quote symbols per worker; minimum 30. |
+| `WS_QUOTES_MAX_CONNECTIONS` | `100` | Maximum simultaneous quote WebSockets per worker. |
+| `WS_QUOTES_MAX_PER_IP` | `3` | Maximum simultaneous quote WebSockets per client IP per worker. |
+| `WS_QUOTES_STARTS_PER_MINUTE` | `10` | Maximum successful quote WebSocket handshakes per client IP per rolling minute per worker. |
+| `WS_QUOTES_GLOBAL_STARTS_PER_MINUTE` | `120` | Maximum successful quote WebSocket handshakes per rolling minute per worker. |
 | `POLYGON_API_KEY` | _(unset)_ | Optional. Enables lower-latency quotes via Polygon.io (falls back to yfinance). |
 | `ALPHA_VANTAGE_API_KEY` | _(unset)_ | Optional alternate quote provider key. |
 | `IEX_API_KEY` | _(unset)_ | Optional IEX Cloud quote provider key. |
+
+Quote connection limits and caching are process-local. Multiply limits by the
+number of workers/instances when sizing provider quotas. Client IPs come from the
+ASGI connection address; configure trusted proxy forwarding in the server when
+deploying behind a reverse proxy. Only trust forwarding headers from that proxy.
+
+Article fetching uses direct connections to validated public IP addresses and
+does not use `HTTP_PROXY` / `HTTPS_PROXY` environment settings. HTTPS still uses
+the article hostname for SNI and certificate verification; redirects are validated
+and pinned independently. Article responses are capped at 2 MiB.
 
 ---
 

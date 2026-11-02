@@ -26,6 +26,7 @@ from sector_manager import sync_sector_data
 from fundamentals import get_financial_statements, get_ratio_trends, get_analyst_estimates, get_segment_data, get_fair_value_comparison
 from technical import build_technical_snapshot, run_backtest
 from realtime import get_live_quotes, get_live_quote, evaluate_alerts, quote_provider
+from quote_stream import QuoteConnectionLimiter, SharedQuoteCache
 from currency_utils import normalize_price, display_currency, normalize_history_value, BRAND_ATTRIBUTION
 from fx_rates import fx_rate_to_zar as _fx_rate_to_zar, positive_number as _positive_number
 from database import get_db, engine, Base
@@ -51,6 +52,19 @@ logging.basicConfig(
     force=True,
 )
 logger = logging.getLogger(__name__)
+
+# Each worker owns a bounded cache and connection budget. Size deployment-wide
+# budgets by worker count; HTTP and WebSocket clients share these cached quotes.
+quote_cache = SharedQuoteCache(
+    ttl_seconds=int(os.getenv("QUOTE_CACHE_TTL_SECONDS", "5")),
+    max_entries=int(os.getenv("QUOTE_CACHE_MAX_ENTRIES", "512")),
+)
+quote_connections = QuoteConnectionLimiter(
+    max_connections=int(os.getenv("WS_QUOTES_MAX_CONNECTIONS", "100")),
+    max_per_ip=int(os.getenv("WS_QUOTES_MAX_PER_IP", "3")),
+    starts_per_minute=int(os.getenv("WS_QUOTES_STARTS_PER_MINUTE", "10")),
+    global_starts_per_minute=int(os.getenv("WS_QUOTES_GLOBAL_STARTS_PER_MINUTE", "120")),
+)
 
 # Optional error tracking. Activates ONLY when SENTRY_DSN is set AND sentry-sdk is
 # installed; otherwise it is a silent no-op, so local/dev runs need nothing extra.
@@ -1125,7 +1139,7 @@ class AlertEvaluateRequest(BaseModel):
 @app.post("/api/quotes/live")
 @limiter.limit("60/minute")
 def live_quotes(request: Request, body: QuotesRequest):
-    return get_live_quotes(body.tickers)
+    return quote_cache.get_quotes(body.tickers, get_live_quotes)
 
 
 @app.get("/api/quotes/provider")
@@ -1162,6 +1176,7 @@ def list_alerts(client_key: str = Depends(require_alert_key), db: Session = Depe
                 "threshold": a.threshold,
                 "label": a.label,
                 "triggered": a.triggered,
+                "armed": not a.triggered if a.alert_type == "price" else None,
                 "last_triggered_at": a.last_triggered_at.isoformat() if a.last_triggered_at else None,
                 "created_at": a.created_at.isoformat() if a.created_at else None,
             }
@@ -1200,10 +1215,11 @@ def delete_alert(alert_id: int, client_key: str = Depends(require_alert_key), db
 @app.post("/api/alerts/check")
 @limiter.limit("20/minute")
 def check_stored_alerts(request: Request, client_key: str = Depends(require_alert_key), db: Session = Depends(get_db)):
-    """Load DB alerts for client, evaluate, mark triggered."""
+    """Evaluate stored alerts; price rules latch until an opposite-side quote."""
     rows = (
         db.query(models.Alert)
         .filter(models.Alert.client_key == client_key, models.Alert.active == True)  # noqa: E712
+        .with_for_update()
         .all()
     )
     rules = [
@@ -1213,13 +1229,30 @@ def check_stored_alerts(request: Request, client_key: str = Depends(require_aler
             "type": a.alert_type,
             "condition": a.condition,
             "threshold": a.threshold,
+            "was_triggered": bool(a.triggered),
         }
         for a in rows
     ]
     result = evaluate_alerts(rules)
     fired_ids = {f.get("id") for f in result.get("fired", [])}
+    evaluations = {item.get("id"): item for item in result.get("results", [])}
     for a in rows:
-        if a.id in fired_ids:
+        evaluation = evaluations.get(a.id)
+        if evaluation is not None and evaluation.get("type") == "price":
+            met = evaluation.get("condition_met", bool(evaluation.get("triggered")))
+            # PostgreSQL locks the rows above. Compare-and-set also prevents two
+            # SQLite checks that read the same state from publishing the same edge.
+            changed = (db.query(models.Alert)
+                       .filter(models.Alert.id == a.id, models.Alert.triggered.is_(a.triggered))
+                       .update({
+                           "triggered": met,
+                           **({"last_triggered_at": datetime.utcnow()} if a.id in fired_ids else {}),
+                       }, synchronize_session=False))
+            if not changed:
+                result["fired"] = [item for item in result["fired"] if item.get("id") != a.id]
+                evaluation["triggered"] = False
+                evaluation["message"] = None
+        elif a.id in fired_ids:
             a.triggered = True
             a.last_triggered_at = datetime.utcnow()
     db.commit()
@@ -1232,7 +1265,6 @@ async def ws_quotes(websocket: WebSocket):
     Near-real-time quote stream. Polls the configured provider on an interval.
     Query: ?tickers=NPN.JO,SBK.JO&interval=5
     """
-    await websocket.accept()
     params = websocket.query_params
     tickers = list(dict.fromkeys(t.strip().upper() for t in (params.get("tickers") or "").split(",") if t.strip()))[:20]
     try:
@@ -1240,12 +1272,19 @@ async def ws_quotes(websocket: WebSocket):
     except ValueError:
         interval = 5
     if not tickers:
+        await websocket.accept()
         await websocket.send_json({"error": "Provide tickers query param"})
         await websocket.close()
         return
+    ip = websocket.client.host if websocket.client else "unknown"
+    if not quote_connections.acquire(ip):
+        # Reject before accepting, without allocating any provider work.
+        await websocket.close(code=1013, reason="Quote connection limit exceeded")
+        return
     try:
+        await websocket.accept()
         while True:
-            payload = await run_in_threadpool(get_live_quotes, tickers)
+            payload = await run_in_threadpool(quote_cache.get_quotes, tickers, get_live_quotes)
             await websocket.send_json(payload)
             # Observe disconnects while waiting, rather than discovering them on
             # the next send. Client messages must not accelerate provider polling.
@@ -1268,6 +1307,8 @@ async def ws_quotes(websocket: WebSocket):
             await websocket.close()
         except Exception:
             pass
+    finally:
+        quote_connections.release(ip)
 
 
 # Ensure new tables exist in local/dev even before migrations are applied

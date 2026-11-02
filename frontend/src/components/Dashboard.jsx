@@ -124,6 +124,7 @@ const Dashboard = ({
                     ticker,
                     start_year: startYear,
                     end_date: endDate,
+                    inflation_rate: inflationAdjusted ? 0.05 : 0.0,
                 });
                 const { tsv, sheets_url, hint } = response.data;
                 await navigator.clipboard.writeText(tsv);
@@ -136,7 +137,8 @@ const Dashboard = ({
             const response = await axios.post(`${API_BASE_URL}/api/export/${type}`, {
                 ticker,
                 start_year: startYear,
-                end_date: endDate
+                end_date: endDate,
+                inflation_rate: inflationAdjusted ? 0.05 : 0.0,
             }, {
                 responseType: 'blob' // Important for file download
             });

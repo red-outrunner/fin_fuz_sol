@@ -20,7 +20,11 @@ async function loadComponent(entry) {
             }
             fixture(/^axios$/, 'export default {post:(...args)=>globalThis.testAxios.post(...args)};');
             fixture(/(^|\/)api$/, 'export const API_BASE_URL="http://test";');
-            fixture(/lucide-react/, 'export const Moon=()=>null,Sun=()=>null,TrendingUp=()=>null,DollarSign=()=>null,Activity=()=>null;');
+            fixture(/lucide-react/, 'export const Moon=()=>null,Sun=()=>null,TrendingUp=()=>null,DollarSign=()=>null,Activity=()=>null,Star=()=>null,Share2=()=>null;');
+            fixture(/context\/AuthContext$/, 'export const useAuth=()=>({user:{tier:"institutional"}});');
+            if (entry === 'components/Dashboard.jsx') {
+                fixture(/^\.\//, 'export default ()=>null;');
+            }
             fixture(/context\/ThemeContext$/, 'export const useTheme=()=>({isDark:false,toggleTheme:()=>{}});');
             fixture(/context\/UserPreferencesContext$/, 'export const UserPreferencesProvider=({children})=>children; export const useUserPreferences=()=>({preferences:{},watchlist:[],updatePreference:()=>{},updateWatchlist:()=>{}});');
             fixture(/components\/(Dashboard|Sidebar|StockScreener|JSEHeatmap|StockIdeasFeed|Watchlist|PortfolioTracker|ConsentToast)$/, p=>`import React from 'react'; export default props=>React.createElement('mock-${p.split('/').pop()}',props);`);
@@ -33,8 +37,8 @@ async function loadComponent(entry) {
     compiled._compile(result.outputFiles[0].text,compiled.filename);
     return compiled.exports.default;
 }
-let App,ValuationLab,pending,trees;
-test.before(async()=>{App=await loadComponent('App.jsx');ValuationLab=await loadComponent('components/ValuationLab.jsx');});
+let App,ValuationLab,Dashboard,pending,trees;
+test.before(async()=>{App=await loadComponent('App.jsx');ValuationLab=await loadComponent('components/ValuationLab.jsx');Dashboard=await loadComponent('components/Dashboard.jsx');});
 test.beforeEach(()=>{
     pending=[];trees=[];
     global.window={location:{hash:'#/'},addEventListener(){},removeEventListener(){},setTimeout};
@@ -120,3 +124,105 @@ test('inflation changes replace an in-flight analysis', async () => {
     await settle(original, false, {ticker: 'AAA.JO', adjusted: false});
     assert.equal(dashboard(tree).data.adjusted, true);
 });
+
+test('draft ticker and dates cannot relabel results, refreshes, or links', async () => {
+    const tree = await mount(App);
+    await select(tree, 'AAA.JO');
+    const submitted = pending.find(request => request.url.endsWith('/api/analyze')).payload;
+    await settle(requestsFor('AAA.JO'));
+    await act(async () => {
+        const sidebar = tree.root.findByType('mock-Sidebar').props;
+        sidebar.setTicker('BBB.JO');
+        sidebar.setStartYear(2025);
+        sidebar.setEndDate('2026-01-01');
+    });
+    assert.equal(tree.root.findByType('mock-Sidebar').props.ticker, 'BBB.JO');
+    assert.equal(dashboard(tree).ticker, 'AAA.JO');
+    assert.equal(dashboard(tree).data.ticker, 'AAA.JO');
+    assert.equal(dashboard(tree).startYear, submitted.start_year);
+    assert.equal(dashboard(tree).endDate, submitted.end_date);
+    await act(async () => { dashboard(tree).setActiveTab('report'); });
+    assert.ok(window.location.hash.includes('AAA.JO'));
+    await act(async () => { dashboard(tree).onRefreshTerminal(); });
+    const refresh = pending.filter(request => !request.done);
+    assert.ok(refresh.every(request => request.payload.ticker === 'AAA.JO'));
+    assert.ok(refresh.every(request => request.payload.start_year === submitted.start_year));
+    await settle(refresh);
+    await act(async () => { tree.root.findByType('mock-Sidebar').props.onAnalyze(); });
+    assert.equal(dashboard(tree).data, null);
+    assert.equal(dashboard(tree).ticker, 'BBB.JO');
+    assert.equal(dashboard(tree).startYear, 2025);
+    await settle(requestsFor('BBB.JO'));
+    assert.equal(dashboard(tree).data.ticker, 'BBB.JO');
+});
+
+test('draft edits during a request cannot relabel its completed result', async () => {
+    const tree = await mount(App);
+    await select(tree, 'AAA.JO');
+    await act(async () => { tree.root.findByType('mock-Sidebar').props.setTicker('BBB.JO'); });
+    await settle(requestsFor('AAA.JO'));
+    assert.equal(dashboard(tree).ticker, 'AAA.JO');
+    assert.equal(dashboard(tree).data.ticker, 'AAA.JO');
+    await act(async () => { tree.root.findByType('mock-Sidebar').props.setInflationAdjusted(true); });
+    const adjusted = pending.filter(request => !request.done);
+    assert.ok(adjusted.every(request => request.payload.ticker === 'AAA.JO'));
+    assert.equal(tree.root.findByType('mock-Sidebar').props.ticker, 'BBB.JO');
+    await settle(adjusted);
+    assert.equal(dashboard(tree).inflationAdjusted, true);
+});
+
+test('valuation cannot show upside when currency conversion is unavailable', async () => {
+    const tree = await mount(ValuationLab, {ticker: 'FOREIGN.JO'});
+    await settle(requestsFor('FOREIGN.JO'), false, {
+        fcf: null, fcf_reporting: 1000, shares_outstanding: 100, price: 100,
+        currency: 'ZAR', reporting_currency: 'USD', valuation_status: 'unavailable',
+        warning: 'Exchange rate from USD to ZAR is unavailable; fair value cannot be compared.',
+    });
+    const output = JSON.stringify(tree.toJSON());
+    assert.ok(output.includes('Exchange rate from USD to ZAR is unavailable'));
+    assert.ok(output.includes('Insufficient Data'));
+    assert.ok(!output.includes('Undervalued'));
+    assert.ok(!output.includes('Overvalued'));
+});
+
+test('valuation rejects mismatched cash-flow and price currencies', async () => {
+    const tree = await mount(ValuationLab, {ticker: 'FOREIGN.JO'});
+    await settle(requestsFor('FOREIGN.JO'), false, {
+        fcf: 1000, fcf_currency: 'USD', shares_outstanding: 100, price: 100, currency: 'ZAR',
+    });
+    assert.ok(JSON.stringify(tree.toJSON()).includes('Insufficient Data'));
+});
+
+for (const adjusted of [false, true]) {
+    test(`all dashboard exports preserve inflation adjustment (${adjusted})`, async () => {
+        window.setTimeout = () => 0;
+        window.open = () => {};
+        window.URL = {createObjectURL: () => 'blob:test'};
+        Object.defineProperty(global, 'navigator', {
+            value: {clipboard: {writeText: async () => {}}}, configurable: true,
+        });
+        global.document = {
+            createElement: () => ({setAttribute() {}, click() {}, remove() {}}),
+            body: {appendChild() {}},
+        };
+        const tree = await mount(Dashboard, {
+            ticker: 'AAA.JO', startYear: 2018, endDate: '2026-11-02',
+            inflationAdjusted: adjusted, data: {ticker: 'AAA.JO', stats: {}},
+        });
+        const button = label => tree.root.findAllByType('button').find(node =>
+            node.findAllByType('span').some(span => span.children.join('') === label));
+        for (const [type, label] of [
+            ['excel', 'Excel (One-Click)'], ['sheets', 'Google Sheets Sync'],
+            ['csv', 'CSV Report'], ['pdf', 'PDF Report'], ['ml', 'ML Data (CSV)'],
+        ]) {
+            await act(async () => { button('Download').props.onClick(); });
+            await act(async () => { button(label).props.onClick(); });
+            const request = pending.at(-1);
+            assert.ok(request.url.endsWith(`/api/export/${type}`));
+            assert.equal(request.payload.inflation_rate, adjusted ? .05 : 0);
+            assert.equal(request.payload.ticker, 'AAA.JO');
+            await settle([request], false, type === 'sheets'
+                ? {tsv: 'data', sheets_url: 'https://sheets.new'} : 'blob');
+        }
+    });
+}

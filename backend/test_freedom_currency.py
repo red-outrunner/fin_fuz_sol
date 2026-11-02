@@ -28,7 +28,8 @@ def test_prices_and_dividends_are_converted_together(ticker, quote_currency, rat
             return SimpleNamespace(info={"currency": quote_currency}, dividends=dividends)
         assert symbol == pair
         return SimpleNamespace(history=lambda **kw: pd.DataFrame({"Close": [rate]}))
-    with patch("yfinance.Ticker", side_effect=provider) as fetch:
+    with patch("yfinance.Ticker", side_effect=provider) as fetch, \
+            patch("analytics._dividend_as_of", return_value=pd.Timestamp("2026-11-02")):
         result = calculate_financial_freedom(history, 100, ticker)
     assert result["current_price"] == 100 * rate
     assert result["dividends_12m"] == 2 * rate
@@ -66,3 +67,29 @@ def test_freedom_endpoint_reports_fx_outage_without_server_error():
     assert response.status_code == 200
     assert response.json()["valuation_status"] == "unavailable"
     assert response.json()["investment_needed"] is None
+
+
+@pytest.mark.parametrize("tz", [None, "Africa/Johannesburg", "America/New_York"])
+def test_dividend_window_ends_today_and_ignores_old_and_future_payments(tz):
+    dates = pd.to_datetime(["2025-11-02", "2026-10-01", "2027-01-01", "2025-11-03"])
+    if tz:
+        dates = dates.tz_localize(tz)
+    stock = SimpleNamespace(info={"currency": "ZAR"},
+                            dividends=pd.Series([99., 2., 999., 3.], index=dates))
+    with patch("yfinance.Ticker", return_value=stock), \
+            patch("analytics._dividend_as_of", return_value=pd.Timestamp("2026-11-02", tz=tz)) as clock:
+        result = calculate_financial_freedom(pd.DataFrame({"Close": [100]}), 100, "TEST.JO")
+    assert result["dividends_12m"] == 5
+    assert result["annual_yield"] == pytest.approx(.05)
+    clock.assert_called_once_with(dates.tz)
+
+
+def test_discontinued_dividends_do_not_project_current_income():
+    stock = SimpleNamespace(info={"currency": "ZAR"}, dividends=pd.Series(
+        [10., 10.], index=pd.to_datetime(["2022-01-01", "2022-07-01"])))
+    with patch("yfinance.Ticker", return_value=stock), \
+            patch("analytics._dividend_as_of", return_value=pd.Timestamp("2026-11-02")):
+        result = calculate_financial_freedom(pd.DataFrame({"Close": [100]}), 100, "TEST.JO")
+    assert result["annual_yield"] == 0
+    assert result["investment_needed"] == 0
+    assert "No dividend data" in result["warning"]

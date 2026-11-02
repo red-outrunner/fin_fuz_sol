@@ -215,7 +215,7 @@ const AlertsPanel = ({ ticker }) => {
                             <div className="text-[11px] text-slate-500 uppercase tracking-wider">
                                 {a.type}
                                 {a.threshold != null ? ` · ${a.condition} ${a.threshold}` : ''}
-                                {a.triggered ? ' · triggered' : ''}
+                                {a.triggered ? ' · triggered' : a.type === 'price' ? ' · armed' : ''}
                             </div>
                         </div>
                         <button type="button" onClick={() => remove(a.id)} className="p-2 text-slate-400 hover:text-error">

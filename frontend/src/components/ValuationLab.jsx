@@ -64,7 +64,10 @@ const ValuationLab = ({ ticker }) => {
 
     // Recalculate Fair Value whenever assumptions or data change
     useEffect(() => {
-        if (!financials || !financials.fcf || !financials.shares_outstanding) return;
+        setFairValue(null);
+        if (!financials || financials.valuation_status === 'unavailable'
+            || financials.fcf == null || !financials.shares_outstanding
+            || (financials.fcf_currency && financials.fcf_currency !== financials.currency)) return;
 
         const fcf0 = financials.fcf;
         const shares = financials.shares_outstanding;
@@ -126,6 +129,11 @@ const ValuationLab = ({ ticker }) => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            {financials.warning && (
+                <p role="status" className="p-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200">
+                    {financials.warning}
+                </p>
+            )}
             <div className="border-b border-navy/5 pb-6">
                 <h2 className="text-3xl font-serif font-bold text-navy title-font flex items-center gap-3">
                     Valuation Lab
@@ -214,11 +222,16 @@ const ValuationLab = ({ ticker }) => {
                     <div className="bg-navy/5 p-4 rounded-lg border border-navy/10">
                         <h4 className="text-xs font-bold text-navy uppercase mb-2">Inputs</h4>
                         <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-500">Free Cash Flow (TTM)</span>
+                            <span className="text-slate-500">Free Cash Flow (trading currency)</span>
                             <span className="font-mono text-navy">
-                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: financials.currency, notation: 'compact' }).format(financials.fcf)}
+                                {financials.fcf == null ? 'N/A' : new Intl.NumberFormat('en-US', { style: 'currency', currency: financials.currency, notation: 'compact' }).format(financials.fcf)}
                             </span>
                         </div>
+                        {financials.fx_rate != null && financials.reporting_currency !== financials.currency && (
+                            <p className="text-xs text-slate-500 mt-2">
+                                Converted from {financials.reporting_currency} to {financials.currency} before valuation.
+                            </p>
+                        )}
                         <div className="flex justify-between text-sm">
                             <span className="text-slate-500">Beta</span>
                             <span className="font-mono text-navy">{financials.beta?.toFixed(2) || '-'}</span>
